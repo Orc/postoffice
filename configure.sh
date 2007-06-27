@@ -149,13 +149,17 @@ EOF
 	AC_SUB    LIBWRAP ""
     fi
     rm -f $$.c $$.x
+else
+    AC_SUB    LIBWRAP ""
 fi
 
-if [ "$WITH_QUEUEDIR" ]; then
-    AC_DEFINE QUEUEDIR \"${WITH_QUEUEDIR}/\"
-else
-    AC_DEFINE QUEUEDIR \"/var/spool/mqueue/\"
-fi
+case "$WITH_QUEUEDIR" in
+"") AC_DEFINE QUEUEDIR \"/var/spool/mqueue/\" ;;
+/*) AC_DEFINE QUEUEDIR \"${WITH_QUEUEDIR}/\"
+    ;;
+*)  AC_FAIL "The mail queue directory [$WITH_QUEUEDIR] must be a full pathname."
+    ;;
+esac
 
 test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1
 test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
@@ -252,12 +256,8 @@ if test "$WITH_VHOST"; then
     *)	VPATH=/etc/virtual ;;
     esac
 
-    test -d $VPATH || LOG "WARNING! vhost directory $VPATH does not exist"
 
     VSPOOL=${WITH_VSPOOL:-/var/spool/virtual}
-
-    test -d $VSPOOL || LOG "WARNING! vhost directory $VSPOOL does not exist"
-
     VUSER=${WITH_VUSER:-mail}
 
     eval `./uid $VUSER`
@@ -371,6 +371,15 @@ else
     AC_SUB WHICH programs
 fi
 
+
+AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 \
+                   greylist.7 smtpauth.5 postoffice.cf.5 aliases.5 \
+		   authexpire.8
+
+
+# final warning checks, put here to put directory errors out where they
+# won't be mixed up with the rest of the output
+
 if [ "$use_mailwrapper" ]; then
     checkdirs="confdir libexec mandir"
 else
@@ -384,6 +393,11 @@ for x in $checkdirs; do
     test -d $D || LOG "WARNING! ${x} directory $D does not exist"
 done
 
-AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 \
-                   greylist.7 smtpauth.5 postoffice.cf.5 aliases.5 \
-		   authexpire.8
+if [ "$WITH_VHOST" ]; then
+    test -d $VPATH || LOG "WARNING! vhost directory $VPATH does not exist!"
+    test -d $VSPOOL || LOG "WARNING! vhost directory $VSPOOL does not exist!"
+fi
+
+if [ "$WITH_QUEUEDIR" ]; then
+    test -d $WITH_QUEUEDIR || LOG "WARNING! mail queue directory $WITH_QUEUEDIR does not exist!"
+fi

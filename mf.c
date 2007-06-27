@@ -410,11 +410,13 @@ mfconnect(struct letter *let)
     for (i=0; i < nrfilters; i++) \
 	if ( (filters[i].fd != -1) && (filters[i].flags & FAILED) == 0 ) { \
 	    mfprintf args; \
-	    if ( (status = mreply(filters[i].fd)) != MF_OK ) { \
+	    if ( (status = mreply(filters[i].fd)) == MF_EOF) { \
 		filters[i].flags |= FAILED; \
 		if ( (filters[i].flags & SOFT) == 0 ) \
 		    return status; \
 	    } \
+	    else if (status != MF_OK) \
+		return status; \
 	} \
     return MF_OK
 

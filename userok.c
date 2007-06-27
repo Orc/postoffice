@@ -20,37 +20,46 @@
  * check /etc/aliases, then passwd, to see if the user exists.  I check
  * /etc/aliases first because aliases override password entries.
  */
+static int
+_see(struct letter *let, struct address *try, DBhandle alias)
+{
+    struct email *em;
+    char *value = 0;
+
+    if ( alias && ((value = dbif_get(alias, try->user)) == 0) )
+	value = dbif_get(alias, lowercase(try->user));
+
+    if ( (value == 0) && (em = getemail(try)) != 0 )
+	return 1;
+
+    if ( (value == 0) && alias && isvhost(try->dom) )
+	value = dbif_get(alias, "*");
+
+    if (value) {
+	if (try->alias = strdup(value))
+	    return 1;
+	else
+	    syslog(LOG_ERR, "(%s) %m", try->user);
+    }
+
+    return 0;
+}
+
+
 int
 userok(struct letter *let, struct address *try)
 {
-    struct email *em;
     DBhandle alias;
-    char *value;
+    int rc;
 
     if (try->user == 0 || try->user[0] == 0)
 	return 1;	/* <> is alway valid; may be invalidated by
 			 * higher-level code.
 			 */
 
-    if ( (alias = dbif_open(aliasfile(try->dom), DBIF_READER, 0)) != 0) {
-	if ( (value = dbif_get(alias, try->user)) == 0)
-	    value = dbif_get(alias, lowercase(try->user));
-	if ( (value==0) && isvhost(try->dom) )
-	    value = dbif_get(alias, "*");
+    rc = _see(let, try, alias=dbif_open(aliasfile(try->dom), DBIF_READER, 0));
 
-	if (value) {
-	    if (try->alias = strdup(value))
-		return 1;
-	    else {
-		syslog(LOG_ERR, "(%s) %m", try->user);
-		return 0;
-	    }
-	}
-	dbif_close(alias);
-    }
+    if (alias) dbif_close(alias);
 
-    if ( (em = getemail(try)) != 0 )
-	return 1;
-
-    return 0;
+    return rc;
 }

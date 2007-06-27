@@ -204,7 +204,8 @@ expand(struct letter *let,
 		    fclose(f);
 		}
 	    }
-	    syslog(LOG_ERR, ":include: only works from /etc/aliases");
+	    else
+		syslog(LOG_ERR, ":include: only works from /etc/aliases");
 
 	}
 	else {

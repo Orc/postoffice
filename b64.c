@@ -140,13 +140,15 @@ char **argv;
     int decode = 0;
     char *res;
 
-    if (strcasecmp(argv[1], "decode") == 0) {
-	decode = 1;
-	++argv, --argc;
-    }
-    else if (strcasecmp(argv[1], "encode") == 0) {
-	decode = 0;
-	++argv, --argc;
+    if (argc > 1) {
+	if (strcasecmp(argv[1], "decode") == 0) {
+	    decode = 1;
+	    ++argv, --argc;
+	}
+	else if (strcasecmp(argv[1], "encode") == 0) {
+	    decode = 0;
+	    ++argv, --argc;
+	}
     }
     for (i=1; i < argc; i++) {
 	if (decode) {

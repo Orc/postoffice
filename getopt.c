@@ -22,6 +22,8 @@ in the public domain.
 #include <stdio.h>
 #include <string.h>
 
+#include <unistd.h>
+
 #if HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
