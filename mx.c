@@ -23,6 +23,10 @@
 #include "mx.h"
 
 
+static struct in_addr* localhost = 0;
+
+
+
 
 /*
  * revolve CNAMEs for the host,
@@ -309,7 +313,7 @@ mx(char *host, struct mxlist *list)
 
 
 static void
-address(struct iplist *list, int key, char* host)
+address(struct iplist *list, int key, char* host, int allow_localhost)
 {
     char *p;
     int count;
@@ -325,16 +329,18 @@ address(struct iplist *list, int key, char* host)
 	    p += 8;
 	    GETSHORT(reclen, p);
 
-	    for (i=0; i<list->count; i++)
-		if (memcmp( &(list->a[i].addr), p, reclen) == 0)
-		    break;
+	    if ( allow_localhost || (memcmp(localhost, p, reclen) != 0) ) {
+		for (i=0; i<list->count; i++)
+		    if (memcmp( &(list->a[i].addr), p, reclen) == 0)
+			break;
 
-	    if (i < list->count) {
-		if (list->a[i].key < key)
-		    list->a[i].key = key;
+		if (i < list->count) {
+		    if (list->a[i].key < key)
+			list->a[i].key = key;
+		}
+		else
+		    NewIP(list, key, (struct in_addr*)p);
 	    }
-	    else
-		NewIP(list, key, (struct in_addr*)p);
 	    p += reclen;
 	}
     }
@@ -347,7 +353,7 @@ addresslist(struct iplist *list, struct mxlist *mx)
     int i;
 
     for (i=0; i < mx->count; i++)
-	address(list, mx->host[i].priority, mx->host[i].name);
+	address(list, mx->host[i].priority, mx->host[i].name, 0);
 }
 
 
@@ -355,6 +361,7 @@ int
 getIPa(char *host, struct iplist *ipp)
 {
     char *fqn, *p;
+    struct in_addr ipa;
 
     memset(ipp, 0, sizeof *ipp);
 
@@ -368,8 +375,10 @@ getIPa(char *host, struct iplist *ipp)
 	long int ip;
 
 	p[-1] = 0;
-	if ( (ip = inet_addr(1+fqn)) != -1)
-	    NewIP(ipp, 0, (struct in_addr*)&ip);
+	if ( (ip = inet_addr(1+fqn)) != -1) {
+	    ipa = inet_makeaddr(ntohl(ip), 0L);
+	    NewIP(ipp, 0, &ipa);
+	}
     }
     else {
 	/*_res.options |= RES_USEVC|RES_STAYOPEN;*/
@@ -380,7 +389,7 @@ getIPa(char *host, struct iplist *ipp)
 	    *p++ = '.';
 	    *p = 0;
 	}
-	address(ipp, 0, fqn);
+	address(ipp, 0, fqn, 1);
     }
     free(fqn);
     return ipp->count;
@@ -426,8 +435,15 @@ getMXes(char *host, struct iplist *ipp)
     char *fq;
     char *wildcard;
     int i;
+    static struct in_addr localhost_buffer;
+    struct in_addr ipa;
 
     memset(ipp, 0, sizeof *ipp);
+
+    if (localhost == 0) {
+	localhost_buffer = inet_makeaddr(ntohl(inet_addr("127.0.0.1")), 0L);
+	localhost = &localhost_buffer;
+    }
 
     if ( (candidate = malloc((i=strlen(host))+2)) == 0)
 	return -1;
@@ -439,7 +455,8 @@ getMXes(char *host, struct iplist *ipp)
 	if ( *(fq = candidate + strlen(candidate)-1) == ']') {
 	    *fq = 0;
 	    if ( (ip = inet_addr(1+candidate)) != -1)
-		NewIP(ipp, 0, (struct in_addr*)&ip);
+		ipa = inet_makeaddr(ntohl(ip), 0L);
+		NewIP(ipp, 0, &ipa);
 	}
 	free(candidate);
 
@@ -482,7 +499,7 @@ getMXes(char *host, struct iplist *ipp)
 
     if (list.count < 1) {
 	/* if THAT fails, just use the A address for the host */
-	address(ipp, 0, fq);
+	address(ipp, 0, fq, 1);
     }
     else {
 	free(fq);
@@ -506,7 +523,7 @@ main(int argc, char **argv)
     int i;
     struct in_addr ip;
 
-    if (argc < 1) {
+    if (argc <= 1) {
 	fprintf(stderr, "usage: mx host-name\n");
 	exit(1);
     }

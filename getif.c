@@ -116,7 +116,7 @@ local_if_list()
     /* hand-build an interfaces list that only contains localhost
      */
     localhost[1].s_addr = 0;
-    localhost[0] = inet_makeaddr(inet_addr("127.0.0.1"), 0L);
+    localhost[0] = inet_makeaddr(ntohl(inet_addr("127.0.0.1")), 0L);
 
     return localhost;
 }

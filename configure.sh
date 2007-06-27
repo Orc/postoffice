@@ -6,11 +6,12 @@
 # make certain that what you quote is what you want to quote.
 
 ac_help='
+--use-peer-flag		enable -opeer (for debugging)
+--use-mailwrappers	use mailwrappers if available
 --with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-tcpwrappers	use tcp wrappers
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
---use-peer-flag		enable -opeer (for debugging)
 --with-auth		enable smtp authentication (AUTH LOGIN)
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
 --with-vspool=PATH	virtual host mailspool (/var/spool/virtual)
@@ -19,6 +20,7 @@ ac_help='
 # load in the configuration file
 #
 TARGET=postoffice
+USE_MAILWRAPPERS=T
 . ./configure.inc
 
 AC_INIT $TARGET
@@ -125,7 +127,7 @@ int allow_severity = 1;
 int deny_severity = 1;
 main()
 {
-    hosts_ctl();
+    hosts_ctl("smtp", "", "", "");
 }
 EOF
     if $AC_CC -o $$.x $$.c ; then
@@ -152,7 +154,10 @@ fi
 test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1
 test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
-test "$WITH_AV"       && AC_DEFINE AV_PROGRAM \""$WITH_AV"\"
+case "$WITH_AV" in
+\|*) AC_DEFINE AV_PROGRAM \""$WITH_AV"\" ;;
+?*) AC_DEFINE AV_PROGRAM \"\|"$WITH_AV"\" ;;
+esac
 
 
 AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
@@ -294,8 +299,49 @@ fi
 
 rm -f uid
 
+# check to see if ``make install'' needs to install all the binaries
+# or just the ones that are compatable with mailwrapper.
+# iff mailwrappers exists, and sendmail, send-mail, newaliases, and
+# mailq are all identical to it (either via symlinks, hardlinks, or
+# just as copies of it), install in a way that's compatable with them.
 
-for x in confdir libexec execdir sbindir mandir; do
+if [ "$USE_MAILWRAPPERS" ]; then
+    TLOGN "Checking mailwrappers"
+
+    if [ -x /usr/sbin/mailwrapper ]; then
+	for x in /usr/sbin/sendmail /usr/bin/newaliases /usr/bin/mailq;do
+	    if cmp -s $x /usr/sbin/mailwrapper; then
+		TLOGN "."
+	    else
+		TLOG " (`basename $x` != mailwrapper)"
+		unset USE_MAILWRAPPERS
+		break
+	fi
+	done
+	test "$USE_MAILWRAPPERS" && TLOG " (ok)"
+    else
+	TLOG " (no mailwrapper program)"
+	unset USE_MAILWRAPPERS
+    fi
+fi
+
+if [ "$USE_MAILWRAPPERS" ]; then
+    AC_SUB WHICH mailfilter
+    AC_SUB MAILERCONF /etc/mail/mailer.conf
+    AC_SUB MAILWRAPPER /usr/sbin/mailwrapper
+else
+    MF_PATH_INCLUDE FALSE false
+    AC_SUB WHICH programs
+fi
+
+if [ "$use_mailwrapper" ]; then
+    checkdirs="confdir libexec mandir"
+else
+    checkdirs="confdir libexec execdir sbindir mandir"
+fi
+
+
+for x in $checkdirs; do
     R=`echo ac_$x | tr 'a-z' 'A-Z'`
     eval D=\$$R
     test -d $D || LOG "WARNING! ${x} directory $D does not exist"

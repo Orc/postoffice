@@ -97,7 +97,7 @@ Set the hop count to
 The hop count is incremented every time the mail is
 processed.
 When it reaches this limit,
-the mail is returned with an error message,
+the mail is returned with an error message (the default is 100 hops).
 .It Li load Ns = Ns Ar N
 When the load average is above
 .Ar N ,

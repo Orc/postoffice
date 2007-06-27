@@ -44,9 +44,18 @@ expire:	expire.c dbif.o
 dbm:	dbm.c dbif.o
 	$(CC) $(CFLAGS) -o dbm dbm.c dbif.o @LIBS@
 
-install: $(PGMS) $(MANPAGES)
-	@INSTALL_DIR@ $(libdir)
-	@INSTALL@ -m 4711 -c postoffice $(libdir)
+tools:  mx b64
+
+mx:     mx.c
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c
+
+b64:    b64.c
+	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
+
+install: install.@WHICH@ install.man
+
+
+install.man: $(MANPAGES)
 	@INSTALL_DIR@ $(mandir)/man8
 	@INSTALL_DIR@ $(mandir)/man7
 	@INSTALL_DIR@ $(mandir)/man5
@@ -58,11 +67,18 @@ install: $(PGMS) $(MANPAGES)
 	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(mandir)/man5; fi
 	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
 	@INSTALL_DATA@ -m 444 -c dbm.1 $(mandir)/man1/@NDBM@.1
+
+install.common.binaries:
+	@INSTALL_DIR@ $(libexec)
+	@INSTALL_DIR@ $(bindir)
+	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
+	@INSTALL_PROGRAM@ -c dbm $(bindir)/@NDBM@
+
+install.programs: $(PGMS) install.common.binaries
+	@INSTALL_DIR@ $(libdir)
+	@INSTALL@ -m 4711 -c postoffice $(libdir)
 	@INSTALL_DIR@ $(bindir)
 	@INSTALL_DIR@ $(sbindir)
-	@INSTALL_DIR@ $(libexec)
-	@INSTALL_PROGRAM@ -c dbm $(bindir)/@NDBM@
-	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
 	for x in runq mailq newaliases sendmail; do \
 	    rm -f $(bindir)/$$x; \
 	    ln -s $(libdir)/postoffice $(bindir)/$$x; \
@@ -74,6 +90,17 @@ install: $(PGMS) $(MANPAGES)
 	rm -f $(libdir)/sendmail
 	ln -s $(libdir)/postoffice $(libdir)/sendmail
 
+install.mailfilter: $(PGMS) install.common.binaries
+	@INSTALL_DIR@ $(libexec)
+	@INSTALL_DIR@ $(bindir)
+	@INSTALL@ -m 4711 -c postoffice $(libexec)
+	echo "# emulate sendmail with postoffice" > @MAILERCONF@.new
+	for x in sendmail send-mail mailq newaliases runq; do \
+	    echo "$$x	$(libexec)/postoffice"; \
+	done >> @MAILERCONF@.new
+	ln -s @MAILWRAPPER@ $(bindir)/runq
+	cp -f @MAILERCONF@ @MAILERCONF@.old
+	mv @MAILERCONF@.new @MAILERCONF@
 
 clean:
 	rm -f *.o $(PGMS)

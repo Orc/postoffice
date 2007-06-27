@@ -55,3 +55,9 @@ Configure.sh has a few options that can be set:
        with a mail alias) but the evil hackers are cleverer than I am
        by definition, and if there are vulnerabilities they will find
        them.
+    e) The AV script needs to accept the file to be scanned on its
+       standard input.  I use --with-av="|/usr/local/bin/clamscan --mbox -i --disable-summary -"
+       as my standard av scanner;  the leading | bar is not necessary
+       for the av command (it will be stripped off during execution),
+       but you can put it there to remind you how the AV script is
+       supposed to work.
