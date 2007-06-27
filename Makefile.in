@@ -24,7 +24,8 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
-     newaliases.o arpatok.o audit.o goodness.o domain.o
+     newaliases.o arpatok.o audit.o goodness.o domain.o \
+     dbif.o
 
 all: $(PGMS)
 
@@ -34,11 +35,11 @@ postoffice: $(OBJS)
 postoffice.o: postoffice.c config.h letter.h env.h smtp.h VERSION
 	$(CC) $(CFLAGS) -c postoffice.c -DVERSION=\"`cat VERSION`\"
 
-expire:	expire.c
-	$(CC) $(CFLAGS) -o expire expire.c @LIBS@
+expire:	expire.c dbif.o
+	$(CC) $(CFLAGS) -o expire expire.c dbif.o @LIBS@
 
-dbm:	dbm.c
-	$(CC) $(CFLAGS) -o dbm dbm.c @LIBS@
+dbm:	dbm.c dbif.o
+	$(CC) $(CFLAGS) -o dbm dbm.c dbif.o @LIBS@
 
 install: $(PGMS) $(MANPAGES)
 	@INSTALL_DIR@ $(libdir)
@@ -49,13 +50,14 @@ install: $(PGMS) $(MANPAGES)
 	@INSTALL_DIR@ $(mandir)/man1
 	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(mandir)/man8
 	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(mandir)/man7
-	test "@VPATH@" && @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(mandir)/man7
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(mandir)/man7; fi
 	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(mandir)/man5
-	test "@VPATH@" && @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(mandir)/man5
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(mandir)/man5; fi
 	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
+	@INSTALL_DATA@ -m 444 -c dbm.1 $(mandir)/man1/@NDBM@.1
 	@INSTALL_DIR@ $(bindir)
 	@INSTALL_DIR@ $(libexec)
-	@INSTALL_PROGRAM@ -c dbm $(bindir)/ndbm
+	@INSTALL_PROGRAM@ -c dbm $(bindir)/@NDBM@
 	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
 	for x in runq mailq newaliases sendmail; do \
 	    rm -f $(bindir)/$$x; \

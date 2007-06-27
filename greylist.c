@@ -1,12 +1,8 @@
 #include "config.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <syslog.h>
-#include <ndbm.h>
-
 #include "letter.h"
+#include "dbif.h"
+
+#include <syslog.h>
 
 #define GREYLIST "/var/db/smtpauth"
 
@@ -20,9 +16,9 @@ int
 greylist(struct letter *let, int delete)
 {
 #ifdef WITH_GREYLIST
-    DBM *db;
-    datum key, value;
-    char *kw;	/* let->from->user + @ + let->deliveredIP */
+    DBhandle db;
+    char *value;
+    char *key;	/* let->from->user + @ + let->deliveredIP */
     time_t now, delay;
     int mode,status;
     int mailerdaemon = 0;
@@ -31,7 +27,7 @@ greylist(struct letter *let, int delete)
 
     time(&now);
 
-    if ( (db = dbm_open(GREYLIST, O_RDWR|O_CREAT, 0600)) == 0) {
+    if ( (db = dbif_open(GREYLIST, DBIF_RDWR|DBIF_CREAT, 0600)) == 0) {
 	syslog(LOG_ERR, "Cannot open greylist database %s: %m", GREYLIST);
 	return 0;	/* fail open */
     }
@@ -39,9 +35,9 @@ greylist(struct letter *let, int delete)
     if (let->from && let->from->user) {
 	char *p;
 
-	kw = alloca(strlen(let->from->user) + strlen(let->deliveredIP) + 10);
-	if (kw)
-	    sprintf(kw, "%s@[%s]", let->from->user, let->deliveredIP);
+	key = alloca(strlen(let->from->user) + strlen(let->deliveredIP) + 10);
+	if (key)
+	    sprintf(key, "%s@[%s]", let->from->user, let->deliveredIP);
 
 	for (p = let->from->user; *p; ++p)
 	    if (*p <= ' ' || !isprint(*p))
@@ -50,57 +46,49 @@ greylist(struct letter *let, int delete)
     else {
 	mailerdaemon = 1;
 	multiplier += 4;
-	if (kw = alloca(strlen(let->deliveredIP) + 10))
-	    sprintf(kw, "<>@[%s]", let->deliveredIP);
+	if (key = alloca(strlen(let->deliveredIP) + 10))
+	    sprintf(key, "<>@[%s]", let->deliveredIP);
     }
 
     if (strcmp(let->deliveredIP, let->deliveredby) == 0)
 	multiplier ++;
 
-    if (kw == 0) {
+    if (key == 0) {
 	syslog(LOG_ERR, "Cannot build key: %m");
 	return 0;
     }
 
-    key.dptr = kw;
-    key.dsize = strlen(kw)+1;
-
 
     if (delete) {
-	dbm_delete(db, key);
+	dbif_delete(db, key);
 	status = let->env->delay;
     }
     else {
-	value = dbm_fetch(db, key);
+	if ( (value = dbif_get(db, key)) != 0 ) {
 
-	if (value.dptr != 0) {
-
-	    delay = atol(value.dptr);
+	    delay = atol(value);
 
 	    status = (now > delay) ? 0 : delay-now;
 
 	    if (mailerdaemon && (status == 0) && (now-delay < WINDOW) ) {
-		dbm_delete(db, key);
-		dbm_close(db);
+		dbif_delete(db, key);
+		dbif_close(db);
 		return 0;
 	    }
-	    mode = DBM_REPLACE;
+	    mode = DBIF_REPLACE;
 	}
 	else {
-	    mode = DBM_INSERT;
+	    mode = DBIF_INSERT;
 	    status = multiplier * let->env->delay;
 	    delay = now + status;
 	}
 	sprintf(dates, "%ld %ld", delay-10, now);
-	value.dptr = dates;
-	value.dsize = strlen(dates) + 1;
 
-	if (dbm_store(db, key, value, mode) != 0)
+	if (dbif_put(db, key, dates, mode) != 0)
 	    syslog(LOG_ERR, "Cannot %s %s in greylist",
-			    (mode==DBM_INSERT) ? "insert"
-					       : "update", kw);
+			    (mode==DBIF_INSERT) ? "insert" : "update", key);
     }
-    dbm_close(db);
+    dbif_close(db);
 
     return status;
 #else

@@ -72,6 +72,11 @@ set_option(char *option, ENV *env)
     case 'p':   if (isopt(option, "paranoid", &val, 0))
 		    env->paranoid = val;
 		return;
+    case 'f':   if (isopt(option, "forward-all", &val, 0)) {
+		    insecure("forward-all");
+		    env->forward_all = val;
+		}
+		return;
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
 		else if (strncasecmp(option, "relay-host=", 11) == 0) {

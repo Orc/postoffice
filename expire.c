@@ -2,12 +2,9 @@
  */
 
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <ndbm.h>
 #include <time.h>
 #include <unistd.h>
+#include "dbif.h"
 
 
 int verbose = 0;
@@ -27,23 +24,20 @@ badinterval(char *pgm, char *arg)
 
 
 void
-list(DBM *db, long age)
+list(DBhandle db, long age)
 {
-    datum key, value;
+    char *key, *value;
     time_t delay, last;
     int ct;
     char bfr[80];
 
-    for (key = dbm_firstkey(db); key.dptr; key = dbm_nextkey(db)) {
-	sprintf(bfr, "%.*s", key.dsize, key.dptr);
-	printf("%-31.31s\t", bfr);
+    for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
+	printf("%-31.31s\t", key);
 
-	value = dbm_fetch(db, key);
-
-	if (value.dptr) {
+	if ( value = dbif_get(db,key) ) {
 	    delay = 0;
 	    last = 0;
-	    ct = sscanf(value.dptr, "%ld %ld", &delay, &last);
+	    ct = sscanf(value, "%ld %ld", &delay, &last);
 
 	    if (ct >= 1) {
 		strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>", localtime(&delay));
@@ -65,9 +59,9 @@ list(DBM *db, long age)
 
 
 void
-scrub(DBM *db, long age)
+scrub(DBhandle db, long age)
 {
-    datum key, value;
+    char *key, *value;
     time_t delay, last;
     int old =0,
 	gone,
@@ -76,35 +70,34 @@ scrub(DBM *db, long age)
     do {
 	gone = total = 0;
 	bzero(&key, sizeof key);
-	for (key = dbm_firstkey(db); key.dptr; key = dbm_nextkey(db)) {
+	for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
 	    total++;
-	    value = dbm_fetch(db, key);
-	    if ( value.dptr ) {
-		switch (sscanf(value.dptr, "%ld %ld", &delay, &last)) { 
+	    if ( (value = dbif_get(db, key)) != 0 ) {
+		switch (sscanf(value, "%ld %ld", &delay, &last)) { 
 		case 1: last = delay;
 		case 2: if (last+age < now) {
 		default:    gone++;
 			    if (dryrun || verbose)
-				printf("delete [%.*s]\n", key.dsize, key.dptr);
+				printf("delete [%s]\n", key);
 
 			    if (!dryrun)
-				dbm_delete(db, key);
+				dbif_delete(db, key);
 			}
-			else if ( nulluser && !strncmp(key.dptr, "<>@", 3) ) {
+			else if ( nulluser && !strncmp(key, "<>@", 3) ) {
 			    gone++;
 			    if (dryrun || verbose)
-				printf("delete [%.*s]\n", key.dsize, key.dptr);
+				printf("delete [%s]\n", key);
 
 			    if (!dryrun)
-				dbm_delete(db, key);
+				dbif_delete(db, key);
 			}
 			else if ((last < delay) && unretried) {
 			    gone++;
 			    if (dryrun || verbose)
-				printf("delete [%.*s]\n", key.dsize, key.dptr);
+				printf("delete [%s]\n", key);
 
 			    if (!dryrun)
-				dbm_delete(db,key);
+				dbif_delete(db,key);
 			}
 			break;
 		}
@@ -120,7 +113,7 @@ scrub(DBM *db, long age)
 
 main(int argc, char **argv)
 {
-    DB *db;
+    DBhandle db;
     int opt;
     char *e;
     char *pgm = basename(argv[0]);
@@ -171,7 +164,8 @@ main(int argc, char **argv)
     else
 	badinterval(pgm,argv[0]);
 
-    if ( !(db = dbm_open("/var/db/smtpauth", listing?O_RDONLY:O_RDWR, 0600)) ) {
+    db = dbif_open("/var/db/smtpauth", listing?DBIF_RDONLY:DBIF_RDWR, 0600);
+    if (db == 0) {
 	perror("cannot open the greylist");
 	exit(1);
     }
@@ -182,6 +176,6 @@ main(int argc, char **argv)
 	list(db, age);
     else
 	scrub(db, age);
-    dbm_close(db);
+    dbif_close(db);
     exit(0);
 }

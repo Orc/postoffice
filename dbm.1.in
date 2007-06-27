@@ -1,0 +1,65 @@
+.\" Copyright (c) 2005 David Loren Parsons
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted.
+.\"
+.\" THIS DOCUMENTATION IS PROVIDED BY DAVID LOREN PARSONS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS DOCUMENTATION, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"     %A%
+.\"
+.Dd March 31, 2004
+.Dt @NDBM@ 1
+.Os MASTODON
+.Sh NAME
+.Nm @NDBM@
+.Nd command-line database utilitiy
+.Sh SYNOPSIS
+.Nm @NDBM@
+.Op Fl d Ar database
+.Ar command
+.Sh DESCRIPTION
+The 
+.Nm @NDBM@
+command provides a way to create, examine, and modify @NDBM@ databases
+from the command line.  It supports the following commands:
+.Bl -tag -width delete database
+.It cmd [ Ar database ]
+.It create [ Ar database ]
+Create (or truncate) the database
+.It delete key
+Delete the record associated with
+.Ar key
+from the database.
+.It dump [ Ar database ]
+Dump the contents of the database, in
+.Ar key <tab> Ar record
+format.
+.It fetch key
+Retrieve the record associated with
+.Ar key .
+.It insert key value
+Insert a new record into the database.
+.It load [ Ar database ]
+Create (or truncate) the database, then insert new records from
+stdin (in 
+.Ar key <tab> Ar value 
+format.)
+.It update key value
+Update the record for 
+.Ar key .
+.El
+
+.Sh SEE ALSO
+.Xr newaliases 5 ,
+.Xr postoffice 8

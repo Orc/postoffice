@@ -1,14 +1,10 @@
 #include "config.h"
+#include "dbif.h"
+#include "letter.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <ndbm.h>
 #include <time.h>
 #include <syslog.h>
 #include <sysexits.h>
-
-#include "letter.h"
 
 #define SANTA "/var/db/goodness"
 
@@ -19,20 +15,16 @@ goodness(struct letter *let, int score)
 {
     int goodness = 0;
 #if WITH_COAL
-    DB *db;
-    datum key, contents;
+    DBhandle db;
+    char *data;
     char bfr[80];
     time_t now = time(0);
     time_t then;
 
-    if (db = dbm_open(SANTA, O_RDWR|O_CREAT, 0644) ) {
-	key.dptr = let->deliveredIP;
-	key.dsize= strlen(key.dptr) + 1;
+    if (db = dbif_open(SANTA, DBIF_RDWR|DBIF_CREAT, 0644) ) {
 
-	contents = dbm_fetch(db, key);
-
-	if (contents.dptr == 0 ||
-		      sscanf(contents.dptr, "%d %lu", &goodness, &then) == 0)
+	if ( (data = dbif_get(db,let->deliveredIP)) == 0 ||
+		      sscanf(data, "%d %lu", &goodness, &then) == 0)
 	    goodness = 0;
 
 #if 0
@@ -43,11 +35,8 @@ goodness(struct letter *let, int score)
 
 	sprintf(bfr, "%d %lu", goodness, now);
 
-	contents.dptr = bfr;
-	contents.dsize = strlen(bfr);
-	((char*)contents.dptr)[contents.dsize-1] = 0;
-
-	dbm_store(db, key, contents, DBM_REPLACE);
+	dbif_put(db, let->deliveredIP, bfr, DBIF_REPLACE);
+	dbif_close(db);
 
 	if (goodness < VERYBAD) {
 	    audit(let, "QUIT", "Coal", 421);
@@ -58,7 +47,6 @@ goodness(struct letter *let, int score)
 	    system(bfr);
 	    byebye(let, EX_OK);
 	}
-	dbm_close(db);
     }
 #endif
     return goodness;

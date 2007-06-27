@@ -1,6 +1,5 @@
 #include "config.h"
 
-#include <ndbm.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,34 +13,7 @@
 #endif
 
 #include "letter.h"
-#include "aliases.h"
-
-
-static void*
-alias_open(char* file)
-{
-    return (void*)dbm_open(file, O_RDONLY, 0);
-}
-
-
-static char *
-alias_lookup(void* db, char* key)
-{
-    datum id, value;
-
-    id.dptr = key;
-    id.dsize = strlen(key)+1;
-    value = dbm_fetch((DBM*)db,id);
-
-    return value.dptr ? value.dptr : 0;
-}
-
-static void
-alias_close(void *db)
-{
-    dbm_close((DBM*)db);
-}
-
+#include "dbif.h"
 
 
 /*
@@ -52,7 +24,7 @@ int
 userok(struct letter *let, struct address *try)
 {
     struct email *em;
-    void* alias = 0;
+    DBhandle alias;
     char *value;
 
     if (try->user == 0 || try->user[0] == 0)
@@ -60,11 +32,11 @@ userok(struct letter *let, struct address *try)
 			 * higher-level code.
 			 */
 
-    if ( (alias = alias_open(aliasfile(try->dom))) != 0) {
-	if ( (value = alias_lookup(alias, try->user)) == 0)
-	    value = alias_lookup(alias, lowercase(try->user));
+    if ( (alias = dbif_open(aliasfile(try->dom), DBIF_RDONLY, 0)) != 0) {
+	if ( (value = dbif_get(alias, try->user)) == 0)
+	    value = dbif_get(alias, lowercase(try->user));
 	if ( (value==0) && isvhost(try->dom) )
-	    value = alias_lookup(alias, "*");
+	    value = dbif_get(alias, "*");
 
 	if (value) {
 	    if (try->alias = strdup(value))
@@ -74,7 +46,7 @@ userok(struct letter *let, struct address *try)
 		return 0;
 	    }
 	}
-	alias_close(alias);
+	dbif_close(alias);
     }
 
     if ( (em = getemail(try)) != 0 )

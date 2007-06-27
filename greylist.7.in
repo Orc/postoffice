@@ -15,7 +15,7 @@ to the mail server.
 The greylist used by the
 .Xr postoffice 8
 SMTP server is a
-.Xr dbm 3
+.Xr @NDBM@ 3
 database containing the
 .Em MAIL FROM:
 and IP addresses of SMTP clients,
@@ -75,8 +75,9 @@ it may never be accepted by the machine with the greylist.
 David Parsons
 .%T orc@pell.chi.il.us .
 .Sh SEE ALSO
-.Xr postoffice 8 ,
+.Xr @NDBM@ 1 ,
 .Xr smtpauth 5 ,
+.Xr postoffice 8 ,
 .Xr authexpire 8 ;
 .Pp
 The web page

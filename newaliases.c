@@ -1,11 +1,10 @@
 #include "config.h"
 
 #include <stdio.h>
-#include <unistd.h>
-#include <ndbm.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <sysexits.h>
@@ -15,19 +14,20 @@
 #   include <malloc.h>
 #endif
 
+#include "dbif.h"
 #include "aliases.h"
 #include "env.h"
+#include "domain.h"
 
 
-static datum
+static char*
 token(char *p, char sep, char **next)
 {
-    datum ret;
+    char *ret;
     char *q;
     int i;
 
-    ret.dptr = 0;
-    ret.dsize = 0;
+    ret = 0;
 
     while (isspace(*p))
 	++p;
@@ -42,15 +42,14 @@ token(char *p, char sep, char **next)
 	    ;
 
 	if (q >= p) {
-	    if ( (ret.dptr = malloc(2 + (q-p))) != 0 ) {
+	    if ( (ret = malloc(2 + (q-p))) != 0 ) {
 		for (i=0; (*p != sep) && (p <= q); p++, i++) {
 		    if ( isascii(*p) && isupper(*p) )
-			((char*)ret.dptr)[i] = tolower(*p);
+			ret[i] = tolower(*p);
 		    else
-			((char*)ret.dptr)[i] = *p;
+			ret[i] = *p;
 		}
-		((char*)ret.dptr)[i++] = 0;
-		ret.dsize = i;
+		ret[i++] = 0;
 	    }
 	}
     }
@@ -61,7 +60,7 @@ token(char *p, char sep, char **next)
 static void
 rebuild_db(char *domain)
 {
-    char *atemp, *alias, *aliasf;
+    char *atemp, *alias;
     int fd;
     char *atext;
     size_t asize;
@@ -69,8 +68,8 @@ rebuild_db(char *domain)
     int longest = 0;
     int total = 0;
     int rv;
-    datum key, value;
-    DBM *aliasdb;
+    char *key, *value;
+    DBhandle aliasdb;
     char *q;
     struct domain *dom = getdomain(domain);
 
@@ -84,28 +83,24 @@ rebuild_db(char *domain)
 	perror(alias);
 	exit(EX_TEMPFAIL);
     }
-    if ( (aliasf = alloca(strlen(alias) + 1 + sizeof DBM_SUFFIX + 1)) == 0 ) {
-	perror(alias);
-	exit(EX_TEMPFAIL);
-    }
     sprintf(atemp, "%sXXXXXX", alias);
-    sprintf(aliasf, "%s" DBM_SUFFIX, alias);
 
     if ( !mktemp(atemp) ) {
 	perror(atemp);
 	exit(EX_TEMPFAIL);
     }
 
-    if ( (aliasdb = dbm_open(atemp, O_RDWR|O_CREAT|O_EXCL, 0644)) == 0) {
+    aliasdb = dbif_open(atemp, DBIF_WRONLY|DBIF_TRUNC, 0644);
+    if (aliasdb == 0) {
 	perror(atemp);
 	exit(EX_NOPERM);
     }
 
-    sprintf(atemp, "%s%s", atemp, DBM_SUFFIX);
-
     if ( (fd = open(alias, O_RDONLY)) != -1 ) {
 	if (atext = mapfd(fd, &asize)) {
 	    char *p, *nl, *end;
+	    int size;
+	    char *value;
 
 	    for (p = atext, end = atext+asize; p && (p < end); p = 1+nl) {
 		if ( (nl = memchr(p, '\n', (end-p))) == 0 )
@@ -113,7 +108,7 @@ rebuild_db(char *domain)
 
 		key = token(p, ':', &p);
 
-		if ( key.dptr && (((char*)key.dptr)[0] != '#') ) {
+		if ( key && (key[0] != '#') ) {
 
 		    /* slurp in continuation lines */
 		    while ( (nl < end-1) && isspace(nl[1]) ) {
@@ -129,15 +124,14 @@ rebuild_db(char *domain)
 		    for (q = nl; (q > p) && isspace(*q); --q)
 			;
 
-		    value.dsize = (q-p)+2;
-		    if ( (q > p) && (value.dptr = malloc(value.dsize)) != 0 ) {
-			memcpy(value.dptr, p, value.dsize);
-			((char*)value.dptr)[value.dsize-1] = 0;
+		    size = (q-p)+2;
+		    if ( (q > p) && (value = malloc(size)) != 0 ) {
+			memcpy(value, p, size);
+			value[size-1] = 0;
 
-			rv = dbm_store(aliasdb, key, value, DBM_INSERT);
-
+			rv = dbif_put(aliasdb,key,value,DBIF_INSERT);
 			if (rv < 0) {
-			    fprintf(stderr, "alias %.*s", key.dsize, key.dptr);
+			    fprintf(stderr, "alias %s", key);
 			    if (errno)
 				fprintf(stderr, " : %s\n", strerror(errno));
 			    else
@@ -146,28 +140,24 @@ rebuild_db(char *domain)
 			    exit(EX_IOERR);
 			}
 			nraliases++;
-			if (value.dsize-1 > longest)
-			    longest = value.dsize-1;
+			if (size-1 > longest)
+			    longest = size-1;
 			/* don't count null bytes in the total size */
-			total += (value.dsize + key.dsize - 2);
-			free(value.dptr);
+			total += (size + strlen(key) - 1);
+			free(value);
 		    }
 		}
-		if (key.dptr) free(key.dptr);
+		if (key) free(key);
 	    }
 	    munmap(atext, asize);
 	}
 	close(fd);
     }
     /* drop in a sendmail-compatable magic cookie */
-    key.dptr = "@";
-    key.dsize = 2;
-    value.dptr = "@";
-    value.dsize = 2;
-    dbm_store(aliasdb, key, value, DBM_INSERT);
-    dbm_close(aliasdb);
+    dbif_put(aliasdb, "@", "@", DBIF_INSERT);
+    dbif_close(aliasdb);
 
-    if (rename(atemp, aliasf) != 0) {
+    if (dbif_rename(atemp, alias) != 0) {
 	perror(alias);
 	exit(EX_IOERR);
     }

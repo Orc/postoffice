@@ -17,7 +17,6 @@
 
 #if __linux__
 #   include <linux/if.h>
-#   include <linux/in.h>
 #endif
 
 struct in_addr *

@@ -33,7 +33,7 @@ to the server.
 .El
 .Pp
 This file is a
-.Xr dbm 3
+.Xr @NDBM@ 3
 database and is not human readable; the
 .Xr authexpire 8
 program is used to maintain it and remove old records.
@@ -47,6 +47,6 @@ When the client can connect and when the client last connected (both
 in seconds after the epoch).
 .El
 .Sh SEE ALSO
-.Xr dbm 3 ,
+.Xr @NDBM@ 1 ,
 .Xr authexpire 8 ,
 .Xr postoffice 8

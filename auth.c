@@ -2,7 +2,7 @@
 #include "letter.h"
 
 #include <stdio.h>
-#include <ndbm.h>
+#include "dbif.h"
 
 
 #if WITH_AUTH
@@ -37,24 +37,20 @@ authlogin(struct letter *let)
     char user[200];
     char pass[80];
     int code;
-    datum key, value;
-    DB *authdb;
+    char * key, * value;
+    DBhandle authdb;
     int good = 0;
 
     if ( (code = authchat(let, "VXNlcm5hbWU6", user, sizeof user)) != 235 )
 	audit(let, "AUTH", "Username: *", code);
     else if ( (code = authchat(let, "UGFzc3dvcmQ6", pass, sizeof pass)) != 235 )
 	audit(let, "AUTH", "Password: *", code);
-    else if (authdb = dbm_open(AUTHDB, O_RDONLY, 0)) {
-	key.dptr = user;
-	key.dsize = strlen(user)+1;
+    else if (authdb = dbif_open(AUTHDB, DBIF_RDONLY)) {
+	value = database_fetch(authdb,user);
 
-	value = dbm_fetch(key);
+	good = value && (strcmp(value,pass) == 0);
 
-	if (value.dptr && strncmp(value.dptr, pass, value.dsize) == 0)
-	    good = 1;
-
-	dbm_close(AUTHDB);
+	dbif_close(AUTHDB);
 	audit(let, "AUTH", user, code = (good ? 235 : 501));
 
 	message(let, code, "Barney %s you!", good ? "loves" : "hates");

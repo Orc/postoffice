@@ -34,6 +34,7 @@ struct env {
     unsigned int   localmx:1;	/* if I am the mx for a client, that
 				 * client can relay.  DANGEROUS!  */
     unsigned int   auditing:1;	/* session logging */
+    unsigned int   forward_all:1;/* forward unknown addresses to relay_host */
 } ;
 
 typedef struct env ENV;

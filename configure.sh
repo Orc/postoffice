@@ -27,12 +27,25 @@ AC_PROG_CC
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
-AC_CHECK_HEADERS ndbm.h || AC_FAIL "$TARGET requires ndbm"
-if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
-    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
+if AC_CHECK_HEADERS ndbm.h; then
+    if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
+	LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
+	AC_SUB NDBM ndbm
+    else
+	AC_FAIL "$TARGET requires ndbm"
+    fi
+elif AC_CHECK_HEADERS gdbm.h; then
+    if QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm; then
+	LOG "Found gdbm_open()" ${AC_LIBS:+in ${AC_LIBS}}
+	AC_SUB NDBM gdbm
+    else
+	AC_FAIL "found gdbm.h, but didn't find gdbm_open()"
+    fi
 else
     AC_FAIL "$TARGET requires ndbm"
 fi
+
+AC_LIBRARY res_query -lresolv || AC_FAIL "$TARGET requires res_query"
 
 if [ "$WITH_TCPWRAPPERS" ]; then
     TLOGN	"Checking for libwrap "
@@ -187,5 +200,5 @@ fi
 
 rm -f uid
 
-AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5
+AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 greylist.7 smtpauth.5
 

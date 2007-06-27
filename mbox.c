@@ -130,7 +130,7 @@ readmbox(MBOX *f)
 	}
 	buf[len++] = c;
     }
-    buf[len] = 0;
+    if (buf) buf[len] = 0;
 
     return buf;
 }

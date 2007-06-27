@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <ndbm.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <string.h>
 
-static DBM  *db = 0;
+#include "dbif.h"
+
+static DBhandle  db = 0;
 static char *dbname = 0;
 
 int verbose = 0;
@@ -14,7 +12,7 @@ int verbose = 0;
 char *pgm;
 
 void usage(char*,int);
-void dbm_perror(char *);
+void dbif_perror(char *);
 
 
 int
@@ -31,8 +29,8 @@ create(int argc, char **argv, int mode)
 	else
 	    dbname = argv[1];
 
-    if ( (db = dbm_open(dbname, mode, 0600)) == 0) {
-	dbm_perror(dbname);
+    if ( (db = dbif_open(dbname, mode, 0600)) == 0) {
+	dbif_perror(dbname);
 	return 1;
     }
     return 0;
@@ -50,17 +48,8 @@ clear(int argc, char **argv, int mode)
 	else
 	    dbname = argv[1];
 
-    if ( (fqdbname = alloca(strlen(dbname) + 2 + sizeof(DBM_SUFFIX))) == 0) {
-	perror(dbname);
-	return 2;
-    }
-    sprintf(fqdbname, "%s%s", dbname, DBM_SUFFIX);
-    if (unlink(fqdbname) != 0) {
-	perror(dbname);
-	return 2;
-    }
-    if ( (db = dbm_open(dbname, mode, 0600)) == 0 ) {
-	dbm_perror(dbname);
+    if ( (db = dbif_open(dbname, DBIF_TRUNC|mode, 0600)) == 0 ) {
+	dbif_perror(dbname);
 	return 1;
     }
     return 0;
@@ -71,20 +60,15 @@ int
 fetch(int argc, char **argv, int mode)
 {
     int i;
-    datum key, value;
+    char *value;
     int found=0;
 
     if (argc < 1 || db == 0)
 	usage("fetch", 1);
 
     for (i=1; i < argc; i++) {
-	key.dptr = argv[i];
-	key.dsize = strlen(argv[i])+1;
-
-	value = dbm_fetch(db, key);
-
-	if (value.dptr) {
-	    printf("%.*s\n", value.dsize, value.dptr);
+	if ( value = dbif_get(db,argv[i]) ) {
+	    printf("%s\n", value);
 	    found++;
 	}
     }
@@ -99,31 +83,26 @@ fetch(int argc, char **argv, int mode)
 int
 dump(int argc, char **argv, int mode)
 {
-    datum key, value;
+    char *key, *value;
     int rc = 0;
 
     if (db == 0 && argc > 0) {
-	db = dbm_open(argv[1], mode, 0600);
+	db = dbif_open(argv[1], mode, 0600);
 
 	if (db == 0) {
-	    dbm_perror(argv[1]);
+	    dbif_perror(argv[1]);
 	    return 2;
 	}
     }
 
-    for (key = dbm_firstkey(db); key.dptr; key = dbm_nextkey(db)) {
+    for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
 
-	printf("%.*s", key.dsize, key.dptr);
-	if (verbose)
-	    printf("(%d)", key.dsize);
-	value = dbm_fetch(db, key);
-
-	if (value.dptr) {
-	    printf("\t%.*s", value.dsize, value.dptr);
-	    printf(verbose ? "(%d)\n" : "\n", value.dsize);
+	printf("%s", key);
+	if ( value = dbif_get(db, key) ) {
+	    printf("\t%s\n", value);
 	}
 	else {
-	    printf(" ERROR %d\n", dbm_error(db));
+	    printf(" ERROR %d\n", dbif_errno);
 	    rc = 1;
 	}
     }
@@ -133,10 +112,10 @@ dump(int argc, char **argv, int mode)
 static int
 dbreopen(char *name, int mode)
 {
-    if (db) dbm_close(db);
+    if (db) dbif_close(db);
 
-    if ( (db = dbm_open(name, mode, 0600)) == 0 ) {
-	dbm_perror(name);
+    if ( (db = dbif_open(name, mode, 0600)) == 0 ) {
+	dbif_perror(name);
 	return 2;
     }
     return 0;
@@ -145,7 +124,6 @@ dbreopen(char *name, int mode)
 int
 delete(int argc, char **argv, int mode)
 {
-    datum key;
     int i, rc;
 
     if (dbname == 0)
@@ -154,10 +132,8 @@ delete(int argc, char **argv, int mode)
 	return rc;
 
     for (i=1; i <argc; ++i) {
-	key.dptr = argv[i];
-	key.dsize = strlen(argv[i])+1;
-	if ( dbm_delete(db, key) != 0) {
-	    dbm_perror(argv[i]);
+	if ( dbif_delete(db, argv[i]) != 0) {
+	    dbif_perror(argv[i]);
 	    rc = 1;
 	}
     }
@@ -168,22 +144,16 @@ delete(int argc, char **argv, int mode)
 int
 store(int argc, char **argv, int mode)
 {
-    datum key, value;
     int rc;
-    int imode = (strcmp(argv[0], "insert") == 0) ? DBM_INSERT : DBM_REPLACE;
+    int imode = (strcmp(argv[0], "insert") == 0) ? DBIF_INSERT : DBIF_REPLACE;
 
     if (dbname == 0)
 	usage("insert", 1);
     else if ( (rc = dbreopen(dbname, mode)) != 0)
 	return rc;
 
-    key.dptr = argv[1];
-    key.dsize = strlen(argv[1])+1;
-    value.dptr = argv[2];
-    value.dsize = strlen(argv[2])+1;
-
-    if (dbm_store(db, key, value, imode) != 0) {
-	dbm_perror(argv[1]);
+    if (dbif_put(db, argv[1], argv[2], imode) != 0) {
+	dbif_perror(argv[1]);
 	return 1;
     }
     return 0;
@@ -197,7 +167,6 @@ load(int argc, char **argv, int mode)
     char line[1024];
     char *p;
     char *q;
-    datum key, value;
     int opt;
 
     if ( (rc = clear(argc, argv, mode)) != 0)
@@ -216,14 +185,8 @@ load(int argc, char **argv, int mode)
 		++p;
 	}
 
-	key.dptr = line;
-	key.dsize = strlen(line)+1;
-
-	value.dptr  = p ? p : "";
-	value.dsize = p ? strlen(p)+1 : 0;
-
-	if (dbm_store(db, key, value, DBM_INSERT) != 0) {
-	    dbm_perror(line);
+	if (dbif_put(db, line, p, DBIF_INSERT) != 0) {
+	    dbif_perror(line);
 	    rc = 1;
 	}
     }
@@ -237,14 +200,14 @@ struct cmd {
     int openmode;
     char *usage;
 } cmds[] = {
-    { "clear",  clear,  O_RDWR|O_CREAT, "[database]" },
-    { "create", create, O_RDWR|O_CREAT|O_EXCL, "[database]" },
-    { "delete", delete, O_RDWR,         "key" },
-    { "dump",   dump,   O_RDONLY,       "[database]" },
-    { "fetch",  fetch,  O_RDONLY,       "key" },
-    { "insert", store,  O_RDWR,         "key value" },
-    { "load",   load,   O_RDWR|O_CREAT, "[database]" },
-    { "update", store,  O_RDWR,         "key value" },
+    { "clear",  clear,  DBIF_RDWR|DBIF_CREAT, "[database]" },
+    { "create", create, DBIF_RDWR|DBIF_CREAT|DBIF_EXCL, "[database]" },
+    { "delete", delete, DBIF_RDWR,            "key" },
+    { "dump",   dump,   DBIF_RDONLY,          "[database]" },
+    { "fetch",  fetch,  DBIF_RDONLY,          "key" },
+    { "insert", store,  DBIF_RDWR,            "key value" },
+    { "load",   load,   DBIF_RDWR|DBIF_CREAT, "[database]" },
+    { "update", store,  DBIF_RDWR,            "key value" },
 };
 
 #define NRCMDS (sizeof cmds / sizeof cmds[0])
@@ -275,14 +238,14 @@ usage(char *cmd, int exitcode)
     }
 
     if (db)
-	dbm_close(db);
+	dbif_close(db);
     exit(exitcode);
 }
 
 void
-dbm_perror(char *text)
+dbif_perror(char *text)
 {
-    /*dbm_error(db);*/
+    /*dbif_error(db);*/
     perror(text);
 }
 
@@ -299,8 +262,9 @@ main(int argc, char **argv)
 
     while ((opt = getopt(argc, argv, "?vd:")) != EOF)
 	switch (opt) {
-	case 'd':   if ( (db = dbm_open(dbname=optarg, O_RDONLY, 0600)) == 0 ) {
-			dbm_perror(optarg);
+	case 'd':   db = dbif_open(dbname=optarg, DBIF_RDONLY, 0600);
+		    if (db == 0) {
+			dbif_perror(optarg);
 			exit(1);
 		    }
 		    break;
@@ -323,6 +287,6 @@ main(int argc, char **argv)
 
     status = (*p->func)(argc, argv, p->openmode);
     if (db)
-	dbm_close(db);
+	dbif_close(db);
     exit(status);
 }

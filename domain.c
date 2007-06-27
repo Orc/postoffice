@@ -47,6 +47,7 @@ add_dom(char *domain, char *spool, char *etc)
     p->passwd = p->mailbox + size;
     p->aliases = p->passwd + size;
 
+#ifdef VPATH
     if (domain) {
 	sprintf(p->mailbox, "%s/%s/", spool, domain);
 	sprintf(p->passwd, "%s/%s/passwd", etc, domain);
@@ -56,11 +57,14 @@ add_dom(char *domain, char *spool, char *etc)
 	p->d_gid = VUSER_GID;
     }
     else {
+#endif
 	sprintf(p->mailbox, "%s/", spool);
 	sprintf(p->passwd, "%s/passwd", etc);
 	sprintf(p->aliases, "%s/aliases", etc);
 	p->vhost = 0;
+#ifdef VPATH
     }
+#endif
     p->userptr = p->mailbox + strlen(p->mailbox);
     nrdom++;
     return 1;

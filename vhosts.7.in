@@ -13,14 +13,22 @@ pop3 mail server.   They are primarily used for setting up virtual email
 accounts -- mailboxes without real accounts for them.   This allows a
 system to act as a mail server for multiple domains.
 .Pp
-A virtual host is listed in @VPATH@/domains.cf, and has
+Each virtual host is listed in @VPATH@/domains.cf, and has
 the following directories and files associated with
 it
 .Bl -tag -width @VPATH@/host/passwd
 .It @VSPOOL@/host
-The mail spool directory
+The mail spool directory.   This directory, and all of the
+spoolfiles in it, should be owned by userid @VHOST_UID@, and
+in the group @VHOST_GID@.
+.It @VPATH@/host
+The password and alias files go here.  This directory, and
+all of the files that live in it, should be owned by the
+user listen in @VPATH@/domains.cf.
 .It @VPATH@/host/passwd
-The password file.
+The password file.  This file is in
+.Ar .htpasswd 
+format (username:encrypted passwd).
 .It @VPATH@/host/aliases
 Mail aliases.  Virtual mail aliases work the same way as normal
 mail aliases do, with the addition of the alias
@@ -31,7 +39,6 @@ which aliases every username.
 Note, also, that for a virtual domain to work the dns for that domain must
 point at the machine where the virtual domain is hosted, so that other machines
 will send the mail to the correct place.  
-
 .Sh SEE ALSO
 .Xr mail 1 ,
 .Xr domains.cf 5 ,

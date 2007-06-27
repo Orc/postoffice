@@ -64,6 +64,13 @@ mkaddress(char *full)
 }
 
 
+static int
+okayanyhow(struct env *env, int flags)
+{
+    return (flags & VF_FROM) ? (!env->verify_from) : env->forward_all;
+}
+
+
 struct address *
 verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 {
@@ -100,7 +107,7 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	      esc:
 		freeiplist(&mxes);
 	    }
-	    else if ( let->env->verify_from || !(flags & VF_FROM) ) {
+	    else if ( !okayanyhow(let->env,flags) ) {
 		if (reason) *reason = V_NOMX;
 		freeaddress(ret);
 		return 0;
