@@ -72,10 +72,26 @@ void
 mflist(FILE *out, int rc)
 {
     int i;
+    char flags[80];
+    int flag;
 
-    for (i=0; i < nrfilters; i++)
-	message(out, rc, "filter:[<%s>] flags: %02xh\n", filters[i].socket,
-						         filters[i].flags);
+    for (i=0; i < nrfilters; i++) {
+	flags[0] = 0;
+	flag = filters[i].flags;
+
+	if (flag & HARD)
+	    strcat(flags, "hard");
+	if (flag & ~HARD) {
+	    if (flag & FAILED) strcat(flags, " failed");
+	    if (flag & DEAD) strcat(flags, " dead");
+	    if (flag & ~(HARD|FAILED|DEAD))
+		sprintf(flags+strlen(flags), " %02xh",
+						flag & ~(HARD|FAILED|DEAD));
+	}
+	else strcat(flags, " ok");
+
+	message(out, rc, "filter:[<%s>]%s", filters[i].socket, flags);
+    }
 }
 #endif
 

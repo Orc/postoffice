@@ -121,13 +121,17 @@ scrub(DBhandle db, long age)
 
 
 void
-approve(DBhandle db, char *key)
+approve(DBhandle db, char *key, int blacklist)
 {
     char *value;
     char bfr[80];
     time_t delay, last;
 
-    if ( value = dbif_get(db,key) ) {
+    if (blacklist) {
+	delay = ~(1<<31);
+	time(&last);
+    }
+    else if ( value = dbif_get(db,key) ) {
 	time(&delay);
 
 	switch (sscanf(value, "%ld %ld", &delay, &last)) { 
@@ -137,11 +141,13 @@ approve(DBhandle db, char *key)
 	    delay = last-1;
 	    break;
 	}
-	snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
-	dbif_put(db,key,bfr, DBIF_REPLACE);
     }
-    else
-	perror(key);
+    else {
+	time(&last);
+	delay = last-1;
+    }
+    snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
+    dbif_put(db,key,bfr, DBIF_REPLACE);
 }
 
 
@@ -153,6 +159,7 @@ main(int argc, char **argv)
     char *pgm;
     char *user = 0;
     long age;
+    int  blacklist;
 
 #if HAVE_BASENAME
     pgm = basename(argv[0]);
@@ -164,9 +171,13 @@ main(int argc, char **argv)
 #endif
 
     opterr = 1;
-    while ( (opt = getopt(argc, argv, "?a:lnuvz")) != EOF) {
+    while ( (opt = getopt(argc, argv, "?a:b:lnuvz")) != EOF) {
 	switch (opt) {
 	case 'a':   user = optarg;
+		    blacklist = 0;
+		    break;
+	case 'b':   user = optarg;
+		    blacklist = 1;
 		    break;
 	case 'n':   dryrun = 1;
 		    break;
@@ -179,7 +190,7 @@ main(int argc, char **argv)
 	case 'l':   listing = 1;
 		    break;
 	case '?':
-	default:    fprintf(stderr, "usage: %s [-lnvz] age\n", pgm);
+	default:    fprintf(stderr, "usage: %s [-a user] [-b user] [-lnvz] age\n", pgm);
 		    exit( (opt=='h') ? 0 : 1 );
 	}
     }
@@ -219,7 +230,7 @@ main(int argc, char **argv)
     time(&now);
 
     if (user)
-	approve(db,user);
+	approve(db,user, blacklist);
     else if (listing)
 	list(db, age);
     else

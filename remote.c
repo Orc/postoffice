@@ -42,8 +42,6 @@ SMTPwrite(MBOX *f, char *text, unsigned long size)
     }
     else {
 	syslog(LOG_INFO, "%s teergrube", inet_ntoa(f->ip));
-	fclose(f->in);  f->in = 0;
-	fclose(f->out); f->out = 0;
 	ret = 0;
     }
 

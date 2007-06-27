@@ -13,6 +13,10 @@ greylist
 .Sy @libexec@/authexpire
 .Op Fl nzuvl
 .Ar age
+.br
+.Sy @libexec@/authexpire
+.Op Fl ab
+.Ar user
 .Sh DESCRIPTION
 .Nm
 examines the 
@@ -49,6 +53,11 @@ Be chattery about what we're doing.
 Just pretend to be cleaning out the database.
 .It Fl l
 Just list the contents of the greylist.
+.It Fl a Ar user
+Approve this user by clearing their greylist entry
+.It Fl b Ar user
+Blacklist this user by setting their greylist entry to the end of time
+(2038, which is when the 32 bit unix time_t rolls over.)
 .El
 .Sh FILES
 .Pp
@@ -56,6 +65,13 @@ Just list the contents of the greylist.
 .It /var/db/smtpauth.db
 The greylist
 .El
+.Sh BUGS
+.Pp
+The format of an
+.Ar user
+may not be what you'd expect.   The
+.Xr smtpauth 5
+manpage describes how users are stored in the greylist.
 .Sh SEE ALSO
 .Xr smtpauth 5 ,
 .Xr postoffice 8

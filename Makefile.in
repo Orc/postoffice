@@ -148,10 +148,10 @@ newaliases.o: newaliases.c config.h dbif.h aliases.h env.h domain.h
 ns.o: ns.c
 postoffice.o: postoffice.c config.h letter.h env.h domain.h smtp.h
 recipient.o: recipient.c config.h letter.h env.h domain.h
-remote.o: remote.c config.h letter.h env.h domain.h mbox.h bounce.h
+remote.o: remote.c config.h letter.h env.h domain.h mbox.h bounce.h socklib.h
 runq.o: runq.c config.h spool.h letter.h env.h domain.h bounce.h
 server.o: server.c config.h letter.h env.h domain.h smtp.h mx.h
-smtp.o: smtp.c config.h letter.h env.h domain.h smtp.h mx.h
+smtp.o: smtp.c config.h letter.h env.h domain.h smtp.h mx.h mf.h
 spool.o: spool.c config.h spool.h letter.h env.h domain.h mx.h
 userok.o: userok.c config.h letter.h env.h domain.h dbif.h
 virusscan.o: virusscan.c config.h letter.h env.h domain.h
