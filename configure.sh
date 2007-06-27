@@ -135,14 +135,16 @@ EOF
     if $AC_CC -o $$.x $$.c ; then
 	TLOG "(ok)"
 	AC_DEFINE WITH_TCPWRAPPERS 1
+	AC_SUB    LIBWRAP ""
     elif $AC_CC -o $$.x $$.c -lwrap; then
 	TLOG "(-lwrap)"
 	AC_DEFINE WITH_TCPWRAPPERS 1
-	AC_LIBS="$AC_LIBS -lwrap"
+	AC_SUB    LIBWRAP "-lwrap"
     else
 	TLOG "(no)"
 	rm -f $$.c $$.x
 	AC_FAIL "Cannot find tcp wrappers library -lwrap"
+	AC_SUB    LIBWRAP ""
     fi
     rm -f $$.c $$.x
 fi
@@ -273,12 +275,18 @@ if [ "$WITH_AUTH" ]; then
     TLOGN "checking for the crypt function "
     if AC_QUIET AC_CHECK_FUNCS crypt; then
 	TLOG "(found)"
-    elif AC_LIBRARY crypt -lcrypt; then
-	TLOG "(in -lcrypt)"
+	AC_SUB LIBCRYPT ""
     else
-	TLOG "(not found)"
-	AC_FAIL "Cannot build AUTH support without a crypt() function"
-	unset WITH_AUTH
+	LIBS="$__libs -lcrypt"
+	if AC_QUIET AC_CHECK_FUNCS crypt; then
+	    TLOG "(in -lcrypt)"
+	    AC_SUB LIBCRYPT "-lcrypt"
+	else
+	    TLOG "(not found)"
+	    AC_FAIL "Cannot build AUTH support without a crypt() function"
+	    unset WITH_AUTH
+	    AC_SUB LIBCRYPT ""
+	fi
     fi
     case "$WITH_AUTH" in
     [Pp][Aa][Ss][Ss][Ww][Dd])  AC_DEFINE AUTH_PASSWD 1 ;;
