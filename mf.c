@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#ifdef OS_FREEBSD
-#include <malloc.h>
-#else
+#if OS_FREEBSD
 #include <stdlib.h>
+#else
+#include <malloc.h>
 #endif
 
 #include <sys/types.h>
@@ -24,8 +24,11 @@
 #include <signal.h>
 #endif
 
-#define WITH_MILTER
+#ifndef WITH_MILTER
+#  define WITH_MILTER
+#endif
 #include "mf.h"
+#include "mx.h"
 
 
 extern void message(FILE *f, int code, char *fmt, ...);
@@ -343,9 +346,31 @@ handshake(struct letter *let, char *channel)
 	}
     }
     else {
-	/* connect to tcp/ip socket.. copy this code from the smtp client
-	 * code. */
-	return -1;
+	/* connect to IP port
+	 */
+	char *p;
+	struct iplist list;
+	int i, port;
+
+	if ( (p = strchr(channel, ':')) == 0 )
+	    return -1;	/* format is host:port */
+
+	*p++ = 0;
+
+	if ( (port = atoi(p)) <= 0)
+	    return -1;	/* bogus port */
+
+	if (getIPa(channel, &list) <= 0)
+	    return -1;
+
+	for (i=list.count; i > 0; )
+	    if ( (f = attach_in(list.a[--i].addr, port)) != -1 )
+		break;
+
+	freeiplist(&list);
+
+	if (i <= 0)
+	    return -1;	/* could not connect to socket */
     }
 
 

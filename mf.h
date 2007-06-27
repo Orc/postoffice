@@ -42,6 +42,7 @@ extern int mfreset(struct letter *let);
 extern int mfquit(struct letter *let);
 extern char *mfresult();
 extern int mfcode();
+extern void mfcomplain(struct letter *let, char *generic);
 #else
 #define mfregister(x,y)	MF_OK
 #define mfconnect(x) MF_OK
@@ -53,10 +54,8 @@ extern int mfcode();
 #define mfquit(x) MF_OK
 #define mfresult() 0
 #define mfcode() 0
+#define mfcomplain(l,g) 0
 #endif
-
-
-extern void mfcomplain(struct letter *let, char *generic);
 
 
 #endif/*__MF_D*/

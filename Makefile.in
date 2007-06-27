@@ -28,7 +28,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
-     dbif.o getopt.o $(AUTH_OBJS) @MILTERLIB@
+     dbif.o getopt.o socklib.o $(AUTH_OBJS) @MILTERLIB@
 
 
 all: $(PGMS)
@@ -50,8 +50,8 @@ tools:  $(TOOLS)
 mx:     mx.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c @LIBS@
 
-mf:     mf.c
-	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c
+mf:     mf.c mx.o socklib.o
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c mx.o socklib.o
 
 b64:    b64.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
@@ -63,51 +63,51 @@ install: install.@WHICH@ install.man
 
 
 install.man: $(MANPAGES)
-	@INSTALL_DIR@ $(TARGET)$(mandir)/man8
-	@INSTALL_DIR@ $(TARGET)$(mandir)/man7
-	@INSTALL_DIR@ $(TARGET)$(mandir)/man5
-	@INSTALL_DIR@ $(TARGET)$(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(TARGET)$(mandir)/man8
-	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(TARGET)$(mandir)/man7
-	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(TARGET)$(mandir)/man7; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(TARGET)$(mandir)/man5
-	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(TARGET)$(mandir)/man5; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(TARGET)$(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c dbm.1 $(TARGET)$(mandir)/man1/@NDBM@.1
+	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man8
+	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man7
+	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man5
+	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man1
+	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(DESTDIR)$(mandir)/man8
+	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(DESTDIR)$(mandir)/man7
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(DESTDIR)$(mandir)/man7; fi
+	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(DESTDIR)$(mandir)/man5
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(DESTDIR)$(mandir)/man5; fi
+	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(DESTDIR)$(mandir)/man1
+	@INSTALL_DATA@ -m 444 -c dbm.1 $(DESTDIR)$(mandir)/man1/@NDBM@.1
 
 install.common.binaries:
-	@INSTALL_DIR@ $(TARGET)$(libexec)
-	@INSTALL_DIR@ $(TARGET)$(bindir)
-	@INSTALL_PROGRAM@ -c expire $(TARGET)$(libexec)/authexpire
-	@INSTALL_PROGRAM@ -c dbm $(TARGET)$(bindir)/@NDBM@
+	@INSTALL_DIR@ $(DESTDIR)$(libexec)
+	@INSTALL_DIR@ $(DESTDIR)$(bindir)
+	@INSTALL_PROGRAM@ -c expire $(DESTDIR)$(libexec)/authexpire
+	@INSTALL_PROGRAM@ -c dbm $(DESTDIR)$(bindir)/@NDBM@
 
 install.programs: $(PGMS) install.common.binaries
-	@INSTALL_DIR@ $(TARGET)$(libdir)
-	@INSTALL@ -m 4711 -c postoffice $(TARGET)$(libdir)
-	@INSTALL_DIR@ $(TARGET)$(bindir)
-	@INSTALL_DIR@ $(TARGET)$(sbindir)
+	@INSTALL_DIR@ $(DESTDIR)$(libdir)
+	@INSTALL@ -m 4711 -c postoffice $(DESTDIR)$(libdir)
+	@INSTALL_DIR@ $(DESTDIR)$(bindir)
+	@INSTALL_DIR@ $(DESTDIR)$(sbindir)
 	for x in runq mailq newaliases sendmail; do \
-	    rm -f $(TARGET)$(bindir)/$$x; \
-	    ln -s $(libdir)/postoffice $(TARGET)$(bindir)/$$x; \
+	    rm -f $(DESTDIR)$(bindir)/$$x; \
+	    ln -s $(libdir)/postoffice $(DESTDIR)$(bindir)/$$x; \
 	done
 	for x in sendmail smtpd; do \
-	    rm -f $(TARGET)$(sbindir)/$$x; \
-	    ln -s $(libdir)/postoffice $(TARGET)$(sbindir)/$$x; \
+	    rm -f $(DESTDIR)$(sbindir)/$$x; \
+	    ln -s $(libdir)/postoffice $(DESTDIR)$(sbindir)/$$x; \
 	done
-	rm -f $(TARGET)$(libdir)/sendmail
-	ln -s $(libdir)/postoffice $(TARGET)$(libdir)/sendmail
+	rm -f $(DESTDIR)$(libdir)/sendmail
+	ln -s $(libdir)/postoffice $(DESTDIR)$(libdir)/sendmail
 
 install.mailfilter: $(PGMS) install.common.binaries
-	@INSTALL_DIR@ $(TARGET)$(libexec)
-	@INSTALL_DIR@ $(TARGET)$(bindir)
-	@INSTALL@ -m 4711 -c postoffice $(TARGET)$(libexec)
-	ln -fs @MAILWRAPPER@ $(TARGET)$(bindir)/runq
-	echo "# emulate sendmail with postoffice" > $(TARGET)@MAILERCONF@.new
+	@INSTALL_DIR@ $(DESTDIR)$(libexec)
+	@INSTALL_DIR@ $(DESTDIR)$(bindir)
+	@INSTALL@ -m 4711 -c postoffice $(DESTDIR)$(libexec)
+	ln -fs @MAILWRAPPER@ $(DESTDIR)$(bindir)/runq
+	echo "# emulate sendmail with postoffice" > $(DESTDIR)@MAILERCONF@.new
 	for x in sendmail send-mail mailq newaliases runq; do \
 	    echo "$$x	$(libexec)/postoffice"; \
-	done >> $(TARGET)@MAILERCONF@.new
-	cp -f $(TARGET)@MAILERCONF@ $(TARGET)@MAILERCONF@.old
-	mv $(TARGET)@MAILERCONF@.new $(TARGET)@MAILERCONF@
+	done >> $(DESTDIR)@MAILERCONF@.new
+	cp -f $(DESTDIR)@MAILERCONF@ $(DESTDIR)@MAILERCONF@.old
+	mv $(DESTDIR)@MAILERCONF@.new $(DESTDIR)@MAILERCONF@
 
 clean:
 	rm -f *.o $(PGMS) $(TOOLS)

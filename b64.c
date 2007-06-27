@@ -31,7 +31,11 @@
  */
 
 #include <string.h>
-#include <malloc.h>
+#if __FreeBSD__
+#  include <stdlib.h>
+#else
+#  include <malloc.h>
+#endif
 
 static char
 table64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

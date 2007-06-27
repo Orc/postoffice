@@ -29,7 +29,6 @@
 #include "mx.h"
 
 
-
 #ifndef HAVE_SETPROCTITLE
 /*
  * drop an informative message into argv
@@ -300,7 +299,7 @@ catchsigs(void (*newsig)(int))
 	    continue;
 	else if ( (sig = signal(i, newsig)) != SIG_DFL) {
 	    signal(i, sig);
-	    syslog(LOG_INFO, "signal %d was set by postoffice", i);
+	    /*syslog(LOG_INFO, "signal %d was set by postoffice", i);*/
 	}
     }
 }
@@ -394,6 +393,8 @@ runqd(ENV *env, int qrunwhen)
 				/* minutes */
     }
 
+    catchsigs(SIG_IGN);
+    signal(SIGCHLD, SIG_DFL);
     signal(SIGHUP,  no_op);
     signal(SIGINT,  sigexit);
     signal(SIGQUIT, sigexit);
@@ -402,8 +403,6 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGUSR1, no_op);
     signal(SIGUSR2, sigexit);
 
-    catchsigs(SIG_IGN);
-    signal(SIGCHLD, SIG_DFL);
 
     setproctitle("postoffice: runq every %d minutes", qrunwhen);
 
@@ -411,9 +410,13 @@ runqd(ENV *env, int qrunwhen)
 	if ( (runchild=fork()) == 0) {
 	    ENV child_env = *env;
 
-	    setproctitle("mail queue runner");
-	    configfile("/etc/postoffice.cf", &child_env);
-	    runq(&child_env);
+	    setsid(); /* set a new session, then double-fork to orphan
+		       * the actual queue runner
+		       */
+	    if (fork() == 0) {
+		configfile("/etc/postoffice.cf", &child_env);
+		runq(&child_env);
+	    }
 	    exit(0);
 	}
 	else if (runchild < 0)

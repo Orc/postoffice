@@ -88,6 +88,14 @@ being minutes.
 and
 .Ql h
 being hours.
+@MILTERMAN@.It Li filter Ns = Ns Ar socket
+@MILTERMAN@Defines a sendmail filter that will scan incoming mail
+@MILTERMAN@before
+@MILTERMAN@.Nm
+@MILTERMAN@accepts it.    The 
+@MILTERMAN@.Ar socket
+@MILTERMAN@can be either a Unix-domain socket on the local machine
+@MILTERMAN@or a tcp socket on a different machine.
 .It Li forward-all
 When set, forward all unknown mail to the configured
 .Sy relay-host .

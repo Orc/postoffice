@@ -10,8 +10,9 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include <string.h>
-#include <signal.h>
-#include <setjmp.h>
+
+#include "mbox.h"
+#include "socklib.h"
 
 #if HAVE_LIMITS_H
 #   include <limits.h>
@@ -45,23 +46,13 @@ getsize(MBOX *f, char *line)
     }
 }
 
-static jmp_buf timeout;
-
-static void
-bail(int sig)
-{
-    longjmp(timeout,1);
-}
-
 
 MBOX *
 newmbox(struct in_addr *ip, int port, int verbose)
 {
     struct servent *p;
-    struct sockaddr_in host;
-    char *c;
+    char *c, *host;
     MBOX *ret = calloc(sizeof *ret, 1);
-    void (*oldalarm)(int);
 
     if (ret == 0)
 	return 0;
@@ -74,53 +65,25 @@ newmbox(struct in_addr *ip, int port, int verbose)
     ret->verbose = verbose;
     memcpy(&ret->ip, ip, sizeof *ip);
 
-    oldalarm = signal(SIGALRM, bail);
+    if ( (host = ptr(ip)) == 0 )
+	host = inet_ntoa(*ip);
 
-    /* cheat here by using the longjmp as a general-purpose exit
-     * routine;  if I come back with val == 1, it's because the
-     * alarm() went off, and I need to log that timeout before I
-     * do all the cleanup.
-     * if val == 2, it's because some different error (which might
-     * be a timeout) happened, and I've already logged the reason,
-     * but still need to clean things up.
-     */
-    switch (setjmp(timeout)) {
-    case 1: syslog(LOG_ERR, "newmbox(%s): timeout", inet_ntoa(*ip));
-	    /* fall through into... */
-    case 2: alarm(0);
-	    signal(SIGALRM, oldalarm);
-	    return freembox(ret);
+    setproctitle("runq: connecting to %s", host);
+
+    if ( (ret->fd = attach_in(ip, port)) != -1 ) {
+	setproctitle("runq: connected to %s", host);
+
+	ret->opened = 1;
+	if ( (ret->in = fdopen(ret->fd,"r"))
+	  && (ret->out = fdopen(ret->fd,"w")) ) {
+	    setlinebuf(ret->in);
+	    setlinebuf(ret->out);
+	    if (ret->verbose)
+		fprintf(stderr, "%15s OPEN\n", inet_ntoa(ret->ip));
+	    return ret;
+	}
+	syslog(LOG_ERR, "fdopen()s: %m");
     }
-    alarm(900);	/* 900 seconds to establish a connection */
-
-    if ( (ret->fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	syslog(LOG_ERR, "socket(%s): %m", inet_ntoa(*ip));
-	longjmp(timeout, 2);
-    }
-    host.sin_family = AF_INET;
-    host.sin_port = htons(port);
-    memcpy(&host.sin_addr, ip, sizeof *ip);
-
-    if (connect(ret->fd, (struct sockaddr*)&host, sizeof(host)) < 0) {
-	syslog(LOG_ERR, "connect(%s): %m", inet_ntoa(*ip));
-	longjmp(timeout,2);
-    }
-    /* connection has been established.  Shut off the alarm, restore
-     * the old signal handler, and we're on our way
-     */
-    alarm(0);
-    signal(SIGALRM, oldalarm);
-
-    ret->opened = 1;
-    if ( (ret->in = fdopen(ret->fd,"r")) && (ret->out = fdopen(ret->fd,"w")) ) {
-	setlinebuf(ret->in);
-	setlinebuf(ret->out);
-	if (ret->verbose)
-	    fprintf(stderr, "%15s OPEN\n", inet_ntoa(ret->ip));
-	return ret;
-    }
-    syslog(LOG_ERR, "fdopen()s: %m");
-
     return freembox(ret);
 }
 
@@ -176,26 +139,39 @@ int
 writembox(MBOX *f, char *fmt, ...)
 {
     va_list ptr;
+    void (*oldalarm)(int);
+    int ret = 0;
 
-    if (f && !feof(f->out)) {
+    if ( (f == 0) || feof(f->out) )
+	return 0;
 
-	va_start(ptr, fmt);
+    va_start(ptr, fmt);
 
-	if (f->verbose) {
-	    fprintf(stderr, "%15s << ", inet_ntoa(f->ip));
-	    vfprintf(stderr, fmt, ptr);
-	    fputc('\n', stderr);
-	}
+    if (f->verbose) {
+	fprintf(stderr, "%15s << ", inet_ntoa(f->ip));
+	vfprintf(stderr, fmt, ptr);
+	fputc('\n', stderr);
+    }
 
+    oldalarm = signal(SIGALRM, timer_expired);
+
+    if (setjmp(timer_jmp) == 0) {
+	alarm(600);
 	vfprintf(f->out, fmt, ptr);
 	fputs("\r\n", f->out);
 	fflush(f->out);
-
-	va_end(ptr);
-
-	return !ferror(f->out);
+	alarm(0);
+	ret = !ferror(f->out);
     }
-    return 0;
+    else {
+	fclose(f->out); f->out = 0;
+	fclose(f->in);  f->in  = 0;
+	ret = 0;
+    }
+    signal(SIGALRM, oldalarm);
+
+    va_end(ptr);
+    return ret;
 }
 
 

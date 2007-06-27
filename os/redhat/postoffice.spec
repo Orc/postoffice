@@ -69,7 +69,7 @@ make
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 
-make TARGET=$RPM_BUILD_ROOT/ install
+make DESTDIR=$RPM_BUILD_ROOT/ install
 
 
 (   cd $RPM_BUILD_ROOT;
