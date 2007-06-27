@@ -94,11 +94,11 @@ install.mailfilter: $(PGMS) install.common.binaries
 	@INSTALL_DIR@ $(libexec)
 	@INSTALL_DIR@ $(bindir)
 	@INSTALL@ -m 4711 -c postoffice $(libexec)
+	ln -fs @MAILWRAPPER@ $(bindir)/runq
 	echo "# emulate sendmail with postoffice" > @MAILERCONF@.new
 	for x in sendmail send-mail mailq newaliases runq; do \
 	    echo "$$x	$(libexec)/postoffice"; \
 	done >> @MAILERCONF@.new
-	ln -s @MAILWRAPPER@ $(bindir)/runq
 	cp -f @MAILERCONF@ @MAILERCONF@.old
 	mv @MAILERCONF@.new @MAILERCONF@
 
