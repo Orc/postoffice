@@ -14,6 +14,7 @@ int verbose = 0;
 int nulluser = 0;
 int dryrun = 0;
 int listing = 0;
+int unretried = 0;
 
 time_t now;
 
@@ -35,7 +36,7 @@ list(DBM *db, long age)
 
     for (key = dbm_firstkey(db); key.dptr; key = dbm_nextkey(db)) {
 	sprintf(bfr, "%.*s", key.dsize, key.dptr);
-	printf("%-32.32s\t", bfr);
+	printf("%-31.31s\t", bfr);
 
 	value = dbm_fetch(db, key);
 
@@ -49,8 +50,10 @@ list(DBM *db, long age)
 		printf("%s", bfr);
 
 		if (ct == 2) {
+		    putchar(' ');
+		    putchar( (last > delay) ? '#' : ' ' );
 		    strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>", localtime(&last));
-		    printf("  %s", bfr);
+		    fputs(bfr, stdout);
 		}
 		putchar('\n');
 		continue;
@@ -92,6 +95,13 @@ scrub(DBM *db, long age)
 			    else
 				dbm_delete(db, key);
 			}
+			else if ((last < delay) && unretried) {
+			    gone++;
+			    if (dryrun)
+				printf("delete [%.*s]\n", key.dsize, key.dptr);
+			    else
+				dbm_delete(db,key);
+			}
 			break;
 		}
 	    }
@@ -113,11 +123,13 @@ main(int argc, char **argv)
     long age;
 
     opterr = 1;
-    while ( (opt = getopt(argc, argv, "?lnvz")) != EOF) {
+    while ( (opt = getopt(argc, argv, "?lnuvz")) != EOF) {
 	switch (opt) {
 	case 'n':   dryrun = 1;
 		    break;
 	case 'z':   nulluser = 1;
+		    break;
+	case 'u':   unretried = 1;
 		    break;
 	case 'v':   verbose = 1;
 		    break;

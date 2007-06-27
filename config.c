@@ -56,20 +56,22 @@ set_option(char *option, ENV *env)
 		return;
     case 'h':	isopt(option,"hops", &env->max_hops, 0);
 		return;
+    case 'q':	isopt(option, "qreturn", &env->qreturn, "m=60,h=3600,d=86400");
+		return;
     case 's':   if (isopt(option, "size", &val, "k=1000,m=1000000"))
-		    env->max_mesg = val;
-		else if (isopt(option, "stat", &val, 0))
-		    env->debug = val;
+		    env->largest = val;
 		return;
     case 'd':   if (isopt(option, "dnscheck", &val, 0))
 		    env->doublecheck = val;
+		else if (isopt(option, "debug", &val, 0))
+		    env->debug = val;
 		else 
-		    isopt(option, "delay", &env->delay, "m=60,h=3600");
+		    isopt(option, "delay", &env->delay, "m=60,h=3600,d=86400");
 		return;
     case 'n':   if (isopt(option, "nodaemon", &val, 0))
 		    env->nodaemon = val;
 		return;
-    case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600");
+    case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
 		return;
     case 'l':   if (isopt(option, "load", &val, 0))
 		    env->max_loadavg = (float)val;

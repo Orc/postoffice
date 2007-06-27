@@ -20,6 +20,7 @@ token(char *p, char sep, char **next)
 {
     datum ret;
     char *q;
+    int i;
 
     ret.dptr = 0;
     ret.dsize = 0;
@@ -37,10 +38,15 @@ token(char *p, char sep, char **next)
 	    ;
 
 	if (q >= p) {
-	    ret.dsize = 2+(q-p);
-	    if ( (ret.dptr = malloc(ret.dsize)) != 0 ) {
-		strncpy(ret.dptr, p, ret.dsize);
-		ret.dptr[ret.dsize-1] = 0;
+	    if ( (ret.dptr = malloc(2 + (q-p))) != 0 ) {
+		for (i=0; (*p != sep) && (p <= q); p++, i++) {
+		    if ( isascii(*p) && isupper(*p) )
+			ret.dptr[i] = tolower(*p);
+		    else
+			ret.dptr[i] = *p;
+		}
+		ret.dptr[i++] = 0;
+		ret.dsize = i;
 	    }
 	}
     }

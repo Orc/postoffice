@@ -9,7 +9,7 @@
 .Nd do housekeeping on the greylist
 .Sh SYNOPSIS
 .Nm /usr/libexec/authexpire
-.Op Fl nzvl
+.Op Fl nzuvl
 .Ar age
 .Sh DESCRIPTION
 .Nm Authexpire
@@ -39,6 +39,8 @@ The options are as follows:
 .Bl -tag -width Ds
 .It Fl z
 Unconditionally remove entries from mailer daemons.
+.It Fl u
+Remove entries that are have not retried since their embargo ended.
 .It Fl v
 Be chattery about what we're doing.
 .It Fl n

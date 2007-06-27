@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include "spool.h"
 #include "bounce.h"
@@ -16,18 +17,15 @@ char pidf [sizeof(QRUNPFX) + 10];
 char xtemp[sizeof(QRUNPFX) + 10];
 
 static int
-finished(struct letter *let)
+too_old(struct letter *let, char *dfile)
 {
-    int i;
-    int active = 0;
+    struct stat finfo;
 
-    for (i=0; i < let->remote.count; i++)
-	if (let->remote.to[i].status == PENDING)
-	    ++active;
+    if (stat(dfile, &finfo) != 0)
+	return 0;
 
-    return (active == 0);
+    return (difftime(time(0), finfo.st_mtime)  > let->env->qreturn);
 }
-
 
 static void
 runjob(struct letter *let, char *qid)
@@ -63,13 +61,37 @@ runjob(struct letter *let, char *qid)
 	    replytext[0] = 0;
 	    forward(let);
 	}
-	if (finished(let)) {
+	if ( too_old(let, dfile) ) {
+	    char why[100];
+	    unsigned int d, h, m;
+	    unsigned int t = let->env->qreturn;
+
+	    sprintf(why, "\tCould not deliver mail for");
+
+	    if (d = t/(24*3600))
+		sprintf(why+strlen(why), " %d day%s", d, (d!=1)?"s":"");
+
+	    t %= (24*3600);
+	    if (h = t/3600)
+		sprintf(why+strlen(why), "%s %d hour%s",
+			    d?",":"", h, (h!=1)?"s":"");
+
+	    t %= 3600;
+	    if (m = t / 60)
+		sprintf(why+strlen(why), "%s %d minute%s",
+			    (d || h)?" and":"", m, (m!=1)?"s":"");
+
+	    bounce(let, why, -1, PENDING);
 	    unlink(cfile);
 	    unlink(dfile);
 	}
-	else {
+	else if (pending(let->remote)) {
 	    let->qcomment = replytext;
 	    writecontrolfile(let);
+	}
+	else {
+	    unlink(cfile);
+	    unlink(dfile);
 	}
     }
     else if (let->env->verbose)

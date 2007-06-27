@@ -181,17 +181,17 @@ restofline(char *p, char *q)
 
     if (size <= 0) {
 	syslog(LOG_ERR, "restofline alloc %d bytes", size);
-	return 0;
+	abort();
     }
 
     if ( ret = malloc(size+1) ) {
 	memcpy(ret, p, size);
 	ret[size] = 0;
+	return ret;
     }
-    else
-	syslog(LOG_ERR,"restofline alloc %d byte%s: %m",size,(size==1)?"s":"");
+    syslog(LOG_ERR,"restofline alloc %d byte%s: %m",size,(size==1)?"s":"");
+    abort();
 
-    return ret;
 } /* restofline */
 
 
@@ -199,13 +199,12 @@ int
 readcontrolfile(struct letter *let, char *qid)
 {
     int   fd;
-    char  ctrlfile[sizeof(DATAPFX)+6+1];
+    char  ctrlfile[sizeof(CTRLPFX)+6+1];
     char *ctrl = 0;
     long  size;
-    int   status = 0;
     char *sep;
     char *p, *q, *end;
-    struct address to;
+    struct address to, *tmp;
 
     sprintf(ctrlfile, CTRLPFX "%.6s", qid);
 
@@ -228,25 +227,38 @@ readcontrolfile(struct letter *let, char *qid)
 	case C_FROM:		/* From: address */
 		if (let->from)
 		    freeaddress(let->from);
-		if ( (let->from = calloc(1, sizeof let->from[0])) == 0 )
-		    goto escape;
-		if ( (let->from->full = restofline(1+p, q)) == 0)
-		    goto escape;
+		if ( (let->from = calloc(1, sizeof let->from[0])) == 0 ) {
+		    syslog(LOG_ERR, "out of memory");
+		    abort();
+		}
+		if ( (let->from->full = restofline(1+p, q)) == 0) {
+		    syslog(LOG_ERR, "out of memory");
+		    abort();
+		}
 		let->from->domain = strdup(let->env->localhost);
 		break;
 
 	case C_TO:		/* To: address */
 		memset(&to, 0, sizeof to);
-		if ( (to.full = restofline(1+p, q)) == 0)
-		    goto escape;
-		if ( (sep = strchr(to.full, '|')) == 0)
-		    goto escape;
+		if ( (to.full = restofline(1+p, q)) == 0) {
+		    syslog(LOG_ERR, "out of memory");
+		    abort();
+		}
+		if ( ((sep = strchr(to.full, '|')) == 0) || (sep == to.full) ) {
+		    syslog(LOG_ERR, "Qid %s: corrupted to address <%s>",
+				    let->qid, to.full);
+		    abort();
+		}
 		*sep++ = 0;
-		if ( (to.domain = sep) == 0)
-		    goto escape;
+		to.domain = sep;
 
-		if (newrecipient(&let->remote, &to, emUSER, -1, -1) == -1)
-		    goto escape;
+		if ( *to.domain == 0 ) {
+		    syslog(LOG_ERR, "Qid %s: corrupted to address <%s>",
+				    let->qid, to.full);
+		    abort();
+		}
+		else if (newrecipient(&let->remote, &to, emUSER, -1, -1) == -1)
+		    abort();
 		free(to.full);
 		break;
 
@@ -260,19 +272,21 @@ readcontrolfile(struct letter *let, char *qid)
 		break;
 
 	case C_HEADER:		/* real headers live past here */
-		if ( let->headtext = restofline(1+q, end) )
+		if (1+q < end) {
+		    let->headtext = restofline(1+q, end);
 		    let->headsize = end - (1+q);
-		status = 1;
-		goto escape;
+		}
+		else {
+		    let->headtext = malloc(1);
+		    let->headsize = 0;
+
+		}
+		munmap(ctrl,size);
+		return 1;
 	}
     }
-
-escape:
-    if (status != 0)
-	qsort(let->remote.to, let->remote.count,
-			      sizeof let->remote.to[0], domaincmp);
     munmap(ctrl, size);
-    return status;
+    return 0;
 }
 
 

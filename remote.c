@@ -54,7 +54,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 	    *denied = last-first;
 	if (code == 0)
 	    fprintf(session->log, "\tLost connection to server\n");
-	return 0;
+	return -1;
     }
     fseek(session->log, base, SEEK_SET);
 
@@ -152,14 +152,15 @@ forward(struct letter *let)
     unsigned int denied;
     char *logtext;
     long logsize, mapsize;
+    int rc;
 
     for (i=0; i < let->remote.count; i = j) {
 
 	for (j=i+1; j < let->remote.count && (j-i) < 100 && Samehost(i,j); ++j)
 	    let->remote.to[i].status = PENDING;
 
-	if (f = session(let->env, let->remote.to[i].host, 25))
-	    if ( (SMTPpost(f, let, i, j, &denied) == 0) || (denied > 0) ) {
+	if (f = session(let->env, let->remote.to[i].host, 25)) {
+	    if ( (rc = SMTPpost(f, let, i, j, &denied)) <= 0 || denied > 0 ) {
 		logsize = ftell(f->log);
 		fflush(f->log);
 		if (logtext = mapfd(fileno(f->log), &mapsize)) {
@@ -169,7 +170,9 @@ forward(struct letter *let)
 		else
 		    bounce(let, "\tCatastrophic system error", -1, FAILED);
 
-		dump_session(f);
+		if (rc < 0)
+		    dump_session(f);
 	    }
+	}
     }
 }

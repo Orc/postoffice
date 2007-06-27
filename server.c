@@ -202,6 +202,7 @@ do_smtp_connection(int client, ENV *env)
 
 	signal(SIGCHLD, SIG_DFL);
 	signal(SIGUSR2, SIG_IGN);
+	signal(SIGUSR1, SIG_IGN);
 	setsid();
 
 	memset(env->argv0, 0, 80);
@@ -293,7 +294,6 @@ server(ENV *env)
     signal(SIGQUIT, sigexit);
     signal(SIGKILL, sigexit);
     signal(SIGTERM, sigexit);
-    signal(SIGUSR1, SIG_IGN);
     signal(SIGUSR2, sigexit);
     signal(SIGCHLD, reaper);
 

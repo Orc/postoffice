@@ -30,12 +30,13 @@ main(int argc, char **argv)
 {
     int opt;
     int val;
+    int auditing = 0;
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
     static ENV env;
     char *pgm;
     char *from = 0;
-    char *options = "A:B:C:F:f:r:b:o:h:R:GUimnqv";
+    char *options = "aA:B:C:F:f:r:b:o:h:R:GUimnqv";
     char *modes = "sqpmid";
     struct utsname sys;
     struct hostent *p;
@@ -46,9 +47,10 @@ main(int argc, char **argv)
     env.verbose = 0;		/* be chattery */
     env.nodaemon = 0;		/* allow MAIL FROM:<> */
     env.delay = 3600;		/* greylist delay */
-    env.max_mesg = 0;
+    env.largest = 0;
     env.sender = getuid();
     env.timeout = 300;
+    env.qreturn = 86400*3;
     env.max_loadavg = 4.0;
     env.max_clients = 100;	/* should be fairly ridiculous */
     env.max_hops = 100;		/* (ditto) */
@@ -59,39 +61,46 @@ main(int argc, char **argv)
     else
 	env.localhost = "localhost";
 
+    pgm = strdup(basename(argv[0]));
     openlog(pgm, LOG_PID, LOG_MAIL);
 
-    pgm = strdup(basename(argv[0]));
+#define SAME(a,b)	(strcasecmp(a,b) == 0)
 
     /* handle magic program names */
-    if (strcasecmp(pgm, "mailq") == 0) {
+    if ( SAME(pgm, "mailq") ) {
 	options = "v";
 	env.bmode = 'p';
     }
-    else if (strcasecmp(pgm, "sendmail") == 0) {
-	options = "b:F:f:io:r:vqt";
+    else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
+	options = "b:F:f:io:r:vt";
 	modes = "sm";
 	env.bmode = 'm';
     }
-    else if (strcasecmp(pgm, "runq") == 0) {
+    else if ( SAME(pgm, "runq") ) {
 	options = "v";
 	env.bmode = 'q';
     }
-    else if (strcasecmp(pgm, "newaliases") == 0) {
+    else if ( SAME(pgm, "newaliases") ) {
 	options = "v";
 	env.bmode = 'i';
-
+    }
+    else if ( SAME(pgm, "smtpd") ) {
+	options = "aA:B:C:o:h:R:GUmnv";
+	env.bmode = 'd';
     }
 
     while ( (opt = getopt(argc, argv, options)) != EOF) {
 	switch (opt) {
+	case 'a':
+		auditing = 1;
+		break;
 	case 'C':
 		if (configfile(optarg, &env) == 0) {
 		    perror(optarg);
 		    exit(EX_NOINPUT);
 		}
 		break;
-#ifdef PEER_OPTION
+#ifdef USE_PEER_FLAG
 	case 'R':
 		{   struct sockaddr_in fake;
 		    union {
@@ -140,6 +149,10 @@ main(int argc, char **argv)
 		exit(EX_TEMPFAIL);
 	case 'd':
 		if (getuid() == 0) {
+		    if (auditing)
+			auditon();
+		    else
+			auditoff();
 		    server(&env);
 		    break;
 		}

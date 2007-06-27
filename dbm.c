@@ -79,7 +79,7 @@ fetch(int argc, char **argv, int mode)
 
     for (i=1; i < argc; i++) {
 	key.dptr = argv[i];
-	key.dsize = strlen(argv[i]);
+	key.dsize = strlen(argv[i])+1;
 
 	value = dbm_fetch(db, key);
 
@@ -155,7 +155,7 @@ delete(int argc, char **argv, int mode)
 
     for (i=1; i <argc; ++i) {
 	key.dptr = argv[i];
-	key.dsize = strlen(argv[i]);
+	key.dsize = strlen(argv[i])+1;
 	if ( dbm_delete(db, key) != 0) {
 	    dbm_perror(argv[i]);
 	    rc = 1;
@@ -178,9 +178,9 @@ store(int argc, char **argv, int mode)
 	return rc;
 
     key.dptr = argv[1];
-    key.dsize = strlen(argv[1]);
+    key.dsize = strlen(argv[1])+1;
     value.dptr = argv[2];
-    value.dsize = strlen(argv[2]);
+    value.dsize = strlen(argv[2])+1;
 
     if (dbm_store(db, key, value, imode) != 0) {
 	dbm_perror(argv[1]);
@@ -217,10 +217,10 @@ load(int argc, char **argv, int mode)
 	}
 
 	key.dptr = line;
-	key.dsize = strlen(line);
+	key.dsize = strlen(line)+1;
 
 	value.dptr  = p ? p : "";
-	value.dsize = p ? strlen(p) : 0;
+	value.dsize = p ? strlen(p)+1 : 0;
 
 	if (dbm_store(db, key, value, DBM_INSERT) != 0) {
 	    dbm_perror(line);

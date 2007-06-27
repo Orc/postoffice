@@ -19,7 +19,7 @@
 int
 greylist(struct letter *let, int delete)
 {
-#if WITH_GREYLIST
+#ifdef WITH_GREYLIST
     DBM *db;
     datum key, value;
     char *kw;	/* let->from->user + @ + let->deliveredIP */
@@ -37,10 +37,18 @@ greylist(struct letter *let, int delete)
     }
 
     if (let->from && let->from->user) {
+	char *p;
+
 	kw = alloca(strlen(let->from->user) + strlen(let->deliveredIP) + 10);
 	if (kw)
 	    sprintf(kw, "%s@[%s]", let->from->user, let->deliveredIP);
+
+	for (p = let->from->user; *p; ++p)
+	    if (*p <= ' ' || !isprint(*p))
+		multiplier++;
     }
+    else if (let->env->nodaemon)
+	return let->env->delay * 60;
     else {
 	mailerdaemon = 1;
 	multiplier *= 4;
@@ -57,7 +65,7 @@ greylist(struct letter *let, int delete)
     }
 
     key.dptr = kw;
-    key.dsize = strlen(kw);
+    key.dsize = strlen(kw)+1;
 
 
     if (delete) {

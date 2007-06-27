@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#if TCP_WRAPPERS
+#ifdef WITH_TCPWRAPPERS
 #include <tcpd.h>
 
 int deny_severity = 0;
@@ -33,7 +33,7 @@ int allow_severity = 0;
 #include "env.h"
 
 enum cmds { HELO, EHLO, MAIL, RCPT, DATA, RSET,
-            VRFY, EXPN, QUIT, NOOP, STAT, MISC };
+            VRFY, EXPN, QUIT, NOOP, DEBU, MISC };
 
 #define CMD(t)	{ t, #t }
 struct cmdt {
@@ -49,7 +49,7 @@ struct cmdt {
     CMD(VRFY),
     CMD(EXPN),
     CMD(QUIT),
-    CMD(STAT),
+    CMD(DEBU),
     CMD(NOOP),
 };
 #define NRCMDS	(sizeof cmdtab/sizeof cmdtab[0])
@@ -132,6 +132,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     extern char *nameof(struct sockaddr_in*);
     enum cmds c;
     int ok = 1;
+    int issock = 1;
+    char bfr[1];
+    int rc;
+    int timeout = env->timeout;
+
+    openlog("smtpd", LOG_PID, LOG_MAIL);
 
     if ( prepare(&letter, in, out, env) ) {
 	letter.deliveredby = peer ? strdup(nameof(peer)) : env->localhost;
@@ -144,9 +150,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			     " Try again later, okay?",
 			     letter.deliveredto, letter.deliveredby);
 	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
+	    audit(&letter, "CONN", "stranger", 421);
 	    byebye(&letter, 1);
 	}
-#if TCP_WRAPPERS
+#ifdef WITH_TCPWRAPPERS
 	else if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
 	    char *why;
@@ -157,6 +164,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    message(out, 554, "%s does not accept mail"
 			      " from %s, because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
+	    audit(&letter, "CONN", "blacklist", 554);
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
 	    ok = 0;
@@ -167,6 +175,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    int fd;
 	    char *blurb = 0;
 	    long size;
+
+	    audit(&letter, "CONN", "", 220);
 
 	    if ( (fd = open("/etc/issue.smtp", O_RDONLY)) != -1) {
 		blurb = mapfd(fd, &size);
@@ -187,6 +197,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     }
     else {
 	message(letter.out, 421, "System error.");
+	audit(&letter, "CONN", "Error", 421);
 	byebye(&letter, 1);
     }
 
@@ -202,90 +213,136 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     signal(SIGALRM, zzz);
 
     if (setjmp(bye) != 0) {
-	syslog(LOG_INFO, "Session with %s timed out", letter.deliveredby);
+	audit(&letter, "QUIT", "timeout", 421);
 	byebye(&letter, 1);
     }
 
-    psstat(&letter, "read");
-    while ( alarm(env->timeout),fgets(line, sizeof line, in) ) {
+    do {
+#if 0
+	psstat(&letter, "EOF?");
+	if (issock) {
+	    if ( (rc = recv(fileno(in), bfr, 1, MSG_PEEK)) < 1) {
+		if (errno == ENOTSOCK)
+		    issock = 0;
+		else {
+		    break;
+		}
+	    }
+	}
+#endif
+	alarm(timeout);
+	psstat(&letter, "gets");
+	if (fgets(line, sizeof line, in) == 0)
+	    break;
 
-	if ( (c = cmd(line)) != MISC)
-	    psstat(&letter, line);
+	psstat(&letter, (c = cmd(line)) == MISC ? "ERR!" : line);
 
+	alarm(60);	/* allow 60 seconds to process a command */
 	if (ok) {
 	    switch (c) {
 	    case EHLO:
 		greeted(&letter);
 		message(out,-250, "Hello, Sailor!");
-		if (env->max_mesg)
-		    message(out,-250, "size %ld", env->max_mesg);
-		if (env->debug)
-		    message(out,-250, "stat");
+		if (env->largest)
+		    message(out,-250, "size %ld", env->largest);
 		message(out, 250, "8bitmime");
-
+		audit(&letter, "EHLO", line, 250);
 		break;
 
 	    case HELO:
 		greeted(&letter);
 		message(out, 250, "A wink is as good as a nod.");
+		audit(&letter, "HELO", line, 250);
 		break;
 	    
 	    case MAIL:
 		if (letter.from)	/* rfc821 */
 		    reset(&letter);
-		if (from(&letter, line))
+
+		if ( (rc = from(&letter, line)) == 2 ) {
+		    audit(&letter, "MAIL", line, 250);
 		    message(out, 250, "Okay fine.");
+		    timeout = env->timeout;
+		}
+		else {
+		    /* After a MAIL FROM:<> fails, but the
+		     * caller on a really short input timer
+		     * in case their tiny brain has popped
+		     * as the result of getting a non 2xx
+		     * reply
+		     */
+		    audit(&letter, "MAIL", line, rc);
+		    timeout = env->timeout / 10;
+		}
 		break;
 
 	    case RCPT:
-		if (to(&letter, line))
+		if (to(&letter, line)) {
 		    message(out, 250, "Sure, I love spam!");
+		    audit(&letter, "RCPT", line, 250);
+		}
+		else
+		    audit(&letter, "RCPT", line, 5);
 		break;
 
 	    case DATA:
 		if (letter.from && (letter.local.count || letter.remote.count) ) {
 		    if ( data(&letter) ) {
-			if (env->max_mesg && (letter.bodysize > env->max_mesg))
+			if (env->largest && (letter.bodysize > env->largest)) {
+			    audit(&letter, "DATA", "size", 550);
 			    message(out, 550, "I don't accept messages longer "
-					    "than %lu bytes.", env->max_mesg);
-			else if (letter.hopcount > env->max_hops)
+					    "than %lu bytes.", env->largest);
+			}
+			else if (letter.hopcount > env->max_hops) {
+			    audit(&letter, "DATA", "looping", 550);
 			    message(out, 550, "Too many Received: fields in "
 					      "the message header.  Is it "
 					      "looping?");
+			}
 			else {
 			    alarm(0);
-			    if (smtpbugcheck(&letter) && post(&letter) )
-				message(out, 250, "Okay fine.");
+			    if (smtpbugcheck(&letter) && post(&letter) ) {
+				audit(&letter, "DATA", "", 250);
+				message(out, 250, "Okay fine."); 
+			    }
+			    else
+				audit(&letter, "DATA", "", 5);
 			}
 		    }
 		    reset(&letter);
 		    break;
 		}
+		audit(&letter, "DATA", "", 550);
 		message(out, 550, "Who is it %s?", letter.from ? "TO" : "FROM");
 		break;
 
 	    case VRFY:
 	    case EXPN:
+		audit(&letter, line, "", (c==VRFY)?252:550);
 		message(out, (c==VRFY)?252:550, "What's your clearance, Citizen?");
 		break;
 
 	    case RSET:
-		message(out, 250, "Deja vu!");
+		audit(&letter, "RSET", "", 250);
 		reset(&letter);
+		message(out, 250, "Deja vu!");
 		break;
 
 	    case QUIT:
+		audit(&letter, "QUIT", "", 221);
 		message(out, 221, "Be seeing you.");
 		byebye(&letter, 0);
 
 	    case NOOP:
+		audit(&letter, "NOOP", "", 250);
 		message(out, 250, "Yes, yes, I know you're busy.");
 		break;
 	    
-	    case STAT:
+	    case DEBU:
 		if (env->debug) {
 		    int i;
 
+		    audit(&letter, "DEBU", "", 250);
 		    if (letter.from)
 			message(out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/",
 				    letter.from->full,
@@ -300,17 +357,33 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    for (i=letter.remote.count; i-- > 0; )
 			describe(out, 250, &letter.remote.to[i] );
 
+		    message(out,-250, "B1FF!!!!: T\n");
+#ifdef WITH_TCPWRAPPERS
+		    message(out,-250, "Tcp-Wrappers: T\n");
+#endif
+#ifdef WITH_GREYLIST
+		    message(out,-250, "Greylist: T\n");
+#endif
+#ifdef AV_PROGRAM
+		    message(out,-250, "AV program: <%s>\n", AV_PROGRAM);
+#endif
+#ifdef USE_PEER_FLAG
+		    message(out,-250, "Peer flag: T\n");
+#endif
+		    if (env->largest)
+			message(out,-250, "size: %ld", env->largest);
 		    message(out, 250, "Timeout: %d\n"
 				      "Delay: %d\n"
 				      "Max clients: %d\n"
+				      "Qreturn: %ld\n"
 				      "Relay-ok: %s\n"
 				      "NoDaemon: %s\n"
 				      "LocalMX: %s\n"
-				      "Paranoid: %s\n"
-				      "B1ff: T",
+				      "Paranoid: %s",
 					  env->timeout,
 					  env->delay,
 					  env->max_clients,
+					  env->qreturn,
 					  env->relay_ok ? "T" : "NIL",
 					  env->nodaemon ? "T" : "NIL",
 					  env->localmx ? "T" : "NIL",
@@ -319,6 +392,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		}
 		/* otherwise fall into the default failure case */
 	    default:
+		audit(&letter, "", line, 502);
 		message(out, 502, "Sadly, No!");
 		break;
 	    }
@@ -326,16 +400,18 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	else {
 	    sleep(30);
 	    if (c == QUIT) {
+		audit(&letter, "QUIT", "", 221);
 		message(out,221,"Be seeing you.");
 		byebye(&letter, 0);
 	    }
-	    else
+	    else {
+		audit(&letter, line, line, 503);
 		message(out,503,"I'm sorry Dave, I'm afraid I can't do that.");
+	    }
 	}
-
-	if (feof(out))
-	    break;
-	psstat(&letter, "read");
-    }
+	fflush(out);
+	fflush(in);
+    } while ( !(feof(out) || feof(in)) );
+    audit(&letter, "QUIT", "EOF", 421);
     byebye(&letter,1);
 }

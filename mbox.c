@@ -49,6 +49,7 @@ newmbox(struct in_addr *ip, int port, int verbose)
     }
 
     ret->verbose = verbose;
+    memcpy(&ret->ip, ip, sizeof *ip);
 
     if ( (ret->fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	syslog(LOG_ERR, "socket(%s): %m", inet_ntoa(*ip));
@@ -67,6 +68,8 @@ newmbox(struct in_addr *ip, int port, int verbose)
     if ( (ret->in = fdopen(ret->fd,"r")) && (ret->out = fdopen(ret->fd,"w")) ) {
 	setlinebuf(ret->in);
 	setlinebuf(ret->out);
+	if (ret->verbose)
+	    fprintf(stderr, "%15s OPEN\n", inet_ntoa(ret->ip));
 	return ret;
     }
     syslog(LOG_ERR, "fdopen()s: %m");
@@ -76,16 +79,19 @@ newmbox(struct in_addr *ip, int port, int verbose)
 }
 
 
-void
+MBOX*
 freembox(MBOX *p)
 {
     if (p) {
+	if (p->verbose)
+	    fprintf(stderr, "%15s CLOSE\n", inet_ntoa(p->ip));
 	if (p->in) fclose(p->in);
 	if (p->out)fclose(p->out);
 	if (p->log)fclose(p->log);
 	if (p->fd != -1) close(p->fd);
 	free(p);
     }
+    return (MBOX*)0;
 }
 
 
@@ -130,7 +136,7 @@ writembox(MBOX *f, char *fmt, ...)
 	va_start(ptr, fmt);
 
 	if (f->verbose) {
-	    fprintf(stderr, "<<");
+	    fprintf(stderr, "%15s << ", inet_ntoa(f->ip));
 	    vfprintf(stderr, fmt, ptr);
 	    fputc('\n', stderr);
 	}
@@ -182,7 +188,7 @@ reply(MBOX *f, void (*look)(MBOX*,char *))
 		whynot(line);
 	}
 	if (f->verbose)
-	    fprintf(stderr, ">>%s\n", line);
+	    fprintf(stderr, "%15s >> %s\n", inet_ntoa(f->ip), line);
 	if (f->log)
 	    fprintf(f->log, "\t%s\n", line);
     } while (*e == '-');
@@ -214,8 +220,7 @@ reset(int sess)
 	reply(cache[sess].session, 0);
     }
 /* ^SMTP^ */
-    freembox(cache[sess].session);
-    cache[sess].session = 0;
+    cache[sess].session = freembox(cache[sess].session);
     return 0;
 }
 
@@ -230,9 +235,9 @@ session(ENV *env, char *host, int port)
     struct mbox_cache *ses;
 
     /* first see if this host in in the cache */
-    for (ses=cache+0, i=0; i < NR_CACHE; i++, ses++)
-	if (ses->session && (strcmp(ses->host, host) == 0) && reset(i))
-	    return ses->session;
+    for (i = NR_CACHE; i-- > 0; )
+	if (cache[i].session && (strcmp(cache[i].host, host) == 0) && reset(i))
+	    return cache[i].session;
 
     /* then pick up the MXes for this host and see if
      * any of them match a cached MX
@@ -242,10 +247,10 @@ session(ENV *env, char *host, int port)
 	return 0;
 
     for (i = mxes.count; i-- > 0; )
-	for (ses=cache+0,j=0; j < NR_CACHE; j++, ses++)
-	    if (ses->session && (ses->mx.s_addr == mxes.a[i].addr.s_addr)
+	for (j=NR_CACHE; j-- > 0; )
+	    if (cache[j].session && (cache[j].mx.s_addr==mxes.a[i].addr.s_addr)
 			     && reset(j))
-		return ses->session;
+		return cache[j].session;
 
     for (i = NR_CACHE; i-- > 0; )
 	if (cache[i].session == 0) {
@@ -265,16 +270,16 @@ session(ENV *env, char *host, int port)
 	reply(ses->session, 0);
 /* ^SMTP^ */
     }
-    freembox(ses->session);
+    ses->session = freembox(ses->session);
 
     for (i=NR_CACHE; i-- > 0; )
 	if (i != victim)
 	    cache[i].prio--;
 
     for (i=mxes.count; i-- > 0; )
-	if (ses->session = newmbox( &mxes.a[i].addr, port, env->verbose)) {
+	if (ses->session = newmbox(&mxes.a[i].addr, port, env->verbose)) {
 	    ses->mx = mxes.a[i].addr;
-	    ses->host = host;
+	    ses->host = strdup(host);
 	    ses->prio = 1;
 /* vSMTPv */
 	    if (reply(ses->session, greet) == 2) {
@@ -301,8 +306,7 @@ dump_session(MBOX *ses)
 
     for (i=NR_CACHE; i-- > 0; )
 	if (cache[i].session == ses) {
-	    freembox(cache[i].session);
-	    cache[i].session = 0;
+	    cache[i].session = freembox(cache[i].session);
 	    return;
 	}
 }
@@ -319,8 +323,7 @@ close_sessions()
 	    writembox(cache[i].session, "QUIT");
 	    reply(cache[i].session, 0);
 /* ^SMTP^ */
-	    freembox(cache[i].session);
-	    cache[i].session = 0;
+	    cache[i].session = freembox(cache[i].session);
 	}
 }
 

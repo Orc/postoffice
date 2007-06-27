@@ -218,6 +218,8 @@ runlocal(struct letter *let)
     }
 
     for (count=let->local.count; (count-- > 0) && !let->fatal; ) {
+	if (let->local.to[count].status != PENDING)
+	    continue;
 	switch (let->local.to[count].typ) {
 	case emEXE: rc = exe(let, &(let->local.to[count]) );
 		    break;

@@ -1,66 +1,69 @@
-CC=cc -baout
-
-LIBWRAP=-lwrap
-INCWRAP=
+CC=@CC@
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
 
 PGMS = postoffice dbm expire
-MAN8PAGES=postoffice.8 authexpire.8 sendmail.8
+MAN8PAGES=postoffice.8 authexpire.8 sendmail.8 smtpd.8
 MAN7PAGES=mailaddr.7 greylist.7
 MAN5PAGES=aliases.5 smtpauth.5
 MAN1PAGES=newaliases.1 mailq.1 runq.1
 
 MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES)
 
-prefix=/usr
+prefix=@prefix@
 libdir=$(prefix)/lib
 libexec=$(prefix)/libexec
 bindir=$(prefix)/bin
 sbindir=$(prefix)/sbin
 mandir=$(prefix)/man
 
-LIBS=-ldb
-
 OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
-     newaliases.o arpatok.o
+     newaliases.o arpatok.o audit.o
 
 all: $(PGMS)
 
 postoffice: $(OBJS)
-	$(CC) $(CFLAGS) -o postoffice $(OBJS) $(LIBS) $(LIBWRAP)
+	$(CC) $(CFLAGS) -o postoffice $(OBJS) @LIBS@
 
 expire:	expire.c
-	$(CC) $(CFLAGS) -o expire expire.c $(LIBS)
+	$(CC) $(CFLAGS) -o expire expire.c @LIBS@
 
 dbm:	dbm.c
-	$(CC) $(CFLAGS) -o dbm dbm.c $(LIBS)
+	$(CC) $(CFLAGS) -o dbm dbm.c @LIBS@
 
 install: $(PGMS) $(MANPAGES)
-	install -m 4711 -c postoffice $(libdir)
-	install -m 444 -c $(MAN8PAGES) $(mandir)/man8
-	install -m 444 -c $(MAN7PAGES) $(mandir)/man7
-	install -m 444 -c $(MAN5PAGES) $(mandir)/man5
-	install -m 444 -c $(MAN1PAGES) $(mandir)/man1
-	install -m 711 -c dbm $(bindir)/ndbm
-	install -m 711 -c expire $(libexec)/authexpire
+	@INSTALL@ -m 4711 -c postoffice $(libdir)
+	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(mandir)/man8
+	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(mandir)/man7
+	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(mandir)/man5
+	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
+	@INSTALL_PROGRAM@ -c dbm $(bindir)/ndbm
+	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
 	for x in runq mailq newaliases sendmail; do \
 	    rm -f $(bindir)/$$x; \
 	    ln -s $(libdir)/postoffice $(bindir)/$$x; \
 	done
+	for x in sendmail smtpd; do \
+	    rm -f $(sbindir)/$$x; \
+	    ln -s $(libdir)/postoffice $(sbindir)/$$x; \
+	done
 	rm -f $(libdir)/sendmail
 	ln -s $(libdir)/postoffice $(libdir)/sendmail
-	rm -f $(sbindir)/sendmail
-	ln -s $(libdir)/postoffice $(sbindir)/sendmail
 
 
 clean:
 	rm -f *.o $(PGMS)
 
+distclean spotless: clean
+	rm -f @GENERATED_FILES@ @CONFIGURE_FILES@
+
 addr.o: addr.c
 address.o: address.c letter.h env.h mx.h
 arpatok.o: arpatok.c
+audit.o: audit.c letter.h env.h
 bounce.o: bounce.c config.h letter.h env.h mbox.h bounce.h
 config.o: config.c config.h env.h
 dbm.o: dbm.c

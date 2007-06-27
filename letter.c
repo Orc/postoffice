@@ -69,6 +69,20 @@ prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 }
 
 
+int
+pending(struct list L)
+{
+    int i;
+    int active = 0;
+
+    for (i=0; i < L.count; i++)
+	if (L.to[i].status == PENDING)
+	    ++active;
+
+    return active;
+}
+
+
 
 static char *
 skipspace(char *p)
@@ -96,30 +110,33 @@ from(struct letter *let, char *line)
 
     if (let->from) {
 	message(let->out, 550, "Too many cooks spoil the broth.");
-	return 0;
+	return 5;
     }
 
     p = skipspace(line+4);
     if (strncasecmp(p, "FROM", 4) != 0 || *(p = skipspace(p+4)) != ':') {
 	message(let->out, 501, "Badly formatted mail from: command.");
-	return 0;
+	return 5;
     }
 
     p = skipspace(p+1);
 
-    if (from = parse_address(let, p, "from"))
-	if (from->local && from->user && !let->env->relay_ok) {
-	    message(let->out, 553, "You are not a local client.");
-	    freeaddress(from);
-	}
-	else
-	    let->from = from;
+    if ( (from = parse_address(let, p, "from")) == 0)
+	return 5;
 
-    if ( (let->env->relay_ok == 0) && (left = greylist(let, 0)) ) {
+    if (from->local && from->user && !let->env->relay_ok) {
+	message(let->out, 553, "You are not a local client.");
+	freeaddress(from);
+	return 5;
+    }
+    else
+	let->from = from;
+
+    if ( (let->env->relay_ok == 0) && (left = greylist(let, 0)) > 1 ) { 
 	message(let->out, 450, "System busy.  Try again in %d seconds.", left);
 	freeaddress(from);
 	let->from = 0;
-	return 0;
+	return 4;
     }
 
     /* check for esmtp mail extensions.
@@ -136,15 +153,15 @@ from(struct letter *let, char *line)
 	    if (strncasecmp(p, "size=", 5) == 0) {
 		unsigned long size = atol(p+5);
 
-		if (let->env->max_mesg
-			&& (size > let->env->max_mesg)) {
+		if (let->env->largest
+			&& (size > let->env->largest)) {
 
 		    message(let->out, 552,
 			    "I don't accept messages longer than %lu bytes.",
-			    let->env->max_mesg);
+			    let->env->largest);
 		    freeaddress(from);
 		    let->from = 0;
-		    break;
+		    return 5;
 		}
 	    }
 	    else if (strncasecmp(p, "body=", 5) == 0)
@@ -155,7 +172,7 @@ from(struct letter *let, char *line)
 	}
     }
 
-    return let->from != NULL;
+    return 2;
 }
 
 int

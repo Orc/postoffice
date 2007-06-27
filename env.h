@@ -8,7 +8,7 @@
 struct env {
     struct in_addr *local_if;	/* ip addresses assigned to the local machine */
     char *localhost;		/* name of localhost */
-    unsigned long max_mesg;	/* longest message we accept */
+    unsigned long largest;	/* longest message we accept */
     float max_loadavg;		/* if la > this, don't accept mail */
     char *argv0;		/* argv0, for status scribbling */
     int   max_clients;		/* max# of connections allowed */
@@ -17,6 +17,7 @@ struct env {
     char  bmode;
     uid_t sender;		/* user who called postoffice */
     int   delay;		/* greylist delay */
+    int   qreturn;		/* how long to leave mail in the queue? */
     int   nodaemon:1;		/* refuse MAIL FROM:<> */
     int   verbose:1;		/* be chattery */
     int   paranoid:1;		/* don't accept email from clients we can't

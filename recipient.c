@@ -238,7 +238,7 @@ expand(struct letter *let,
 			rc = newrecipient(&let->local, p, emUSER, uid, gid);
 		}
 		else if (p->alias) {
-		    rc = expand(let,&link,p,token,p->alias,uid,gid,alias);
+		    rc = expand(let,&link,p,p->alias,token,uid,gid,alias);
 		}
 		else if (p->local) {
 		    rc = localprocess(let,p,&link);

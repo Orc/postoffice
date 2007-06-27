@@ -41,10 +41,12 @@
 .Nm postoffice
 .Op Ar flags
 .Op Ar address ...
-.Nm newaliases
 .Nm mailq
+.Nm newaliases
 .Nm runq
 .Op Fl v
+.Nm smtpd
+.Op Ar flags
 .Sh DESCRIPTION
 .Nm Postoffice
 accepts and delivers mail on
@@ -70,8 +72,14 @@ and aliased appropriately.
 .Pp
 Flags are:
 .Bl -tag -width Fl
+.It Fl a
+Start SMTP servers with session auditing enabled.
+If session logging is enabled, 
+.Nm postoffice
+will log all sorts of information about each
+SMTP session to the syslog.
 .It Fl bd
-Run as a daemon.  This requires Berkeley IPC.
+Run as a daemon.
 .Nm Postoffice
 will fork and run in background
 listening on socket 25 for incoming SMTP
@@ -240,12 +248,11 @@ server.   If your machine is connected to a public network,
 .Em OPTION ,
 unless you really want to end up on every antispam blacklist on
 the planet.
-.It Li stat
+.It Li debug
 Enable the ESMTP
-.Ql STAT
-command, which 
-.Nm postoffice
-uses to display various internal settings.
+.Ql DEBUG
+command, which displays various compile and runtime settings,
+as well as the current state of the mail envelope.
 .It Li size Ns = Ns Ar size
 Sets the 
 largest message size that 
@@ -359,6 +366,10 @@ If invoked as
 .Nm runq ,
 .Nm postoffice
 will run through the mail queue and make what deliveries are possible.
+If invoked as
+.Nm smtpd ,
+.Nm postoffice
+runs as a SMTP daemon.
 .Sh FILES
 .Pp
 .Bl -tag -width /var/db/smtpauth.db -compact
@@ -378,11 +389,12 @@ database.
 .Xr mail 1 ,
 .Xr rmail 1 ,
 .Xr syslog 3 ,
+.Xr aliases 5 ,
+.Xr smtpauth 5 ,
+.Xr mailaddr 7 ,
 .Xr authexpire 8 ,
 .Xr sendmail 8 ,
-.Xr smtpauth 5 ,
-.Xr aliases 5 ,
-.Xr mailaddr 7 ;
+.Xr smtpd 8 ;
 .Pp
 DARPA
 Internet Request For Comments

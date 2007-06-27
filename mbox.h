@@ -7,6 +7,7 @@ struct mbox {
     FILE *in;
     FILE *out;
     FILE *log;
+    struct in_addr ip;
     int fd;
     long size;		/* maximum messagesize or 0 */
     int esmtp : 1;
@@ -17,7 +18,7 @@ struct mbox {
 typedef struct mbox MBOX;
 
 extern MBOX *newmbox(struct in_addr *, int, int);
-extern void freembox(MBOX *);
+extern MBOX *freembox(MBOX *);
 
 extern char *readmbox(MBOX *);
 extern int  writembox(MBOX *, char *, ...);

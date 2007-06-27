@@ -56,7 +56,7 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
     if ( bounce.from = mkaddress("") ) {
 	if (mkspool(&bounce)) {
 	    fprintf(bounce.body, "Subject: Undeliverable mail\n"
-				 "From: Mail system on %s <MAILER-DAEMON>\n"
+				 "From: Mail <MAILER-DAEMON@%s>\n"
 				 "MIME-Version: 1.0\n"
 				 "Content-Type: multipart/report;\n"
 				 "              report-type=delivery-status;\n"
@@ -64,7 +64,7 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
 				 "\n"
 				 "--%s\n", let->env->localhost,
 					     boundary, boundary);
-	    fprintf(bounce.body, "\nThe mail service at %s was unable to \n"
+	    fprintf(bounce.body, "\nThe mail service on %s was unable to \n"
 				 "deliver your mail to\n",
 				    let->env->localhost);
 
