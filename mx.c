@@ -363,6 +363,9 @@ getIPa(char *host, struct iplist *ipp)
     char *fqn, *p;
     struct in_addr ipa;
 
+    if (ipp == 0)
+	return 0;
+
     memset(ipp, 0, sizeof *ipp);
 
     if ( *host == 0 || (fqn = malloc(strlen(host)+2)) == 0)

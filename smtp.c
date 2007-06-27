@@ -35,6 +35,8 @@ int allow_severity = 0;
 #include "mx.h"
 #include "mf.h"
 
+extern char myversion[];
+
 #define do_reset(x)	mfreset(x),reset(x)
 
 enum cmds { HELO, EHLO, MAIL, RCPT, DATA, RSET,
@@ -532,6 +534,7 @@ debug(struct letter *let)
     for (i=let->remote.count; i-- > 0; )
 	describe(let->out, 250, &let->remote.to[i] );
 
+    message(let->out,-250, "Version: <%s>\n", myversion);
     message(let->out,-250, "B1FF!!!!: T\n");
 #if WITH_TCPWRAPPERS
     message(let->out,-250, "Tcp-Wrappers: T\n");
@@ -603,7 +606,9 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	letter.deliveredto = env->localhost;
 
 	if ( (rc = mfconnect(&letter)) != MF_OK ) {
-	    mfcomplain(&letter, "There's something wrong here");
+	    syslog(LOG_ERR, "milter problems");
+	    message(out, 421, "We are having problems here, please try"
+			      "again later.");
 	    audit(&letter, "CONN", "milter", 421);
 	    byebye(&letter, 1);
 	}

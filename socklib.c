@@ -37,8 +37,10 @@ attach_in(struct in_addr *ip, int port)
     else
 	errno = ETIMEDOUT;
 
+#if 0
     if ( fd == -1 )
 	syslog(LOG_ERR, "attach_in(%s): %m", inet_ntoa(*ip));
+#endif
 
     signal(SIGALRM, oldalarm);
     return fd;

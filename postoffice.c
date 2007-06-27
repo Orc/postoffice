@@ -16,6 +16,8 @@
 #include <libgen.h>
 #endif
 
+extern char myversion[];
+
 #include "letter.h"
 #include "smtp.h"
 
@@ -186,9 +188,9 @@ main(int argc, char **argv)
 		break;
 	case 'V':
 		if (strcasecmp(pgm, "postoffice") == 0)
-		    printf("%s %s\n", pgm, VERSION);
+		    printf("%s %s\n", pgm, myversion);
 		else
-		    printf("%s: postoffice %s\n", pgm, VERSION);
+		    printf("%s: postoffice %s\n", pgm, myversion);
 		exit(EX_OK);
 	}
     }

@@ -22,6 +22,9 @@
 
 #ifdef DEBUG
 #include <signal.h>
+#define PERROR(x)	perror(x)
+#else
+#define	PERROR(x)	
 #endif
 
 #ifndef WITH_MILTER
@@ -339,12 +342,11 @@ handshake(struct letter *let, char *channel)
 	/* connect to named socket
 	 */
 	if (strlen(channel) > sizeof urk.sun_path) {
-	    fprintf(stderr, "%s: too long for socket\n", channel);
 	    return -1;
 	}
 
 	if ( (f = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-	    perror("socket");
+	    PERROR("socket");
 	    return -1;
 	}
 
@@ -353,7 +355,7 @@ handshake(struct letter *let, char *channel)
 	len = strlen(urk.sun_path) + sizeof(urk.sun_family);
 
 	if ( connect(f, (struct sockaddr*)&urk, len) != 0 ) {
-	    perror(channel);
+	    PERROR(channel);
 	    close(f);
 	    return -1;
 	}
@@ -376,17 +378,18 @@ handshake(struct letter *let, char *channel)
 	if ( (port = atoi(p)) <= 0)
 	    return -1;	/* bogus port */
 
-	if (getIPa(ipchan, &list) <= 0)
+	if (getIPa(ipchan, &list) > 0) {
+
+	    for (i=list.count; i > 0; --i)
+		if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
+		    break;
+	    freeiplist(&list);
+
+	    if (i <= 0)
+		return -1;	/* could not connect to socket */
+	}
+	else
 	    return -1;
-
-	for (i=list.count; i > 0; )
-	    if ( (f = attach_in(&(list.a[--i].addr), port)) != -1 )
-		break;
-
-	freeiplist(&list);
-
-	if (i <= 0)
-	    return -1;	/* could not connect to socket */
     }
 
 

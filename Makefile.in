@@ -29,7 +29,8 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
-     dbif.o getopt.o socklib.o $(AUTH_OBJS) @MILTERLIB@
+     dbif.o getopt.o socklib.o version.o \
+     $(AUTH_OBJS) @MILTERLIB@
 
 
 all: $(PGMS)
@@ -37,8 +38,8 @@ all: $(PGMS)
 postoffice: $(OBJS)
 	$(CC) $(CFLAGS) -o postoffice $(OBJS) @LIBS@ @LIBWRAP@ @LIBCRYPT@
 
-postoffice.o: postoffice.c config.h letter.h env.h smtp.h VERSION
-	$(CC) $(CFLAGS) -c postoffice.c -DVERSION=\"`cat VERSION`\"
+version.o: version.c VERSION
+	$(CC) $(CFLAGS) -c version.c -DVERSION=\"`cat VERSION`\"
 
 expire:	expire.c dbif.o
 	$(CC) $(CFLAGS) -o expire expire.c dbif.o @LIBS@
