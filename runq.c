@@ -138,7 +138,9 @@ runjob(struct letter *let, char *qid)
 #else
     int fd;
 
-    sprintf(xtemp, QUEUEDIR "/%s", qid);
+    strcpy(xtemp, QRUNPFX);
+    strcat(xtemp, qid);
+
     if ( (fd = open(xtemp, O_RDWR)) == -1) {
 	if (errno != ENOENT)
 	    perror(qid);
