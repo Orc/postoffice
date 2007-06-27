@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -8,7 +10,12 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <malloc.h>
+
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "spool.h"
 
@@ -201,7 +208,7 @@ readcontrolfile(struct letter *let, char *qid)
     int   fd;
     char  ctrlfile[sizeof(CTRLPFX)+6+1];
     char *ctrl = 0;
-    long  size;
+    size_t size;
     char *sep;
     char *p, *q, *end;
     struct address to, *tmp;

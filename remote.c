@@ -151,7 +151,8 @@ forward(struct letter *let)
     MBOX *f;
     unsigned int denied;
     char *logtext;
-    long logsize, mapsize;
+    long logsize;
+    size_t mapsize;
     int rc;
 
     for (i=0; i < let->remote.count; i = j) {

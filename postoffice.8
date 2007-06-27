@@ -77,7 +77,9 @@ Start SMTP servers with session auditing enabled.
 If session logging is enabled, 
 .Nm postoffice
 will log all sorts of information about each
-SMTP session to the syslog.
+SMTP session to the syslog.  See
+.Xr mailaudit 5
+for details about the format of the audit records.
 .It Fl bd
 Run as a daemon.
 .Nm Postoffice
@@ -99,9 +101,9 @@ protocol as described in
 on standard input and output.
 .It Fl C Ns Ar file
 Read options from the named configuration file.
-.It Fl d Ns Ar X
-Set debugging value to
-.Ar X .
+.\" .It Fl d Ns Ar X
+.\" Set debugging value to
+.\" .Ar X .
 .It Fl f Ns Ar name
 Sets the name of the
 .Ql from
@@ -139,9 +141,7 @@ An alternate form of the
 .Fl f
 flag.
 .It Fl v
-Go into verbose mode. This makes 
-.Nm
-more chatty for debugging purposes.
+Go into verbose mode.
 .El
 .Pp
 When 
@@ -190,6 +190,11 @@ The options are:
 Allow only 
 .Ar N
 clients at a time to connect to the server.
+.It Li debug
+Enable the ESMTP
+.Ql DEBUG
+command, which displays various compile and runtime settings,
+as well as the current state of the mail envelope.
 .It Li delay Ns = Ns Ar N
 Set the
 .Em greylist Ns ing
@@ -248,11 +253,6 @@ server.   If your machine is connected to a public network,
 .Em OPTION ,
 unless you really want to end up on every antispam blacklist on
 the planet.
-.It Li debug
-Enable the ESMTP
-.Ql DEBUG
-command, which displays various compile and runtime settings,
-as well as the current state of the mail envelope.
 .It Li size Ns = Ns Ar size
 Sets the 
 largest message size that 
@@ -390,6 +390,7 @@ database.
 .Xr rmail 1 ,
 .Xr syslog 3 ,
 .Xr aliases 5 ,
+.Xr mailaudit 5 ,
 .Xr smtpauth 5 ,
 .Xr mailaddr 7 ,
 .Xr authexpire 8 ,

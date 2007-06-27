@@ -1,11 +1,18 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <ctype.h>
-#include <malloc.h>
 #include <string.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <syslog.h>
+
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "letter.h"
 

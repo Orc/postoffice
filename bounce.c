@@ -8,6 +8,8 @@
 #include "mbox.h"
 #include "bounce.h"
 
+extern struct address *mkaddress(char*);
+
 void
 bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
 {

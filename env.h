@@ -1,6 +1,7 @@
 #ifndef ENV_D
 #define ENV_D
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -34,7 +35,7 @@ struct env {
 typedef struct env ENV;
 
 
-char *mapfd(int, long*);
+char *mapfd(int, size_t*);
 
 void set_option(char *, ENV*);
 int  configfile(char *, ENV*);

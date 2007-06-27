@@ -47,11 +47,9 @@ greylist(struct letter *let, int delete)
 	    if (*p <= ' ' || !isprint(*p))
 		multiplier++;
     }
-    else if (let->env->nodaemon)
-	return let->env->delay * 60;
     else {
 	mailerdaemon = 1;
-	multiplier *= 4;
+	multiplier += 4;
 	if (kw = alloca(strlen(let->deliveredIP) + 10))
 	    sprintf(kw, "<>@[%s]", let->deliveredIP);
     }

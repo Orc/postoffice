@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -7,10 +9,16 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdarg.h>
-#include <sys/resource.h>
-
-#include <malloc.h>
 #include <string.h>
+
+#if HAVE_LIMITS_H
+#   include <limits.h>
+#endif
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "mbox.h"
 #include "mx.h"

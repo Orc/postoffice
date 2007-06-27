@@ -1,0 +1,83 @@
+.\" Copyright (c) 1983, 1987 The Regents of the University of California.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms are permitted
+.\" provided that the above copyright notice and this paragraph are
+.\" duplicated in all such forms and that any documentation,
+.\" advertising materials, and other materials related to such
+.\" distribution and use acknowledge that the software was developed
+.\" by the University of California, Berkeley.  The name of the
+.\" University may not be used to endorse or promote products derived
+.\" from this software without specific prior written permission.
+.\" THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+.\" IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+.\" WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.\"	%A%
+.\"
+.Dd Apr 10, 2004
+.Dt MAILAUDIT 5
+.Os MASTODON 4
+.Sh NAME
+.Nm mailaudit
+.Nd description of 
+.Nm postoffice
+session audit records
+.Sh DESCRIPTION
+.Pp
+This file describes the auditing format used by the
+.Nm postoffice
+mail server.  Mail audit records are written to the
+.Xr syslog
+with facility
+.Em LOG_MAIL
+and priority
+.Em LOG_DEBUG .
+An audit record is a colon-separated line prefixed with the word
+.Nm AUDIT ,
+and it contains the fields
+.Bl -tag -width XXXXXX
+.It TIME
+The time, in seconds, since the session began,
+.It IP
+the IP address of the client,
+.It COMMAND
+the (4 character) SMTP command the client sent (or 
+.Em CONN , 
+which is when the session connects),
+.It CODE
+the SMTP response code
+.Nm postoffice
+sent in reply to this command (if the code is
+.Em 499
+or
+.Em 599 
+it means that the auditing module was not passed the
+entire response code, just the first digit.), and finally,
+.It INFO
+additional information about the command. Usually this is just
+the command + arguments passed in to the SMTP server, but for
+the
+.Em CONN
+command it will be the reason why the connection was denied,
+and for the 
+.Em QUIT
+command it will say whether the session timed out or the client
+closed the connection without first issuing a
+.Em QUIT
+command.
+.El
+.Pp
+The audit format does not include the process-id of the SMTP session
+or the time the record was generated;  this is pure laziness because
+it assumes that any auditing programs can retrieve this data from the
+.Xr syslog .
+.Sh AUTHOR
+David Parsons
+.%T orc@pell.chi.il.us .
+.Sh SEE ALSO
+.Xr postoffice 8 ;
+.Pp
+DARPA
+Internet Request For Comments
+.%T RFC822 .

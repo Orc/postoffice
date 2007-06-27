@@ -50,9 +50,9 @@ struct letter {
     char  *deliveredto;		/* machine being delivered to */
     FILE  *body;		/* the mail message */
     char  *bodytext;		/* mmap()ed copy of the body */
-    off_t  bodysize;		/* # bytes in it */
+    size_t bodysize;		/* # bytes in it */
     char  *headtext;		/* malloc()ed copy of extra headers */
-    off_t  headsize;		/* size of extra headers */
+    size_t headsize;		/* size of extra headers */
     char   qid[8];		/* spool file suffix */
     char  *tempfile;		/* temporary spoolfile */
     FILE  *in, *out;		/* data connection */

@@ -5,7 +5,7 @@
 
 
 char *
-mapfd(int fd, long *size)
+mapfd(int fd, size_t *size)
 {
     struct stat info;
     char *map;

@@ -1,15 +1,22 @@
+/*
+ * get back a list of MXes for a site
+ */
+
+#include "config.h"
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
 
-/*
- * get back a list of MXes for a site
- */
-
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
+
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "mx.h"
 

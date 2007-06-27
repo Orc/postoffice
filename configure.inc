@@ -139,7 +139,7 @@ while [ $# -gt 0 ]; do
 	if [ "$_var" ]; then
 	    _val=`echo "$1" | sed -e 's/^--with-[^=]*=\(.*\)$/\1/'`
 	    _v=`echo $_var | tr '[a-z]' '[A-Z]' | tr '-' '_'`
-	    eval WITH_${_v}=$_val
+	    eval WITH_${_v}=\"$_val\"
 	else
 	    echo "Bad option $1.   Use --help to show options" 1>&2
 	    exit 1

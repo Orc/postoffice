@@ -11,8 +11,12 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-#include <malloc.h>
 #include <sysexits.h>
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 
 static datum
@@ -61,7 +65,7 @@ newaliases()
     char alias[sizeof PATH_ALIAS+10];
     int fd;
     char *atext;
-    long  asize;
+    size_t asize;
     int nraliases = 0;
     int longest = 0;
     int total = 0;

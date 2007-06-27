@@ -1,6 +1,12 @@
+#include "config.h"
+
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
+#ifdef OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "letter.h"
 #include "mx.h"

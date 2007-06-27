@@ -5,7 +5,7 @@ LDFLAGS=@LDFLAGS@
 PGMS = postoffice dbm expire
 MAN8PAGES=postoffice.8 authexpire.8 sendmail.8 smtpd.8
 MAN7PAGES=mailaddr.7 greylist.7
-MAN5PAGES=aliases.5 smtpauth.5
+MAN5PAGES=aliases.5 smtpauth.5 mailaudit.5
 MAN1PAGES=newaliases.1 mailq.1 runq.1
 
 MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES)

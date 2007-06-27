@@ -5,8 +5,13 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <syslog.h>
-#include <malloc.h>
 #include <sysexits.h>
+
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "letter.h"
 #include "env.h"
@@ -145,7 +150,6 @@ mail(char *from, int argc, char **argv, ENV *env)
 {
     struct letter let;
     char *ptr;
-    long  size;
     int reason;
     int count;
     int total = 0;
@@ -209,7 +213,7 @@ mail(char *from, int argc, char **argv, ENV *env)
 
     if (let.fatal || (rc < let.local.count) ) {
 	char *ptr;
-	off_t size;
+	size_t size;
 
 	/* something went wrong.  Report it */
 	if (let.log) {

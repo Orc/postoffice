@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <ctype.h>
-#include <malloc.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,6 +12,11 @@
 #include <time.h>
 #include <syslog.h>
 #include <sysexits.h>
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "letter.h"
 #include "env.h"
@@ -114,7 +118,7 @@ from(struct letter *let, char *line)
     }
 
     p = skipspace(line+4);
-    if (strncasecmp(p, "FROM", 4) != 0 || *(p = skipspace(p+4)) != ':') {
+    if ( strncasecmp(p, "FROM", 4) != 0 || *(p = skipspace(p+4)) != ':' ) {
 	message(let->out, 501, "Badly formatted mail from: command.");
 	return 5;
     }
@@ -124,10 +128,16 @@ from(struct letter *let, char *line)
     if ( (from = parse_address(let, p, "from")) == 0)
 	return 5;
 
-    if (from->local && from->user && !let->env->relay_ok) {
+    if ( from->local && from->user && !let->env->relay_ok ) {
 	message(let->out, 553, "You are not a local client.");
 	freeaddress(from);
 	return 5;
+    }
+    else if ( (from->user == 0) && let->env->nodaemon ) {
+	message(let->out, 553, "Not Allowed.");
+	freeaddress(from);
+	return 5;
+
     }
     else
 	let->from = from;
@@ -276,7 +286,6 @@ int
 post(struct letter *let)
 {
     int ok, didmsg=0;
-    long size;
     char *ptr;
 
     if (svspool(let) == 0)
@@ -287,7 +296,7 @@ post(struct letter *let)
     if ( !ok ) {
 	/* something went wrong.  Report it */
 	char *ptr;
-	off_t size;
+	size_t size;
 
 	fseek(let->log, SEEK_END, 0);
 

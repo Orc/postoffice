@@ -6,8 +6,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <syslog.h>
-#include <malloc.h>
 #include <string.h>
+#if OS_FREEBSD
+#   include <stdlib.h>
+#else
+#   include <malloc.h>
+#endif
 
 #include "letter.h"
 #include "aliases.h"

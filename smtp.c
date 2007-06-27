@@ -90,7 +90,7 @@ smtpbugcheck(struct letter *let)
     int code = virus_scan(let);
     char *msg;
     char *p, *q;
-    off_t size;
+    size_t size;
     int count;
 
     if (code) {
@@ -174,7 +174,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	else {
 	    int fd;
 	    char *blurb = 0;
-	    long size;
+	    size_t size;
 
 	    audit(&letter, "CONN", "", 220);
 

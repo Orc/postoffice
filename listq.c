@@ -3,18 +3,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <string.h>
 #include <sysexits.h>
 
 #include "spool.h"
 
 int
-Qpicker(struct dirent *f)
+Qpicker(const struct dirent *f)
 {
     return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (f->d_reclen == 8);
 }
 
 static int
-Qcompare(struct dirent *a, struct dirent *b)
+Qcompare(const struct dirent *a, const struct dirent *b)
 {
     struct stat sa, sb;
     int  ra, rb;

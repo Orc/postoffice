@@ -20,14 +20,12 @@ AC_INIT $TARGET
 
 AC_PROG_CC
 
-AC_CHECK_FUNCS mmap || \
-    AC_FAIL "$TARGET will not build unless your system supports mmap"
+AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
-TLOGN "Checking for ndbm "
-if QUIET AC_CHECK_FUNCS dbm_open; then
-    TLOG "(ok)"
-elif QUIET AC_LIBRARY dbm_open -ldb; then
-    TLOG "(-ldb)"
+AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
+AC_CHECK_HEADERS ndbm.h || AC_FAIL "$TARGET requires ndbm"
+if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
+    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
 else
     AC_FAIL "$TARGET requires ndbm"
 fi
