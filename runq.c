@@ -138,7 +138,7 @@ runjob(struct letter *let, char *qid)
 #else
     int fd;
 
-    strcpy(xtemp, QRUNPFX);
+    strcpy(xtemp, CTRLPFX);
     strcat(xtemp, qid);
 
     if ( (fd = open(xtemp, O_RDWR)) == -1) {
