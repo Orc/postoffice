@@ -6,18 +6,16 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <string.h>
-#if OS_FREEBSD
-#   include <stdlib.h>
-#else
-#if OS_DARWIN
-#   include <stdlib.h>
-#else
+
+#if HAVE_MALLOC_H
 #   include <malloc.h>
-#endif
+#else
+#   include <stdlib.h>
 #endif
 
 #include "letter.h"
 #include "dbif.h"
+#include "usermap.h"
 
 
 /*
@@ -48,15 +46,17 @@ _see(struct letter *let, struct address *try, DBhandle alias)
 	    return 0;
 	}
     }
-
     if (value) {
 	if (try->alias = strdup(value))
 	    return 1;
 	else
 	    syslog(LOG_ERR, "(%s) %m", try->user);
     }
+    else 
+	try->alias = usermap(let,try);
 
-    return 0;
+
+    return (try->alias != 0) ;
 }
 
 

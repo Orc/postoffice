@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <pwd.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -12,14 +11,11 @@
 #include <time.h>
 #include <syslog.h>
 #include <sysexits.h>
-#if OS_FREEBSD
-#   include <stdlib.h>
-#else
-#if OS_DARWIN
-#   include <stdlib.h>
-#else
+
+#if HAVE_MALLOC_H
 #   include <malloc.h>
-#endif
+#else
+#   include <stdlib.h>
 #endif
 
 #include "letter.h"
@@ -132,7 +128,6 @@ getemail(struct address *u)
     static struct email ret;
     static char bfr[200];
     int fd;
-    struct stat st;
     char *forward;
     char *p;
 
@@ -153,8 +148,7 @@ getemail(struct address *u)
 
     if (forward = alloca(strlen(pwd->pw_dir) + sizeof "/.forward" + 1)) {
 	sprintf(forward, "%s/.forward", pwd->pw_dir);
-	if (stat(forward, &st) == 0 && st.st_uid == ret.uid
-				    && (st.st_mode & (S_IWGRP|S_IWOTH)) == 0 ) {
+	if ( goodfile(forward,pwd) ) {
 	    if ( (fd = open(forward, O_RDONLY)) != -1) {
 		if (read(fd, bfr, sizeof bfr) > 0)
 		    ret.forward = bfr;

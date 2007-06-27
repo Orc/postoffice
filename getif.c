@@ -8,16 +8,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#if OS_FREEBSD
-#   include <stdlib.h>
-#   include <string.h>
-#else
-#if OS_DARWIN
-#   include <stdlib.h>
-#   include <string.h>
-#else
+
+#if HAVE_MALLOC_H
 #   include <malloc.h>
+#else
+#   include <stdlib.h>
 #endif
+
+#if defined(OS_FREEBSD) || defined(OS_DARWIN)
+#   include <string.h>
 #endif
 
 #if __linux__

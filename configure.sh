@@ -351,6 +351,8 @@ if [ "$USE_MAILWRAPPERS" ]; then
     fi
 fi
 
+[ "$OS_FREEBSD" -o "$OS_DRAGONFLY" ] || AC_CHECK_HEADERS malloc.h
+
 if [ "$USE_MAILWRAPPERS" ]; then
     # FreeBSD puts mailer.conf into /etc/mail, NetBSD and OpenBSD put
     # mailer.conf into /etc

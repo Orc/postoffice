@@ -17,14 +17,11 @@
 #if HAVE_LIMITS_H
 #   include <limits.h>
 #endif
-#if OS_FREEBSD
-#   include <stdlib.h>
-#else
-#if OS_DARWIN
-#   include <stdlib.h>
-#else
+
+#if HAVE_MALLOC_H
 #   include <malloc.h>
-#endif
+#else
+#   include <stdlib.h>
 #endif
 
 #include "mbox.h"

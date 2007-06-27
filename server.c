@@ -127,7 +127,10 @@ reaper(int sig)
 static void
 sigexit(int sig)
 {
-    syslog(LOG_ERR, "server exit on signal %d", sig);
+    if (sig == SIGALRM)
+	syslog(LOG_ERR, "session timeout");
+    else
+	syslog(LOG_ERR, "server exit on signal %d", sig);
     exit(EX_TEMPFAIL);
 }
 
@@ -252,7 +255,7 @@ static void
 crash(int sig)
 {
     if (sig == SIGALRM) {
-	syslog(LOG_ERR, "CRASH when alarm() expired");
+	syslog(LOG_ERR, "session timeout");
 	exit(EX_TEMPFAIL);
     }
     else {

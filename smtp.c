@@ -325,6 +325,16 @@ to(struct letter *let, char *line)
 	return 0;
     }
 
+#if WITH_MILTER
+    /* at least one milter freezes if you give it TO addresses
+     * before FROM addresses.
+     */
+    if ( !let->from ) {
+	message(let->out, 501, "But who is it from?");
+	return 0;
+    }
+#endif
+
     p = skipspace(p+1);
 
     if (mfto(let,p) != MF_OK) {

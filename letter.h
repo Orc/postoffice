@@ -103,5 +103,6 @@ extern int newrecipient(struct list*, struct address*, enum r_type,uid_t,gid_t);
 extern int recipients(struct letter*, struct address*);
 
 extern struct passwd *getpwemail(struct domain *, char *);
+extern int goodfile(char *, struct passwd *);
 
 #endif/*__LETTER_D*/

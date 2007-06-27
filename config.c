@@ -143,6 +143,21 @@ set_option(char *option, ENV *env)
 		return;
     case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
 		return;
+    case 'u':   if (strncasecmp(option, "usermap=", 8) == 0) {
+		    if (env->usermap.pat) {
+			free(env->usermap.pat);
+			env->usermap.pat = env->usermap.map = 0;
+		    }
+		    if ( env->usermap.pat = strdup(option+8) ) {
+			char *q = strchr(env->usermap.pat, ':');
+
+			if (q) {
+			    *q++ = 0;
+			    env->usermap.map = q;
+			}
+		    }
+		}
+		return;
     case 'v':   if (isopt(option, "verify-from", &val, 0))
 		    env->verify_from = val;
 		return;

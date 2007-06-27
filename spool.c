@@ -11,14 +11,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#if OS_FREEBSD
-#   include <stdlib.h>
-#else
-#ifdef OS_DARWIN
-#   include <stdlib.h>
-#else
+#if HAVE_MALLOC_H
 #   include <malloc.h>
-#endif
+#else
+#   include <stdlib.h>
 #endif
 
 #if HAVE_SYS_MOUNT_H

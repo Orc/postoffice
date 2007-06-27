@@ -29,7 +29,8 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
-     dbif.o getopt.o socklib.o version.o \
+     dbif.o getopt.o socklib.o version.o usermap.o \
+     goodfile.o \
      $(AUTH_OBJS) @MILTERLIB@
 
 
@@ -155,3 +156,5 @@ smtp.o: smtp.c config.h letter.h env.h domain.h smtp.h mx.h mf.h
 spool.o: spool.c config.h spool.h letter.h env.h domain.h mx.h
 userok.o: userok.c config.h letter.h env.h domain.h dbif.h
 virusscan.o: virusscan.c config.h letter.h env.h domain.h
+usermap.o: usermap.c config.h letter.h env.h domain.h usermap.h
+goodfile.o: goodfile.c config.h letter.h env.h domain.h

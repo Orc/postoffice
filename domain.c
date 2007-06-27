@@ -1,15 +1,13 @@
 #include "config.h"
 
 #include <stdio.h>
-#if OS_FREEBSD
-#   include <stdlib.h>
-#else
-#if OS_DARWIN
-#   include <stdlib.h>
-#else
+
+#if HAVE_MALLOC_H
 #   include <malloc.h>
+#else
+#   include <stdlib.h>
 #endif
-#endif
+
 #include <pwd.h>
 #include <sys/types.h>
 #include <string.h>
