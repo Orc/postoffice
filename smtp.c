@@ -601,6 +601,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     int timeout = env->timeout;
 #ifdef SMTP_AUTH
     int auth_ok = 0;
+#else
+#   define auth_ok 0
 #endif
 
     openlog("smtpd", LOG_PID, LOG_MAIL);

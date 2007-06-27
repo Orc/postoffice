@@ -27,7 +27,7 @@ too_old(struct letter *let, char *dfile)
     return (difftime(time(0), finfo.st_mtime)  > let->env->qreturn);
 }
 
-static void
+void
 runjob(struct letter *let, char *qid)
 {
     char dfile[sizeof(DATAPFX) + 10];

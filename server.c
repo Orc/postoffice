@@ -200,7 +200,7 @@ do_smtp_connection(int client, ENV *env)
 			  "and try again.");
     }
     else if ( (child = window[i].clerk = fork()) == -1 ) {
-	syslog(LOG_ERR, "%s - fork: %m", nameof(&window[i].customer) );
+	syslog(LOG_ERR, "%s fork: %m", inet_ntoa(window[i].customer.sin_addr) );
 	message(out, 451, "System error.  Please try again later.");
     }
     else if (child == 0) {
@@ -211,6 +211,7 @@ do_smtp_connection(int client, ENV *env)
 	setsid();
 
 	setproctitle("SMTP startup");
+	alarm(30);	/* give 30 seconds to figure out the peer name */
 	peername = nameof(&window[i].customer);
 	setproctitle("SMTP %s", peername);
 	alarm(300);	/* give the client 5 minutes to set up a connection */

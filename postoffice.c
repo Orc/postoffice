@@ -57,6 +57,7 @@ main(int argc, char **argv)
     struct utsname sys;
     struct hostent *p;
     int debug = 0;
+    int sendmaild0 = 0;
     int qruntime = 0;
 
     env.bmode = 'm';
@@ -116,7 +117,7 @@ main(int argc, char **argv)
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
-	options = "A:b:F:f:imo:r:q;Vvt";
+	options = "A:b:d;F:f:imo:r:q;Vvt";
 	env.bmode = 'm';
     }
     else if ( SAME(pgm, "runq") ) {
@@ -175,7 +176,11 @@ main(int argc, char **argv)
 		from = z_optarg;
 		break;
 	case 'd':
-		debug = 1;
+		if (z_optarg)
+		    sendmaild0 = (strcmp(z_optarg, "0") == 0)
+			      || (strncmp(z_optarg, "0.", 2) == 0);
+		else
+		    debug = 1;
 		break;
 	case 'b':
 		env.bmode = z_optarg[0];
@@ -194,6 +199,9 @@ main(int argc, char **argv)
 		exit(EX_OK);
 	}
     }
+
+    if (sendmaild0)
+	printf("Version %s\n", myversion);
 
     if (strchr(modes, env.bmode)) {
 	switch (env.bmode) {

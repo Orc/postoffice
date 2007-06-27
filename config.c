@@ -101,6 +101,9 @@ set_option(char *option, ENV *env)
 		return;
     case 'h':	isopt(option,"hops", &env->max_hops, 0);
 		return;
+    case 'i':	if (isopt(option, "immediate", &val, 0))
+		    env->immediate = val;
+		return;
     case 'l':   if (isopt(option, "load", &val, 0))
 		    env->max_loadavg = (float)val;
 		else if (isopt(option, "localmx", &val, 0))

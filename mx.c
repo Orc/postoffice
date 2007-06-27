@@ -23,6 +23,9 @@
 #include "mx.h"
 
 
+#define DNSIZE 512
+
+
 static struct in_addr* localhost = 0;
 
 
@@ -225,16 +228,19 @@ cname(char *host)
     long dttl;
     short reclen;
     char *p;
+    int count = 0;
 
     name = host;
 
-    while (p = query(name, T_CNAME, &dns_rec)) {
+    while ( p = query(name, T_CNAME, &dns_rec) ) {
 	p = dname(0, &dns_rec, p, dns_rec.eod);
 
 	p += 8;
 	GETSHORT(reclen, p);
 
 	p = dname(&name, &dns_rec, p, p+reclen);
+	if (++count > 10)	/* too many levels of indirection spoil */
+	    break;		/* the broth */
     }
     return strdup(name);
 }
@@ -247,7 +253,7 @@ ptr(struct in_addr *ip)
     long dttl;
     short reclen;
     char *p, *q;
-    char candidate[100];
+    char candidate[DNSIZE];
     int i;
 
     if (ip == 0)

@@ -39,6 +39,8 @@ struct env {
     unsigned int   soft_deny:1;	/* blacklist sites with 4xx instead of 5xx */
     unsigned int   escape_from:1;/* add a '>' prefix to lines beginning with */
 				 /* 'From ' */
+    unsigned int   immediate:1;	/* try to run the queue immediately after */
+				/* someone sends mail */
 } ;
 
 typedef struct env ENV;

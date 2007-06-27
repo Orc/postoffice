@@ -258,6 +258,18 @@ mail(char *from, int argc, char **argv, ENV *env)
     rc = runlocal(&let);
     /*syslog(LOG_INFO, "mail: runlocal");*/
 
+    if ( (let.remote.count > 0) && env->immediate ) {
+	pid_t id;
+	if ( (id=fork()) == 0 ) {
+	    setsid();
+	    if (fork() == 0)
+		runjob(&let, let.qid);
+	    exit(0);
+	}
+	else if (id < 0)
+	    syslog(LOG_ERR, "remote delivery: %m");
+    }
+
     if (let.fatal || (rc < let.local.count) ) {
 	char *ptr;
 	size_t size;
