@@ -62,11 +62,6 @@ set_option(char *option, ENV *env)
     int val;
 
     switch (option[0]) {
-#if HAVE_STATFS
-    case 'm':   if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
-		    env->minfree = val * 1024;
-		return;
-#endif
     case 'a':	if (isopt(option, "audit", &val, 0))
 		    env->auditing = val;
 		return;
@@ -74,13 +69,37 @@ set_option(char *option, ENV *env)
 		    env->checkhelo = val;
 		isopt(option, "clients", &env->max_clients, 0);
 		return;
-    case 'p':   if (isopt(option, "paranoid", &val, 0))
-		    env->paranoid = val;
+    case 'd':   if (isopt(option, "dnscheck", &val, 0))
+		    env->doublecheck = val;
+		else if (isopt(option, "debug", &val, 0))
+		    env->debug = val;
+		else 
+		    isopt(option, "delay", &env->delay, "m=60,h=3600,d=86400");
 		return;
     case 'f':   if (isopt(option, "forward-all", &val, 0)) {
 		    insecure("forward-all");
 		    env->forward_all = val;
 		}
+		return;
+    case 'h':	isopt(option,"hops", &env->max_hops, 0);
+		return;
+    case 'l':   if (isopt(option, "load", &val, 0))
+		    env->max_loadavg = (float)val;
+		else if (isopt(option, "localmx", &val, 0))
+		    env->localmx = val;
+		return;
+#if HAVE_STATFS
+    case 'm':   if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
+		    env->minfree = val * 1024;
+		return;
+#endif
+    case 'n':   if (isopt(option, "nodaemon", &val, 0))
+		    env->nodaemon = val;
+		return;
+    case 'p':   if (isopt(option, "paranoid", &val, 0))
+		    env->paranoid = val;
+		return;
+    case 'q':	isopt(option, "qreturn", &env->qreturn, "m=60,h=3600,d=86400");
 		return;
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
@@ -91,10 +110,6 @@ set_option(char *option, ENV *env)
 		    env->relay_host = strdup(option+11);
 		}
 		return;
-    case 'h':	isopt(option,"hops", &env->max_hops, 0);
-		return;
-    case 'q':	isopt(option, "qreturn", &env->qreturn, "m=60,h=3600,d=86400");
-		return;
     case 's':   if (isopt(option, "size", &val, "k=1000,m=1000000"))
 		    env->largest = val;
 		else if (strncasecmp(option, "self=", 5) == 0) {
@@ -103,23 +118,10 @@ set_option(char *option, ENV *env)
 			free(env->localhost);
 		    env->localhost = strdup(option+5);
 		}
-		return;
-    case 'd':   if (isopt(option, "dnscheck", &val, 0))
-		    env->doublecheck = val;
-		else if (isopt(option, "debug", &val, 0))
-		    env->debug = val;
-		else 
-		    isopt(option, "delay", &env->delay, "m=60,h=3600,d=86400");
-		return;
-    case 'n':   if (isopt(option, "nodaemon", &val, 0))
-		    env->nodaemon = val;
+		else if (isopt(option, "soft-deny", &val, 0))
+		    env->soft_deny = val;
 		return;
     case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
-		return;
-    case 'l':   if (isopt(option, "load", &val, 0))
-		    env->max_loadavg = (float)val;
-		else if (isopt(option, "localmx", &val, 0))
-		    env->localmx = val;
 		return;
     case 'v':   if (isopt(option, "verify-from", &val, 0))
 		    env->verify_from = val;

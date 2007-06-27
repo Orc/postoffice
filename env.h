@@ -37,6 +37,7 @@ struct env {
 				 * client can relay.  DANGEROUS!  */
     unsigned int   auditing:1;	/* session logging */
     unsigned int   forward_all:1;/* forward unknown addresses to relay_host */
+    unsigned int   soft_deny:1;	/* blacklist sites with 4xx instead of 5xx */
 } ;
 
 typedef struct env ENV;

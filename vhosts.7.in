@@ -24,7 +24,7 @@ in group @VUSER_GID@.
 .It @VPATH@/host
 The password and alias files go here.  This directory, and
 all of the files that live in it, should be owned by the
-user listen in @VPATH@/domains.cf.
+user listed in @VPATH@/domains.cf.
 .It @VPATH@/host/passwd
 The password file.  This file is in
 .Ar .htpasswd 

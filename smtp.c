@@ -329,7 +329,7 @@ data(struct letter *let)
     register c2 = 0;
 
     if (mkspool(let) == 0) {
-	message(let->out, 451,
+	message(let->out, 452,
 		"Cannot store message body. Try again later.");
 	return 0;
     }
@@ -366,7 +366,7 @@ data(struct letter *let)
 	if (c2) {
 	    if ( fputc( (c1 == CRLF) ? '\n' : c1, let->body) == EOF ) {
 		syslog(LOG_ERR, "spool write error: %m");
-		message(let->out, 451,
+		message(let->out, 452,
 		    "Cannot store message body. Try again later.");
 		break;
 	    }
@@ -669,7 +669,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    audit(&letter, "EHLO", line, 250);
 		}
 		else
-		    score = -4;
+		    score -= 4;
 		break;
 
 	    case HELO:
@@ -678,7 +678,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    audit(&letter, "HELO", line, 250);
 		}
 		else
-		    score = -4;
+		    score -= 4;
 		break;
 	    
 	    case MAIL:
@@ -690,7 +690,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    audit(&letter, "MAIL", line, 250);
 		    message(out, 250, "Okay fine.");
 		    timeout = env->timeout;
-		    score = 1;
+		    score += 1;
 		}
 		else {
 		    /* After a MAIL FROM:<> fails, put the
@@ -699,7 +699,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		     * as the result of getting a non 2xx
 		     * reply
 		     */
-		    score = -2;
+		    score -= 2;
 		    audit(&letter, "MAIL", line, rc);
 		    timeout = env->timeout / 10;
 		}
@@ -708,12 +708,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    case RCPT:
 		traf++;
 		if (to(&letter, line)) {
-		    score = 1;
+		    score += 1;
 		    message(out, 250, "Sure, I love spam!");
 		    audit(&letter, "RCPT", line, 250);
 		}
 		else {
-		    score = -2;
+		    score -= 2;
 		    audit(&letter, "RCPT", line, 5);
 		}
 		break;
@@ -725,13 +725,25 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    if (letter.reject) {
 			audit(&letter, "DATA", "reject", 501);
 			message(out, 501, "Not Allowed.");
+			score -= 2;
 		    }
 		    else if (delay > 0) {
 			char buf[40];
+#if 0
+# define GREYCODE 451
+#else
+# define GREYCODE 421
+#endif
+
 			sprintf(buf,"delay %d", delay);
-			audit(&letter, "DATA", buf, 451);
-			message(out, 451, "System busy.  Try again in %d seconds.",
-					  delay);
+			audit(&letter, "DATA", buf, GREYCODE);
+			message(out, GREYCODE,
+				    "System busy.  Try again in %d seconds.",
+				     delay);
+#if GREYCODE == 421
+			audit(&letter, "QUIT", "greylist", 421);
+			byebye(&letter,1);
+#endif
 		    }
 		    else if ( data(&letter) ) {
 			if (env->largest && (letter.bodysize > env->largest)) {
@@ -750,10 +762,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			    if (smtpbugcheck(&letter) && post(&letter) ) {
 				audit(&letter, "DATA", "", 250);
 				message(out, 250, "Okay fine."); 
-				score = 2;
+				score += 2;
 			    }
 			    else {
-				score = -1;
+				score -= 1;
 				audit(&letter, "DATA", "", 5);
 			    }
 			}
@@ -763,6 +775,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		else {
 		    audit(&letter, "DATA", "", 503);
 		    message(out, 503, "Who is it %s?", letter.from ? "TO" : "FROM");
+		    score -= 2;
 		}
 		break;
 
