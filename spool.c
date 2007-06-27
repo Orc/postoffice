@@ -17,14 +17,15 @@
 #   include <malloc.h>
 #endif
 
-#if HAVE_STATFS
-#   if HAVE_SYS_MOUNT_H
-#       include <sys/param.h>
-#       include <sys/mount.h>
-#   endif
-#   if HAVE_SYS_VFS_H
-#       include <sys/vfs.h>
-#   endif
+#if HAVE_SYS_MOUNT_H
+#   include <sys/param.h>
+#   include <sys/mount.h>
+#endif
+#if HAVE_SYS_VFS_H
+#   include <sys/vfs.h>
+#endif
+#if HAVE_SYS_STATVFS_H
+#   include <sys/statvfs.h>
 #endif
 
 #include "spool.h"
@@ -92,17 +93,25 @@ mkspool(struct letter *let)
     static char tempfile[sizeof(TEMPPFX)+20+1];
     int f;
 
+#if HAVE_STATFS || HAVE_STATVFS
 #if HAVE_STATFS
-    struct statfs df;
+#   define STATFS statfs
+#   define F_BSIZE f_bsize
+#else
+#   define STATFS statvfs
+#   define F_BSIZE f_frsize
+#endif
+
+    struct STATFS df;
     unsigned long size;
 
     if ( let->env && (let->env->minfree > 0) ) {
-	if (statfs(QUEUEDIR, &df) != 0) {
-	    syslog(LOG_ERR, "statfs(%s): %m", QUEUEDIR);
+	if (STATFS(QUEUEDIR, &df) != 0) {
+	    syslog(LOG_ERR, "stat(v)fs(%s): %m", QUEUEDIR);
 	    return 0;
 	}
 
-	size = let->env->minfree / df.f_bsize;
+	size = let->env->minfree / df.F_BSIZE;
 
 	if (df.f_bavail < size) { 
 	    syslog(LOG_ERR, "Disk too full (need %ld blocks, have %ld free)",
