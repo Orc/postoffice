@@ -21,6 +21,60 @@ static char blocked[] = "Mail to %s is blocked by security policy\n";
 static char CannotWrite[] = "Cannot write to mailbox for %s: %s\n";
 static char SuspiciousName[] = "<%s> is not a username I like\n";
 
+#ifndef HAVE_MEMSTR
+static char *
+memstr(char *haystack, char *needle, int size)
+{
+    char *p;
+    int szneedle;
+    char *end;
+
+    if ( !(/*haystack && needle &&*/size) )
+	return 0;
+
+    szneedle = strlen(needle);
+    end = haystack + size - szneedle;
+
+    for (p = haystack; p < end;  ) {
+	if ( (p = memchr(p, needle[0], end-p)) == 0 )
+	    return 0;
+	if (memcmp(p, needle, szneedle) == 0)
+	    return p;
+	++p;
+    }
+    return 0;
+}
+#endif
+
+
+static void
+copybody(FILE *f, struct letter *let)
+{
+
+#define DO_OR_DIE(x,ret)	if ( x != ret) return
+
+    if (!let->has_headers)
+	DO_OR_DIE(fputc('\n', f), '\n');
+
+    if (let->env->escape_from) {
+	char *p, *n;
+	char *end = let->bodytext + let->bodysize;
+
+	for (p = let->bodytext; p ; p = n) {
+	    if ( n = memstr(p+1, "\nFrom ", end - (p+1)) ) {
+		n++;	/* skip past leading \n */
+		DO_OR_DIE(fwrite(p, (n-p), 1, f), 1);
+		DO_OR_DIE(fputc('>', f), '>');
+	    }
+	    else
+		DO_OR_DIE(fwrite(p, (end-p), 1, f), 1);
+	}
+    }
+    else
+	DO_OR_DIE(fwrite(let->bodytext, let->bodysize, 1, f), 1);
+    fflush(f);
+}
+
 
 static int
 _exe(struct letter *let, struct recipient *to)
@@ -119,55 +173,6 @@ exe(struct letter *let, struct recipient *to)
     return WEXITSTATUS(let->status) ? 0 : 1;
 }
 
-#ifndef WITH_MEMSTR
-static char *
-memstr(char *haystack, char *needle, int size)
-{
-    char *p;
-    int szneedle;
-    char *end;
-
-    if ( !(haystack && needle && size) )
-	return 0;
-
-    szneedle = strlen(needle);
-    end = haystack + size - szneedle;
-
-    for (p = haystack; p < end;  ) {
-	if ( (p = memchr(p, needle[0], end-p)) == 0 )
-	    return 0;
-	if (memcmp(p, needle, szneedle) == 0)
-	    return p;
-	++p;
-    }
-    return 0;
-}
-#endif
-
-
-static int
-escapebody(FILE *f, struct letter *let)
-{
-    char *ptr;
-    char *p, *n, *end;
-
-    if (!let->has_headers)
-	fputc('\n', f);
-
-    end = let->bodytext + let->bodysize;
-
-    for (p = let->bodytext; p ; p = n) {
-	if ( n = memstr(p+1, "From ", end - (p+1)) ) {
-	    fwrite(p, (n-p), 1, f);
-	    if ( n[-1] == '\n' )
-		fputc('>', f);
-	}
-	else
-	    fwrite(p, (end-p), 1, f);
-    }
-    fflush(f);
-}
-
 
 static int
 mbox(struct letter *let, struct recipient *to, char *mbox)
@@ -192,10 +197,7 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 
 	mboxfrom(f, let);
 	addheaders(f, let, to);
-	if (let->env->escape_from)
-	    escapebody(f, let);
-	else
-	    copybody(f, let);
+	copybody(f, let);
 	putc('\n', f);
 
 	flock(fileno(f), LOCK_UN);

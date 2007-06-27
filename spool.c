@@ -178,17 +178,6 @@ receivedby(FILE *f, struct letter *let, struct recipient *to)
 
 
 void
-copybody(FILE *f, struct letter *let)
-{
-    if (!let->has_headers)
-	fputc('\n', f);
-
-    fwrite(let->bodytext, let->bodysize, 1, f);
-    fflush(f);
-}
-
-
-void
 addheaders(FILE *f, struct letter *let, struct recipient *to)
 {
     char msgtime[20];

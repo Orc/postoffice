@@ -32,6 +32,7 @@ AC_SCALAR_TYPES
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
+AC_CHECK_FUNCS memstr
 
 # for basename
 if AC_CHECK_FUNCS basename; then

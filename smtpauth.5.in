@@ -44,7 +44,14 @@ The record format used in this database is:
 The key
 .It DATE DATE
 When the client can connect and when the client last connected (both
-in seconds after the epoch).
+in seconds after the epoch).   If the client is blacklisted (via the
+.Fl b
+flag in 
+.Xr authexpire 8 ),
+the first DATE will be the magic token
+.Sy * ,
+and the second DATE will be the last time the client connected before
+being blacklisted.
 .El
 .Sh SEE ALSO
 .Xr @NDBM@ 1 ,

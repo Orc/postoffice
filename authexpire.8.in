@@ -11,7 +11,7 @@
 greylist
 .Sh SYNOPSIS
 .Sy @libexec@/authexpire
-.Op Fl nzuvl
+.Op Fl Enzuvwl
 .Ar age
 .br
 .Sy @libexec@/authexpire
@@ -43,6 +43,8 @@ both set the expiration to two weeks.
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
+.It Fl E
+Remove blacklisted entries.
 .It Fl z
 Unconditionally remove entries from mailer daemons.
 .It Fl u
@@ -52,7 +54,13 @@ Be chattery about what we're doing.
 .It Fl n
 Just pretend to be cleaning out the database.
 .It Fl l
-Just list the contents of the greylist.
+Just list the contents of the greylist.   When the listing is to the
+screen, the user keys are truncated so that the output will fit into
+an 80 column window, otherwise the full user keys are shown (which
+may be considerably longer than the truncated size.)
+.It Fl w
+Don't truncate fields when listing the contents of the greylist, even
+if it's being displayed on your terminal.
 .It Fl a Ar user
 Approve this user by clearing their greylist entry
 .It Fl b Ar user

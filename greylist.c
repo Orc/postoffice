@@ -66,9 +66,13 @@ greylist(struct letter *let, int delete)
     else {
 	if ( (value = dbif_get(db, key)) != 0 ) {
 
-	    delay = atol(value);
+	    if (value[0] == '*')
+		status = delay = INT_MAX;
+	    else {
+		delay = atol(value);
 
-	    status = (now > delay) ? 0 : delay-now;
+		status = (now > delay) ? 0 : delay-now;
+	    }
 
 	    if (mailerdaemon && (status == 0) && (now-delay < WINDOW) ) {
 		dbif_delete(db, key);

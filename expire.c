@@ -21,6 +21,8 @@ int nulluser = 0;
 int dryrun = 0;
 int listing = 0;
 int unretried = 0;
+int everybody = 0;
+int prettyprint;
 
 time_t now;
 
@@ -37,25 +39,43 @@ list(DBhandle db, long age)
 {
     char *key, *value;
     time_t delay, last;
-    int ct;
+    int ct, isblacklist;
     char bfr[80];
 
     for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
-	printf("%-31.31s\t", key);
+	printf( prettyprint ? "%-31.31s\t" : "%s\t", key);
 
 	if ( value = dbif_get(db,key) ) {
 	    delay = 0;
 	    last = 0;
-	    ct = sscanf(value, "%ld %ld", &delay, &last);
+
+	    if (value[0] == '*') {
+		isblacklist = 1;
+		ct = sscanf(value, "* %ld", &last);
+		if (ct == 1) {
+		    ct = 2;
+		    delay = last;
+		}
+	    }
+	    else {
+		isblacklist = 0;
+		ct = sscanf(value, "%ld %ld", &delay, &last);
+	    }
 
 	    if (ct >= 1) {
-		strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>", localtime(&delay));
-		printf("%s", bfr);
+		if (isblacklist)
+		    fputs("**** blacklist ****", stdout);
+		else {
+		    strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>",
+						localtime(&delay));
+		    fputs(bfr, stdout);
+		}
 
 		if (ct == 2) {
 		    putchar(' ');
 		    putchar( (last > delay) ? '#' : ' ' );
-		    strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>", localtime(&last));
+		    strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>",
+						 localtime(&last));
 		    fputs(bfr, stdout);
 		}
 		putchar('\n');
@@ -74,7 +94,8 @@ scrub(DBhandle db, long age)
     time_t delay, last;
     int old =0,
 	gone,
-	total;
+	total,
+	ct;
 
     do {
 	gone = total = 0;
@@ -82,7 +103,19 @@ scrub(DBhandle db, long age)
 	for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
 	    total++;
 	    if ( (value = dbif_get(db, key)) != 0 ) {
-		switch (sscanf(value, "%ld %ld", &delay, &last)) { 
+		if ( value[0] == '*' ) {
+		    if (!everybody) continue;
+
+		    ct = sscanf(value, "* %ld", &last);
+		    if (ct == 1) {
+			delay = last;
+			ct = 2;
+		    }
+		}
+		else
+		    ct = sscanf(value, "%ld %ld", &delay, &last);
+
+		switch (ct) {
 		case 1: last = delay;
 		case 2: if (last+age < now) {
 		default:    gone++;
@@ -128,26 +161,29 @@ approve(DBhandle db, char *key, int blacklist)
     time_t delay, last;
 
     if (blacklist) {
-	delay = ~(1<<31);
 	time(&last);
-    }
-    else if ( value = dbif_get(db,key) ) {
-	time(&delay);
-
-	switch (sscanf(value, "%ld %ld", &delay, &last)) { 
-	default:
-	    time(&last);
-	case 2:
-	    delay = last-1;
-	    break;
-	}
+	snprintf(bfr, sizeof bfr, "* %ld", last);
+	dbif_put(db, key, bfr, DBIF_REPLACE);
     }
     else {
-	time(&last);
-	delay = last-1;
+	if ( value = dbif_get(db,key) ) {
+	    time(&delay);
+
+	    switch (sscanf(value, "%ld %ld", &delay, &last)) { 
+	    default:
+		time(&last);
+	    case 2:
+		delay = last-1;
+		break;
+	    }
+	}
+	else {
+	    time(&last);
+	    delay = last-1;
+	}
+	snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
+	dbif_put(db, key, bfr, DBIF_REPLACE);
     }
-    snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
-    dbif_put(db,key,bfr, DBIF_REPLACE);
 }
 
 
@@ -170,8 +206,10 @@ main(int argc, char **argv)
 	pgm = argv[0];
 #endif
 
+    prettyprint = isatty(fileno(stdout));
+
     opterr = 1;
-    while ( (opt = getopt(argc, argv, "?a:b:lnuvz")) != EOF) {
+    while ( (opt = getopt(argc, argv, "?a:b:Elnuvwz")) != EOF) {
 	switch (opt) {
 	case 'a':   user = optarg;
 		    blacklist = 0;
@@ -183,14 +221,18 @@ main(int argc, char **argv)
 		    break;
 	case 'z':   nulluser = 1;
 		    break;
+	case 'E':   everybody = 1;
+		    break;
 	case 'u':   unretried = 1;
 		    break;
 	case 'v':   verbose = 1;
 		    break;
+	case 'w':   prettyprint = 0;
+		    break;
 	case 'l':   listing = 1;
 		    break;
 	case '?':
-	default:    fprintf(stderr, "usage: %s [-a user] [-b user] [-lnvz] age\n", pgm);
+	default:    fprintf(stderr, "usage: %s [-a user] [-b user] [-Elnvwz] age\n", pgm);
 		    exit( (opt=='h') ? 0 : 1 );
 	}
     }
