@@ -22,6 +22,7 @@
 #include "env.h"
 #include "mx.h"
 #include "spool.h"
+#include "domain.h"
 
 
 void
@@ -85,12 +86,15 @@ lowercase(char *q)
 
 
 /*
- * try to match a name in /etc/passwd (case not significant)
+ * try to match a name in a passwd file (case not significant)
  */
 struct passwd *
-getpwemail(char *q)
+getpwemail(struct domain *dom, char *q)
 {
     static struct passwd *p = 0;
+
+    if (isvhost(dom))
+	return getvpwemail(dom, q);
 
 #if 0
     /* cache the most recent lookup -- works if nobody scribbles on
@@ -128,14 +132,7 @@ getemail(struct address *u)
     char *forward;
     char *p;
 
-#ifdef VPATH
-    if (u->vhost)
-	pwd = getvpwemail(u->user, u->domain);
-    else
-	pwd = getpwemail(u->user);
-#else
-    pwd = getpwemail(u->user);
-#endif
+    pwd = getpwemail(u->dom, u->user);
 
     if (pwd == 0)
 	return 0;
@@ -145,11 +142,10 @@ getemail(struct address *u)
     ret.forward = 0;
     ret.uid = pwd->pw_uid;
     ret.gid = pwd->pw_gid;
+    ret.dom = u->dom;
 
-#ifdef VPATH
-    if (u->vhost)
+    if (isvhost(u->dom))
 	return &ret;
-#endif
 
     if (forward = alloca(strlen(pwd->pw_dir) + sizeof "/.forward" + 1)) {
 	sprintf(forward, "%s/.forward", pwd->pw_dir);

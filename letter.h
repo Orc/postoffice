@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "env.h"
+#include "domain.h"
 
 struct address {
     char *full;			/* full address <blah@blah> or <blah!blah> */
@@ -13,7 +14,7 @@ struct address {
     char *user;			/* user at that domain */
     char *alias;		/* (or alias in /etc/aliases) */
     int   local;		/* is this a local address? */
-    int   vhost;		/* and, if so, is it a vhost? */
+    struct domain *dom;		/* local mail domain */
 } ;
 
 struct email {
@@ -22,6 +23,7 @@ struct email {
     char *forward;		/* contents of .forward file (real user) */
     uid_t uid;			/* their userid */
     gid_t gid;			/*  and groupid */
+    struct domain *dom;		/* local mail domain */
 } ;
 
 struct recipient {
@@ -30,6 +32,7 @@ struct recipient {
     char *fullname;
     char *user;
     char *host;
+    struct domain *dom;
     uid_t uid;
     gid_t gid;
 };
@@ -91,7 +94,7 @@ struct email *getemail(struct address *);
 #define VF_USER	0x01
 #define VF_FROM	0x02
 
-extern struct address* verify(struct letter*, char*, int, int*);
+extern struct address* verify(struct letter*, struct domain*, char*, int, int*);
 extern void freeaddress(struct address*);
 
 extern int newrecipient(struct list*, struct address*, enum r_type,uid_t,gid_t);

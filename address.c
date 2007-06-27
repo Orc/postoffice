@@ -10,6 +10,7 @@
 
 #include "letter.h"
 #include "mx.h"
+#include "domain.h"
 
 void
 freeaddress(struct address *ptr)
@@ -64,7 +65,7 @@ mkaddress(char *full)
 
 
 struct address *
-verify(struct letter *let, char *p, int flags, int *reason)
+verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 {
     char *e = p + strlen(p);
     int bad = 0;
@@ -93,6 +94,7 @@ verify(struct letter *let, char *p, int flags, int *reason)
 			    /* we are a legitimate mx for this address.
 			     */
 			    ret->local = 1;
+			    ret->dom = getdomain(ret->domain);
 			    goto esc;
 			}
 	      esc:
@@ -105,14 +107,10 @@ verify(struct letter *let, char *p, int flags, int *reason)
 	    }
 
 	}
-	else
+	else {
 	    ret->local = 1;
-
-#ifdef VPATH
-	if (ret->local && vspool(ret->domain))
-	    ret->vhost = 1;
-#endif
-
+	    ret->dom = dom;
+	}
 
 	if (ret->local && (flags & VF_USER) && !userok(let, ret)) {
 	    if (reason) *reason = V_WRONG;

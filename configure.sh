@@ -73,6 +73,8 @@ if test "$WITH_VHOST"; then
     AC_DEFINE VSPOOL \"/var/spool/virtual\"
 fi
 
+AC_DEFINE MAX_USERLEN	16
+
 AC_DEFINE NOBODY_UID	"`id -u nobody`"
 AC_DEFINE NOBODY_GID	"`id -u nobody`"
 

@@ -21,7 +21,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
-     newaliases.o arpatok.o audit.o goodness.o vhost.o
+     newaliases.o arpatok.o audit.o goodness.o domain.o
 
 all: $(PGMS)
 

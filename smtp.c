@@ -171,7 +171,7 @@ parse_address(struct letter *let, char *p, int to)
     int reason;
     struct address *ret;
 
-    if ( (ret = verify(let,p,(to ? VF_USER : VF_USER|VF_FROM), &reason)) != 0)
+    if ( (ret = verify(let,0,p,(to ? VF_USER : VF_USER|VF_FROM), &reason)) != 0)
 	return ret;
 
     switch (reason) {

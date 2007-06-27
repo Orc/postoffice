@@ -18,6 +18,7 @@
 
 struct back {
     char *user;
+    struct domain *dom;
     struct back *next;
 };
 
@@ -64,6 +65,7 @@ newrecipient(struct list *list,
 	free(new->host);
 	return -1;
     }
+    new->dom = to->dom;
     new->uid = uid;
     new->gid = gid;
     new->typ = typ;
@@ -145,8 +147,7 @@ localprocess(struct letter *let, struct address *u, struct back *b)
 
     if (em->forward)
 	return expand(let, b, u, em->forward, token, em->uid, em->gid, 0);
-    return newrecipient(&let->local, u, u->vhost ? emVHOST : emUSER,
-					em->uid, em->gid);
+    return newrecipient(&let->local, u, emUSER, em->uid, em->gid);
 }
 
 
@@ -209,15 +210,16 @@ expand(struct letter *let,
 	    struct back *q;
 
 
-	    if ( (p = verify(let,word,VF_USER,(void*)0)) == 0)
+	    if ( (p = verify(let,who->dom,word,VF_USER,(void*)0)) == 0)
 		rc = 0;
 	    else {
 		link.next = prev;
 		link.user = p->user;
+		link.dom  = p->dom;
 
 		for (q = prev; q; q = q->next)
-		    if (strcmp(q->user, p->user) == 0) /* alias loop */
-			break;
+		    if ( (p->dom == q->dom) && (strcmp(q->user, p->user) == 0) )
+			break; /* alias loop */
 
 		if (q) {
 		    struct back *link = prev;
@@ -226,17 +228,35 @@ expand(struct letter *let,
 		    char *what = p->alias ? "alias" : "forward";
 
 		    if (q != prev) {
-			for ( ;link != q; link = link->next)
+			if (isvhost(who->dom))
+			    sz += strlen(who->dom->domain) + 1;
+
+			for ( ;link != q; link = link->next) {
 			    sz += strlen(link->user) + 5;
+			    if (isvhost(link->dom))
+				sz += strlen(link->dom->domain) + 1;
+			}
 
 			if (msg = alloca(sz)) {
 			    strcpy(msg, word);
+			    if (isvhost(who->dom)) {
+				strcat(msg, "@");
+				strcat(msg, link->dom->domain);
+			    }
 			    for (link = prev ; link != q; link = link->next) {
 				strcat(msg,"->");
 				strcat(msg,link->user);
+				if (isvhost(link->dom)) {
+				    strcat(msg, "@");
+				    strcat(msg, link->dom->domain);
+				}
 			    }
 			    strcat(msg,"->");
 			    strcat(msg,link->user);
+			    if (isvhost(link->dom)) {
+				strcat(msg, "@");
+				strcat(msg, link->dom->domain);
+			    }
 			    syslog(LOG_ERR, "%s loop %s", what, msg);
 			}
 			else

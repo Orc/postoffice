@@ -161,54 +161,18 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 }
 
 
-#ifdef VPATH
-
-static int
-vpost(struct letter *let, struct recipient *to)
-{
-    char *mailfile, *spool = vspool(to->host);
-    struct passwd *pwd = getvpwemail(to->user, to->host);
-
-    if (spool == 0) {
-	fprintf(let->log, "Internal error: lost spool for %s\n", to->host);
-	syslog(LOG_ERR, "Lost spool for %s", to->host);
-	return 0;
-    }
-
-    mailfile = alloca(strlen(spool) + 1 + strlen(to->user) + 1);
-
-    if (mailfile == 0) {
-	fprintf(let->log, "Internal error: out of memory\n");
-	syslog(LOG_ERR, "(%s) %m", to->host);
-    }
-
-    if ( (pwd == 0) || (strchr(pwd->pw_name, '/') != 0) ) {
-	fprintf(let->log, SuspiciousName, to->user);
-	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
-	return 0;
-    }
-    sprintf(mailfile, "%s/%s", spool, pwd->pw_name);
-
-    return mbox(let, to, mailfile);
-}
-#endif
-
-
 static int
 post(struct letter *let, struct recipient *to)
 {
-    char mailfile[sizeof _PATH_MAILDIR + 1 + 16 + 1];
-    struct passwd *dest = getpwemail(to->user);
+    struct passwd *pwd = getpwemail(to->dom, to->user);
+    char *file;
 
-    if ( dest == 0 || strchr(dest->pw_name, '/') != 0 ) {
+    if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
 	fprintf(let->log, SuspiciousName, to->user);
 	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
 	return 0;
     }
-
-    sprintf(mailfile, _PATH_MAILDIR "/%s", dest->pw_name);
-
-    return mbox(let, to, mailfile);
+    return mbox(let, to, file);
 }
 
 
@@ -252,12 +216,6 @@ runlocal(struct letter *let)
 	switch (let->local.to[count].typ) {
 	case emEXE: rc = exe(let, &(let->local.to[count]) );
 		    break;
-
-	case emVHOST:
-#ifdef VPATH
-		    rc = vpost(let,&(let->local.to[count]) );
-		    break;
-#endif
 	case emUSER:rc = post(let, &(let->local.to[count]) );
 		    break;
 	case emFILE:rc = file(let, &(let->local.to[count]) );

@@ -58,11 +58,10 @@ token(char *p, char sep, char **next)
 }
 
 
-void
-newaliases(int argc, char **argv)
+static void
+rebuild_db(char *domain)
 {
-    char atemp[sizeof PATH_ATEMP+10];
-    char alias[sizeof PATH_ALIAS+10];
+    char *atemp, *alias, *aliasf;
     int fd;
     char *atext;
     size_t asize;
@@ -73,8 +72,24 @@ newaliases(int argc, char **argv)
     datum key, value;
     DBM *aliasdb;
     char *q;
+    struct domain *dom = getdomain(domain);
 
-    strcpy(atemp, PATH_ATEMP);
+    if ( domain && (dom == 0) ) {
+	fprintf(stderr, "%s: not a known virtual domain\n", domain);
+	return;
+    }
+
+    alias = aliasfile(dom);
+    if ( (atemp = alloca(strlen(alias) + 7)) == 0 ) {
+	perror(alias);
+	exit(EX_TEMPFAIL);
+    }
+    if ( (aliasf = alloca(strlen(alias) + 1 + sizeof DBM_SUFFIX + 1)) == 0 ) {
+	perror(alias);
+	exit(EX_TEMPFAIL);
+    }
+    sprintf(atemp, "%sXXXXXX", alias);
+    sprintf(aliasf, "%s" DBM_SUFFIX, alias);
 
     if ( !mktemp(atemp) ) {
 	perror(atemp);
@@ -88,7 +103,7 @@ newaliases(int argc, char **argv)
 
     sprintf(atemp, "%s%s", atemp, DBM_SUFFIX);
 
-    if ( (fd = open(PATH_ALIAS, O_RDONLY)) != -1 ) {
+    if ( (fd = open(alias, O_RDONLY)) != -1 ) {
 	if (atext = mapfd(fd, &asize)) {
 	    char *p, *nl, *end;
 
@@ -152,14 +167,12 @@ newaliases(int argc, char **argv)
     dbm_store(aliasdb, key, value, DBM_INSERT);
     dbm_close(aliasdb);
 
-    sprintf(alias, "%s%s", PATH_ALIAS, DBM_SUFFIX);
-
-    if (rename(atemp, alias) != 0) {
+    if (rename(atemp, aliasf) != 0) {
 	perror(alias);
 	exit(EX_IOERR);
     }
     fprintf(stderr, "%s: %d alias%s",
-		    PATH_ALIAS,
+		    alias,
 		    nraliases, (nraliases != 1)?"es":"");
     if (nraliases > 1)
 	fprintf(stderr, ", longest is %d byte%s", longest, (longest!=1)?"s":"");
@@ -167,10 +180,23 @@ newaliases(int argc, char **argv)
 }
 
 
+void
+newaliases(int argc, char **argv)
+{
+    int i;
+
+    if (argc == 0)
+	rebuild_db(0);
+    else for (i=0; i< argc; i++)
+	rebuild_db(argv[i]);
+}
+
+
+
 #ifdef DEBUG
 
 main()
 {
-    newaliases();
+    newaliases(0);
 }
 #endif

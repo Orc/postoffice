@@ -52,7 +52,7 @@ int
 userok(struct letter *let, struct address *try)
 {
     struct email *em;
-    static void* alias = 0;
+    void* alias = 0;
     char *value;
 
     if (try->user == 0 || try->user[0] == 0)
@@ -60,37 +60,12 @@ userok(struct letter *let, struct address *try)
 			 * higher-level code.
 			 */
 
-#ifdef VPATH
-    if (try->vhost && (value = isvhost(try->domain)) ) {
-	static void *valias;
-	char *vap = alloca(strlen(value) + sizeof "/aliases" + 1);
-
-	if (vap) {
-	    sprintf(vap, "%s/aliases", value);
-
-	    if (valias = alias_open(vap)) {
-		if ( (value = alias_lookup(valias, try->user)) == 0 )
-		    value = alias_lookup(valias, lowercase(try->user));
-		if (value == 0)
-		    value = alias_lookup(valias, "*");
-		alias_close(valias);
-
-		if (value)
-		    if (try->alias = strdup(value))
-			return 1;
-		    else {
-			syslog(LOG_ERR, "(%s) %m", try->user);
-			return 0;
-		    }
-	    }
-	}
-    }
-    else
-#endif
-
-    if ( alias || (alias = alias_open(PATH_ALIAS)) != 0) {
+    if ( (alias = alias_open(aliasfile(try->dom))) != 0) {
 	if ( (value = alias_lookup(alias, try->user)) == 0)
 	    value = alias_lookup(alias, lowercase(try->user));
+	if ( (value==0) && isvhost(try->dom) )
+	    value = alias_lookup(alias, "*");
+
 	if (value) {
 	    if (try->alias = strdup(value))
 		return 1;
@@ -99,7 +74,7 @@ userok(struct letter *let, struct address *try)
 		return 0;
 	    }
 	}
-	/* alias_close(alias); */
+	alias_close(alias);
     }
 
     if ( (em = getemail(try)) != 0 )
