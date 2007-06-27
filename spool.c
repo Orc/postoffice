@@ -124,6 +124,13 @@ mkspool(struct letter *let)
 }
 
 
+static int
+notnull(struct address *from)
+{
+    return from && from->full && (from->full[0] != 0);
+}
+
+
 void
 mboxfrom(FILE *f, struct letter *let)
 {
@@ -132,9 +139,8 @@ mboxfrom(FILE *f, struct letter *let)
     if (let->mboxfrom) return;
 
     strftime(date, 80, "%a %b %d %H:%M:%S %Y", localtime(&let->posted));
-    fprintf(f, "From %s %s\n",
-		(let->from->full && let->from->full[0]) ? let->from->full
-                                                        : "<>", date);
+    fprintf(f, "From %s %s\n", notnull(let->from) ? let->from->full
+                                                  : "<>", date);
 }
 
 
@@ -142,7 +148,7 @@ static void
 receivedby(FILE *f, struct letter *let, struct recipient *to)
 {
     char date[80];
-    int nullfrom = !(let->from->full && (strlen(let->from->full) > 0));
+    int nullfrom = notnull(let->from);
 
     if (let->deliveredIP == 0) return;
 
@@ -353,6 +359,7 @@ writecontrolfile(struct letter *let)
     FILE *f;
     char ctrlfile[sizeof(DATAPFX)+6+1];
     int count;
+    enum r_status status;
 
     /* after writing the data, write the control file
      */
@@ -363,18 +370,20 @@ writecontrolfile(struct letter *let)
 	 */
 	if (let->qcomment && let->qcomment[0])
 	    fprintf(f, "%c%s\n", C_STATUS, let->qcomment);
-	if (let->from->full && strlen(let->from->full) > 0)
+	if (notnull(let->from))
 	    if (let->from->domain && strlen(let->from->domain) > 0)
 		fprintf(f, "%c%s\n", C_FROM, let->from->full);
 	    else
 		fprintf(f, "%c%s@%s\n",C_FROM,let->from->user,
 				    let->env->localhost);
 
-	for (count=let->remote.count; count-- > 0; )
-	    if (let->remote.to[count].status == PENDING) {
+	for (count=let->remote.count; count-- > 0; ) {
+	    status = let->remote.to[count].status;
+	    if (status == PENDING || status == ACCEPTED) {
 		fprintf(f, "%c%s|%s\n", C_TO, let->remote.to[count].fullname,
 					      let->remote.to[count].host);
 	    }
+	}
 
 	if (let->has_headers)
 	    fprintf(f, "%cH ;has headers\n", C_FLAGS);

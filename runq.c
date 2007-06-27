@@ -155,7 +155,6 @@ runq(struct env *env)
 		syslog(LOG_INFO, (qpid == -1) ? "Zombie QID %s"
 					      : "Zombie QID %s (pid %d)",
 				  de->d_name+2, qpid);
-		break;
 		unlink(xtemp);
 	    }
 
