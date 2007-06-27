@@ -163,11 +163,14 @@ test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 if [ "$WITH_MILTER" ]; then
     AC_DEFINE WITH_MILTER 
     AC_SUB MILTERLIB mf.o
+else
+    AC_SUB MILTERLIB ''
+
+    case "$WITH_AV" in
+    \|*) AC_DEFINE AV_PROGRAM \""$WITH_AV"\" ;;
+    ?*) AC_DEFINE AV_PROGRAM \"\|"$WITH_AV"\" ;;
+    esac
 fi
-case "$WITH_AV" in
-\|*) AC_DEFINE AV_PROGRAM \""$WITH_AV"\" ;;
-?*) AC_DEFINE AV_PROGRAM \"\|"$WITH_AV"\" ;;
-esac
 
 AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
 
