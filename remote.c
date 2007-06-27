@@ -43,8 +43,8 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
     *denied = 0;
     rewind(session->log);
 
-    writembox(session, session->esmtp ? "MAIL FROM:<%s> SIZE=%ld"
-			              : "MAIL FROM:<%s>",
+    writembox(session, session->sizeok ? "MAIL FROM:<%s> SIZE=%ld"
+				       : "MAIL FROM:<%s>",
 		      let->from ? let->from->full : "",
 		      (long)(let->bodysize * 1.25));
 
@@ -137,7 +137,8 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 
     /* reset all output to PENDING */
     for (i=first; i < last; i++)
-	let->remote.to[i].status = status;
+	if (let->remote.to[i].status != FAILED)
+	    let->remote.to[i].status = status;
 
     if (status == FAILED)
 	*denied = last-first;

@@ -31,7 +31,7 @@
 .\"
 .\"     %A%
 .\"
-.Dd March 31, 2004
+.Dd November 21, 2004
 .Dt POSTOFFICE 8
 .Os MASTODON 4
 .Sh NAME
@@ -144,17 +144,21 @@ flag.
 Go into verbose mode.
 .El
 .Pp
-When 
+Various processing options can be set when 
 .Nm
-is running as a SMTP
-server, there are a number of processing options that may be set.
+is started.
 Options may be set either on the command line
 using the
 .Fl o
-flag
-or in a configuration file.
+flag,
+in the configuration file /etc/postoffice.cf, or in a configuration
+file specified by the
+.Fl C
+flag.
 The options are:
 .Bl -tag -width Fl
+.It Li audit
+Enable session auditing.
 .\" .It Li A Ns Ar file
 .\" Use alternate alias file.
 .\" .It Li D Ns Ar x
@@ -263,7 +267,9 @@ the planet.
 .It Li relay-host Ns = Ns Ar host
 Send all mail destined for remote hosts via this
 .Ar host .
-The superuser is the only user that can use this option.
+The superuser is the only user that can use this option on the
+command line or in a configuration file other than
+.Pa /etc/postoffice.cf
 .It Li size Ns = Ns Ar size
 Sets the 
 largest message size that 
@@ -384,6 +390,10 @@ runs as a SMTP daemon.
 .Sh FILES
 .Pp
 .Bl -tag -width /var/db/smtpauth.db -compact
+.It Pa /etc/postoffice.cf
+Default
+.Nm
+options.
 .It Pa /etc/aliases
 raw data for alias names
 .It Pa /etc/aliases.db

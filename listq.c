@@ -13,7 +13,7 @@
 int
 Qpicker(const struct dirent *f)
 {
-    return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (f->d_namlen == 8);
+    return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (strlen(f->d_name) == 8);
 }
 
 static int

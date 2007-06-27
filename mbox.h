@@ -11,7 +11,9 @@ struct mbox {
     int fd;
     long size;		/* maximum messagesize or 0 */
     int esmtp : 1;
+    int sizeok : 1;	/* saw SIZE in ehlo reply */
     int verbose : 1;
+    int opened : 1;
 } ;
 
 

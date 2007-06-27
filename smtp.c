@@ -511,6 +511,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     extern char *nameof(struct sockaddr_in*);
     enum cmds c;
     int ok = 1;
+    char *why = 0;
     int issock = 1;
     int delay = 0;
     char bfr[1];
@@ -527,8 +528,6 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 #ifdef WITH_TCPWRAPPERS
 	if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
-	    char *why;
-
 	    if ( (why=getenv("WHY")) == 0)
 		why = "We get too much spam from your domain";
 
@@ -771,7 +770,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    else {
 		audit(&letter, line, line, 503);
 		sleep(30);
-		message(out,503,"I'm sorry Dave, I'm afraid I can't do that.");
+		message(out, 503, "Sorry, but %s.", why);
+		/*message(out, 503,"I'm sorry Dave, I'm afraid I can't do that.");*/
 	    }
 	}
 	if (score)

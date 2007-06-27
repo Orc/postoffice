@@ -32,6 +32,7 @@ struct env {
     unsigned int   checkhelo:1;	/* verify HELO/EHLO header */
     unsigned int   localmx:1;	/* if I am the mx for a client, that
 				 * client can relay.  DANGEROUS!  */
+    unsigned int   auditing:1;	/* session logging */
 } ;
 
 typedef struct env ENV;

@@ -23,6 +23,8 @@
 #include "mbox.h"
 #include "mx.h"
 
+void dump_session(MBOX *ses);
+
 static void
 greet(MBOX *f, char *line)
 {
@@ -35,8 +37,10 @@ getsize(MBOX *f, char *line)
 {
     char *p = strstr(line, "SIZE");
 
-    if (p)
+    if (p) {
 	f->size = atol(p+4);
+	f->sizeok = 1;
+    }
 }
 
 MBOX *
@@ -52,8 +56,7 @@ newmbox(struct in_addr *ip, int port, int verbose)
 
     if ((ret->log = tmpfile()) == 0) {
 	syslog(LOG_ERR, "tmpfile(): %m");
-	freembox(ret);
-	return 0;
+	return freembox(ret);
     }
 
     ret->verbose = verbose;
@@ -61,8 +64,7 @@ newmbox(struct in_addr *ip, int port, int verbose)
 
     if ( (ret->fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	syslog(LOG_ERR, "socket(%s): %m", inet_ntoa(*ip));
-	freembox(ret);
-	return 0;
+	return freembox(ret);
     }
     host.sin_family = AF_INET;
     host.sin_port = htons(port);
@@ -70,9 +72,9 @@ newmbox(struct in_addr *ip, int port, int verbose)
 
     if (connect(ret->fd, (struct sockaddr*)&host, sizeof(host)) < 0) {
 	syslog(LOG_ERR, "connect(%s): %m", inet_ntoa(*ip));
-	freembox(ret);
-	return 0;
+	return freembox(ret);
     }
+    ret->opened = 1;
     if ( (ret->in = fdopen(ret->fd,"r")) && (ret->out = fdopen(ret->fd,"w")) ) {
 	setlinebuf(ret->in);
 	setlinebuf(ret->out);
@@ -82,8 +84,7 @@ newmbox(struct in_addr *ip, int port, int verbose)
     }
     syslog(LOG_ERR, "fdopen()s: %m");
 
-    freembox(ret);
-    return 0;
+    return freembox(ret);
 }
 
 
@@ -91,7 +92,7 @@ MBOX*
 freembox(MBOX *p)
 {
     if (p) {
-	if (p->verbose)
+	if (p->verbose && p->opened)
 	    fprintf(stderr, "%15s CLOSE\n", inet_ntoa(p->ip));
 	if (p->in) fclose(p->in);
 	if (p->out)fclose(p->out);
@@ -271,6 +272,9 @@ session(ENV *env, char *host, int port)
 	}
 
     ses = &cache[victim];
+    for (i=NR_CACHE; i-- > 0; )
+	if (i != victim)
+	    cache[i].prio--;
 
     if (ses->session) {
 /* vSMTPv */
@@ -279,10 +283,6 @@ session(ENV *env, char *host, int port)
 /* ^SMTP^ */
     }
     ses->session = freembox(ses->session);
-
-    for (i=NR_CACHE; i-- > 0; )
-	if (i != victim)
-	    cache[i].prio--;
 
     for (i=mxes.count; i-- > 0; )
 	if (ses->session = newmbox(&mxes.a[i].addr, port, env->verbose)) {
@@ -296,9 +296,10 @@ session(ENV *env, char *host, int port)
 		    writembox(ses->session, "HELO %s", env->localhost);
 		    reply(ses->session, 0);
 		}
+		return ses->session;
 	    }
+	    dump_session(ses->session);
 /* ^SMTP^ */
-	    return ses->session;
 	}
 	else
 	    whynot(strerror(errno));

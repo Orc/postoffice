@@ -310,10 +310,20 @@ AC_CHECK_HEADERS () {
 AC_CHECK_FUNCS () {
     AC_PROG_CC
 
+F=$1
+shift
+rm -f /tmp/ngc$$.c
+
+while [ "$1" ]; do
+    echo "#include <$1>" >> /tmp/ngc$$.c
+    shift
+done
+
     cat >> /tmp/ngc$$.c << EOF
 main()
 {
-    $1();
+
+    $F();
 }
 EOF
 

@@ -25,16 +25,16 @@ superpowers()
     }
 }
 
+char *pgm;
+
 float
 main(int argc, char **argv)
 {
     int opt;
     int val;
-    int auditing = 0;
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
     static ENV env;
-    char *pgm;
     char *from = 0;
     char *options = "aA:B:C:F:f:r:b:o:h:R:GUimnqv";
     char *modes = "sqpmid";
@@ -99,10 +99,10 @@ main(int argc, char **argv)
     while ( (opt = getopt(argc, argv, options)) != EOF) {
 	switch (opt) {
 	case 'a':
-		auditing = 1;
+		env.auditing = 1;
 		break;
 	case 'C':
-		if (configfile(optarg, &env) == 0) {
+		if (configfile( optarg, &env ) == 0) {
 		    perror(optarg);
 		    exit(EX_NOINPUT);
 		}
@@ -141,7 +141,7 @@ main(int argc, char **argv)
 		env.bmode = optarg[0];
 		break;
 	case 'o':
-		set_option(optarg, &env);
+		set_option( optarg, &env );
 		break;
 	case 'v':
 		env.verbose = 1;
@@ -153,11 +153,13 @@ main(int argc, char **argv)
 	switch (env.bmode) {
 	case 's':
 		superpowers();
+		configfile("/etc/postoffice.cf", &env);
 		smtp(stdin, stdout, peer, &env);
 		exit(EX_TEMPFAIL);
 	case 'd':
 		if (getuid() == 0) {
-		    if (auditing)
+		    configfile("/etc/postoffice.cf", &env);
+		    if (env.auditing)
 			auditon();
 		    else
 			auditoff();
@@ -172,16 +174,12 @@ main(int argc, char **argv)
 		break;
 	case 'm':
 		superpowers();
+		configfile("/etc/postoffice.cf", &env);
 		mail(from, argc-optind, argv+optind, &env);
 		break;
 	case 'q':
-		if (env.relay_host && (getuid() != 0) ) {
-		    fprintf(stderr, "%s: You may not set the relay-host.\n", pgm);
-		    syslog(LOG_CRIT,
-			    "User #%d attempted to set relay-host", getuid());
-		    exit(EX_NOPERM);
-		}
 		superpowers();
+		configfile("/etc/postoffice.cf", &env);
 		runq(&env);
 		break;
 	case 'i':	/* initialize alias database */

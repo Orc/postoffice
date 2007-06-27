@@ -43,12 +43,28 @@ isopt(char *arg, char *opt, int *val, char *m)
 }
 
 
+static void
+insecure(char *what)
+{
+    extern char *pgm;
+
+    if (getuid() == 0)
+	return;
+    fprintf(stderr, "%s: You may not set %s.\n", pgm, what);
+    syslog(LOG_CRIT, "User #%d attempted to set %s", getuid(), what);
+    exit(EX_NOPERM);
+}
+
+
 void
 set_option(char *option, ENV *env)
 {
     int val;
 
     switch (option[0]) {
+    case 'a':	if (isopt(option, "audit", &val, 0))
+		    env->auditing = val;
+		return;
     case 'c':   if (isopt(option, "checkhelo", &val, 0))
 		    env->checkhelo = val;
 		isopt(option, "clients", &env->max_clients, 0);
@@ -59,6 +75,9 @@ set_option(char *option, ENV *env)
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
 		else if (strncasecmp(option, "relay-host=", 11) == 0) {
+		    insecure("relay-host");
+		    if (env->relay_host)
+			free(env->relay_host);
 		    env->relay_host = strdup(option+11);
 		}
 		return;
@@ -68,6 +87,12 @@ set_option(char *option, ENV *env)
 		return;
     case 's':   if (isopt(option, "size", &val, "k=1000,m=1000000"))
 		    env->largest = val;
+		else if (strncasecmp(option, "self=", 5) == 0) {
+		    insecure("self");
+		    if (env->localhost)
+			free(env->localhost);
+		    env->localhost = strdup(option+5);
+		}
 		return;
     case 'd':   if (isopt(option, "dnscheck", &val, 0))
 		    env->doublecheck = val;
@@ -100,9 +125,15 @@ configfile(char *cf, ENV *env)
 
     if (f = fopen(cf, "r")) {
 	while (fgets(line, sizeof line, f)) {
-	    if (p = strchr(line, '\n')) 
+	    if (p = strchr(line, '#')) 
 		*p = 0;
-	    set_option(line, env);
+
+	    p = &line[strlen(line)-1];
+	    while ( (p >= line) && isspace(*p) )
+		*p-- = 0;
+
+	    if (line[0])
+		set_option(line, env);
 	}
 	fclose(f);
 	return 1;
