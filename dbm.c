@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <string.h>
 
+#if OS_DARWIN
+#include <stdlib.h>
+#endif
+
 #if HAVE_LIBGEN_H
 #include <libgen.h>
 #endif

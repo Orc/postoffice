@@ -4,6 +4,11 @@
 
 #include <syslog.h>
 
+#if OS_DARWIN
+#include <string.h>
+#include <stdlib.h>
+#endif
+
 #define GREYLIST "/var/db/smtpauth"
 
 #define WINDOW 600	/* 10 minutes windows for mail from <> */

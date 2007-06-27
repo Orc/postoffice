@@ -1,4 +1,7 @@
 #include "config.h"
+#if OS_DARWIN
+#include <string.h>
+#endif
 
 #include "socklib.h"
 

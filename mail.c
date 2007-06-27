@@ -13,7 +13,11 @@
 #if OS_FREEBSD
 #   include <stdlib.h>
 #else
+#if OS_DARWIN
+#   include <stdlib.h>
+#else
 #   include <malloc.h>
+#endif
 #endif
 
 #include "letter.h"

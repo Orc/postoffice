@@ -5,7 +5,11 @@
 #ifdef OS_FREEBSD
 #   include <stdlib.h>
 #else
+#ifdef OS_DARWIN
+#   include <stdlib.h>
+#else
 #   include <malloc.h>
+#endif
 #endif
 
 #include "letter.h"

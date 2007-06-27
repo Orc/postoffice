@@ -10,6 +10,10 @@
 #include <fcntl.h>
 #include <time.h>
 
+#if OS_DARWIN
+#include <string.h>
+#endif
+
 #include "spool.h"
 #include "bounce.h"
 

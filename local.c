@@ -15,6 +15,10 @@
 #include <sysexits.h>
 #include <string.h>
 
+#if OS_DARWIN
+#include <stdlib.h>
+#endif
+
 #include "letter.h"
 
 static char blocked[] = "Mail to %s is blocked by security policy\n";

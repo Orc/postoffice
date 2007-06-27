@@ -10,6 +10,10 @@
 #   include <fcntl.h>
 #   include <ndbm.h>
 
+#if OS_DARWIN
+typedef DBM DB;
+#endif
+
 typedef DB * DBhandle;
 
 #define DBIF_READER	O_RDONLY

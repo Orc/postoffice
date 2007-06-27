@@ -8,6 +8,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#if OS_DARWIN
+#define BIND_8_COMPAT
+#endif
 #include <arpa/nameser.h>
 #include <resolv.h>
 
@@ -17,7 +20,11 @@
 #if OS_FREEBSD
 #   include <stdlib.h>
 #else
+#if OS_DARWIN
+#   include <stdlib.h>
+#else
 #   include <malloc.h>
+#endif
 #endif
 
 #include "mx.h"

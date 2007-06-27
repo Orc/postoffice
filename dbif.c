@@ -1,5 +1,10 @@
 #include "dbif.h"
 
+#if OS_DARWIN
+#include <string.h>
+#include <stdlib.h>
+#endif
+
 
 #if HAVE_GDBM_H && !defined(DBM_SUFFIX)
 #   define DBM_SUFFIX	".db"

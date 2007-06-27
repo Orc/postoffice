@@ -9,6 +9,10 @@
 #include <string.h>
 #include <sysexits.h>
 
+#if OS_DARWIN
+#include <stdlib.h>
+#endif
+
 #include "spool.h"
 
 int

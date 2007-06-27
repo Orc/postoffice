@@ -12,7 +12,12 @@
 #   include <stdlib.h>
 #   include <string.h>
 #else
+#if OS_DARWIN
+#   include <stdlib.h>
+#   include <string.h>
+#else
 #   include <malloc.h>
+#endif
 #endif
 
 #if __linux__

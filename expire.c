@@ -15,6 +15,11 @@
 #include <string.h>
 #endif
 
+#if OS_DARWIN
+#include <stdlib.h>
+#include <strings.h>
+#endif
+
 
 int verbose = 0;
 int nulluser = 0;
