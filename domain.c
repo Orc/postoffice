@@ -21,16 +21,10 @@ static int nrdom = 0;
 
 
 static int
-add_dom(char *domain, char *user, char *spool, char *etc)
+add_dom(char *domain, char *spool, char *etc)
 {
     int a, b, size;
-    struct passwd *pwd;
     struct domain *p;
-
-    if (user && ((pwd = getpwnam(user)) == 0) ) {
-	syslog(LOG_ERR, "virtual domain %s owned by %s: %m", domain, user);
-	return 1;	/* successfully added nothing */
-    }
 
     if ( (domains = realloc(domains, (1+nrdom)*sizeof domains[0])) == 0 )
 	return 0;
@@ -58,8 +52,8 @@ add_dom(char *domain, char *user, char *spool, char *etc)
 	sprintf(p->passwd, "%s/%s/passwd", etc, domain);
 	sprintf(p->aliases, "%s/%s/aliases", etc, domain);
 	p->vhost = 1;
-	p->d_uid = pwd->pw_uid;
-	p->d_gid = pwd->pw_gid;
+	p->d_uid = VUSER_UID;
+	p->d_gid = VUSER_GID;
     }
     else {
 	sprintf(p->mailbox, "%s/", spool);
@@ -82,7 +76,7 @@ initdomain()
     if (domains) return 1;
 
 
-    add_dom(0, 0, _PATH_MAILDIR, "/etc");
+    add_dom(0, _PATH_MAILDIR, "/etc");
 
 #ifdef VPATH
     if ( f = fopen(VPATH "/domains.cf", "r") ) {
@@ -96,7 +90,7 @@ initdomain()
 	    active = strtok(0, ":");
 
 	    if (owner && domain && active)
-		add_dom(domain,owner,VSPOOL,VPATH);
+		add_dom(domain,VSPOOL,VPATH);
 	}
 	fclose(f);
 	return 1;
@@ -168,7 +162,7 @@ getvpwemail(struct domain *dom, char* user)
 {
     char *thisuser;
     FILE *f;
-    char bfr[200];
+    static char bfr[200];
     static struct passwd ent;
 
     if (dom == 0 || dom->vhost == 0)	/* only works on virtual hosts */
@@ -178,7 +172,7 @@ getvpwemail(struct domain *dom, char* user)
 	while (fgets(bfr, sizeof bfr, f)) {
 	    thisuser = strtok(bfr, ":");
 	    if (thisuser && (strcasecmp(user, thisuser) == 0) ) {
-		ent.pw_name = user;
+		ent.pw_name = thisuser;
 		ent.pw_uid  = dom->d_uid;
 		ent.pw_gid  = dom->d_gid;
 		fclose(f);

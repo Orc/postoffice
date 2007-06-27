@@ -11,7 +11,8 @@ ac_help='
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --use-peer-flag		enable -opeer (for debugging)
---with-vhost=PATH	user virtual domains'
+--with-vhost[=PATH]	enable virtual hosting
+--with-vspool=PATH:id	virtual host mailspool and owner'
 
 # load in the configuration file
 #
@@ -69,14 +70,44 @@ test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 test "$WITH_AV"       && AC_DEFINE AV_PROGRAM \""$WITH_AV"\"
 if test "$WITH_VHOST"; then
-    AC_DEFINE VPATH \"$WITH_VHOST\"
-    AC_DEFINE VSPOOL \"/var/spool/virtual\"
+    case "$WITH_VHOST" in
+    /*) VPATH=$WITH_VHOST ;;
+    *)	VPATH=/etc/virtual ;;
+    esac
+
+    if test "$WITH_VSPOOL"; then
+	eval `echo ${WITH_VSPOOL} | sed -e 's/:/ VUSER=/' -e 's/^/VSPOOL=/'`
+    fi
+
+    VSPOOL=${VSPOOL:-/var/spool/virtual}
+    VUSER=${VUSER:-news}
+
+    if id $VUSER 2>/dev/null >/dev/null; then
+	AC_DEFINE VSPOOL 	\"$VSPOOL\"
+	AC_SUB    VSPOOL 	$VSPOOL
+	AC_DEFINE VPATH 	\"$VPATH\"
+	AC_SUB    VPATH 	$VPATH
+	AC_DEFINE VUSER 	\"$VUSER\"
+	AC_DEFINE VUSER_UID	"`id -u $VUSER`"
+	AC_DEFINE VUSER_GID	"`id -g $VUSER`"
+	AC_SUB VHOST ''
+    else
+	AC_FAIL "Virtual host spool owner $VUSER does not exist"
+    fi
+else
+    AC_SUB VPATH ''
+    AC_SUB VSPOOL ''
+    AC_SUB VHOST '.\\"'
 fi
 
 AC_DEFINE MAX_USERLEN	16
 
-AC_DEFINE NOBODY_UID	"`id -u nobody`"
-AC_DEFINE NOBODY_GID	"`id -u nobody`"
+if id nobody 2>/dev/null >/dev/null; then
+    AC_DEFINE NOBODY_UID	"`id -u nobody`"
+    AC_DEFINE NOBODY_GID	"`id -g nobody`"
+else
+    AC_FAIL "The 'nobody' account does not exist"
+fi
 
-AC_OUTPUT Makefile
+AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5
 

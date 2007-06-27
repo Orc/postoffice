@@ -43,6 +43,7 @@
 .Op Ar address ...
 .Nm mailq
 .Nm newaliases
+@VHOST@.Op Ar host ...
 .Nm runq
 .Op Fl v
 .Nm smtpd
@@ -88,12 +89,19 @@ listening on socket 25 for incoming SMTP
 connections.
 .It Fl bi
 Initialize the alias database.
+@VHOST@If a 
+@VHOST@.Ar host
+@VHOST@is passed on the command line, 
+@VHOST@.Nm Postoffice
+@VHOST@will rebuild the aliases file for that virtual host, otherwise
+@VHOST@it will rebuild the system alias file
+@VHOST@.Ar /etc/aliases .
 .It Fl bm
 Deliver mail in the usual way (default).
 .It Fl bp
 Print a listing of the queue.
 .It Fl bq
-Process saved messages in the queue.
+Process messages in the queue.
 .It Fl bs
 Use the SMTP
 protocol as described in
@@ -101,6 +109,11 @@ protocol as described in
 on standard input and output.
 .It Fl C Ns Ar file
 Read options from the named configuration file.
+.It Fl d
+When running as a daemon, 
+.Nm
+will not fork and run in the background, but will instead stay
+attached to the controlling terminal.
 .\" .It Fl d Ns Ar X
 .\" Set debugging value to
 .\" .Ar X .
@@ -123,7 +136,7 @@ to the specified
 Options are described below.
 .It Fl q
 An alternate form of the
-.Fl bd
+.Fl bq
 flag.
 .\" .It Fl M Ns Ar ident
 .\" Process the queued message with the queue id
@@ -309,6 +322,13 @@ For example,
 or 
 .Ql timeout=1h
 both set the timeout to one hour.
+.It Li verify-from Ns = Ns Ar flag
+Check the validity of MAIL FROM addresses.  If
+nonzero (the default), the address will be rejected if it's
+from an unresolvable domain or if a remote client attempts to
+give a local address, and if zero, anything the client gives is
+okay with 
+.Nm postoffice .
 .\" .It Li stats Ns Ar file
 .\" Save statistics in the named file.
 .\" .It Li return Ns Ar time
@@ -398,13 +418,15 @@ Default
 .Nm
 options.
 .It Pa /etc/aliases
-raw data for alias names
+raw data for alias names.
 .It Pa /etc/aliases.db
-data base of alias names
+data base of alias names.
+.It Pa /etc/issue.smtp
+smtp server welcome banner.
 .It Pa /var/log/mail.stat
-collected statistics
+collected statistics.
 .It Pa /var/spool/mqueue/*
-temp files
+temp files.
 .It Pa /var/db/smtpauth.db
 .Nm greylist
 database.
@@ -414,8 +436,10 @@ database.
 .Xr rmail 1 ,
 .Xr syslog 3 ,
 .Xr aliases 5 ,
+@VHOST@.Xr domains.cf 5 ,
 .Xr mailaudit 5 ,
 .Xr smtpauth 5 ,
+@VHOST@.Xr vhosts 7 ,
 .Xr mailaddr 7 ,
 .Xr authexpire 8 ,
 .Xr sendmail 8 ,

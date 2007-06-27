@@ -5,10 +5,13 @@ LDFLAGS=@LDFLAGS@
 PGMS = postoffice dbm expire
 MAN8PAGES=postoffice.8 authexpire.8 sendmail.8 smtpd.8
 MAN7PAGES=mailaddr.7 greylist.7
+VMAN7PAGES=vhosts.7
 MAN5PAGES=aliases.5 smtpauth.5 mailaudit.5
+VMAN5PAGES=domains.cf.5
 MAN1PAGES=newaliases.1 mailq.1 runq.1
 
-MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES)
+MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES) \
+	 $(VMAN5PAGES) $(VMAN7PAGES)
 
 prefix=@prefix@
 libdir=@libdir@
@@ -46,7 +49,9 @@ install: $(PGMS) $(MANPAGES)
 	@INSTALL_DIR@ $(mandir)/man1
 	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(mandir)/man8
 	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(mandir)/man7
+	test "@VPATH@" && @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(mandir)/man7
 	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(mandir)/man5
+	test "@VPATH@" && @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(mandir)/man5
 	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
 	@INSTALL_DIR@ $(bindir)
 	@INSTALL_DIR@ $(libexec)

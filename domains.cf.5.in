@@ -1,0 +1,38 @@
+.\"
+.\"     %A%
+.\"
+.Dd Jan 30, 2005
+.Dt DOMAINS.CF 5
+.Os MASTODON
+.Sh NAME
+.Nm domains.cf
+.Nd configuration file for virtual domains
+.Sh SYNOPSIS
+.Nm @VPATH@/domains.cf
+.Sh DESCRIPTION
+This file describes the virtual domains that are active on this system.
+The file resides in
+.Pa @VPATH@
+and
+is formatted as a series of lines of the form
+.Bd -filled -offset indent
+owner:domain:active-flag:comments
+.Ed
+.Pp
+The
+.Em owner
+is the login name of the person who is responsible for the
+domain, the
+.Em domain
+is the fully qualified domain name, and the
+.Em active-flag
+is what you'd expect;  1 for active, 0 for not.
+Lines beginning with
+.Ql #
+are comments.
+
+.Sh SEE ALSO
+.Xr vhosts 7 ,
+.Xr vpasswd 8 ,
+.Xr valias 8 ,
+.Xr postoffice 8

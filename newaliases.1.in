@@ -39,14 +39,26 @@
 .Nd rebuild the data base for the mail aliases file
 .Sh SYNOPSIS
 .Nm newaliases
+@VHOST@.Op Ar host ...
 .Sh DESCRIPTION
 .Nm Newaliases
 rebuilds the random access data base for the mail aliases file
 .Pa /etc/aliases .
-It must be run each time
-.Pa /etc/aliases
-is changed in order
+@VHOST@When 
+@VHOST@.Nm
+@VHOST@is called with virtual host arguments, it will attempt to rebuild
+@VHOST@the alias databases for those virtual hosts.
+It must be run each time an alias file is modified in order
 for the change to take effect.
+.Sh FILES
+.Pp
+.Bl -tag -width @VPATH@/host/aliases -compact
+.It Pa /etc/aliases
+System aliases file.
+@VHOST@.It Pa @VPATH@/host/aliases
+@VHOST@The aliases file for the virtual host
+@VHOST@.Ar host .
+.El
 .Sh SEE ALSO
 .Xr aliases 5 ,
 .Xr postoffice 8

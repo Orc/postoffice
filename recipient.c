@@ -126,11 +126,11 @@ int
 recipients(struct letter *let, struct address *to)
 {
     if (to->alias)
-	return expand(let, 0, to, to->alias, 0, -1, -1, 1);
+	return expand(let, 0, to, to->alias, 0, NOBODY_UID, NOBODY_GID, 1);
     else if (to->local)
 	return localprocess(let, to, 0);
     else 
-	return newrecipient(&let->remote, to, emUSER, -1, -1);
+	return newrecipient(&let->remote, to, emUSER, NOBODY_UID, NOBODY_GID);
 }
 
 

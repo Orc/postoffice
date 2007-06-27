@@ -166,7 +166,7 @@ do_smtp_connection(int client, ENV *env)
 	message(out, 451, "System error.  Please try again later.");
 	ret = -1;
     }
-    else if (isconnected(i)) {
+    else if (isconnected(i) && !islocalhost(env,&window[i].customer.sin_addr)) {
 	message(out, 451, "You are already connected to "
 			  "this mail server. Finish that session "
 			  "and try again.");

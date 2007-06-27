@@ -273,7 +273,8 @@ readcontrolfile(struct letter *let, char *qid)
 				    let->qid, to.full);
 		    abort();
 		}
-		else if (newrecipient(&let->remote, &to, emUSER, -1, -1) == -1)
+		else if (newrecipient(&let->remote, &to,
+				       emUSER, NOBODY_UID, NOBODY_GID) == -1)
 		    abort();
 		free(to.full);
 		break;
