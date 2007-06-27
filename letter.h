@@ -76,6 +76,7 @@ void reset(struct letter *);
 void byebye(struct letter *, int);
 
 char *lowercase(char *);
+char *skipspace(char *);
 struct email *getemail(struct address *);
 
 

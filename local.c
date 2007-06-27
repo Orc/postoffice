@@ -120,9 +120,7 @@ exe(struct letter *let, struct recipient *to)
 static int
 mbox(struct letter *let, struct recipient *to, char *mbox)
 {
-    int status;
-    int count;
-    unsigned int time;
+    int status = 0;
     FILE *f;
     uid_t saveuid = getuid();
     gid_t savegid = getgid();
@@ -132,13 +130,12 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 	fprintf(let->log, CannotWrite, to->user, strerror(errno));
 	return 0;
     }
+    umask(077);
+    if ( (f = fopen(mbox, "a")) == 0) {
+	syslog(LOG_ERR, "%s: %m", to->fullname);
+	fprintf(let->log, CannotWrite, to->user, strerror(errno));
+    }
     else {
-	umask(077);
-	if ( (f = fopen(mbox, "a")) == 0) {
-	    syslog(LOG_ERR, "%s: %m", to->fullname);
-	    fprintf(let->log, CannotWrite, to->user, strerror(errno));
-	    return 0;
-	}
 	flock(fileno(f), LOCK_EX);
 
 	receivedby(f, let, to);
@@ -147,16 +144,17 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 
 	flock(fileno(f), LOCK_UN);
 	fclose(f);
-
-	if (setreuid(-1, saveuid) || setregid(-1, saveuid) ) {
-	    syslog(LOG_ERR, "cannot regain privileges: %m\n");
-	    fprintf(let->log, "Fatal error writing to mailbox for %s: %s\n",
-			    to->user, strerror(errno));
-	    let->fatal = 1;
-	    return 0;
-	}
-	return 1;
+	status = 1;
     }
+
+    if (setreuid(-1, saveuid) || setregid(-1, saveuid) ) {
+	syslog(LOG_ERR, "cannot regain privileges: %m\n");
+	fprintf(let->log, "Fatal error writing to mailbox for %s: %s\n",
+			to->user, strerror(errno));
+	let->fatal = 1;
+	return 0;
+    }
+    return status;
 }
 
 

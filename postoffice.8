@@ -186,6 +186,13 @@ The options are:
 .\" interrupted by system crashes.
 .\" .It Li queue Ns = Ns Ar queuedir
 .\" Select the directory in which to queue messages.
+.It Li checkhelo
+Check the arguments passed with the 
+.Em HELO
+and
+.Em EHLO
+SMTP command and refuse to do an SMTP conversation with the
+client if they claim to be the mail server.
 .It Li clients Ns = Ns Ar N
 Allow only 
 .Ar N

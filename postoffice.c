@@ -112,6 +112,7 @@ main(int argc, char **argv)
 			fake.sin_addr = ip.a;
 			fake.sin_family = AF_INET;
 			peer = &fake;
+			env.relay_ok = islocalhost(&env, &fake.sin_addr);
 		    }
 		}
 		break;

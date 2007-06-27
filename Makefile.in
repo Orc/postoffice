@@ -21,7 +21,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
-     newaliases.o arpatok.o audit.o
+     newaliases.o arpatok.o audit.o goodness.o
 
 all: $(PGMS)
 
@@ -61,31 +61,34 @@ distclean spotless: clean
 	rm -f @GENERATED_FILES@ @CONFIGURE_FILES@
 
 addr.o: addr.c
-address.o: address.c letter.h env.h mx.h
+address.o: address.c config.h letter.h env.h mx.h
 arpatok.o: arpatok.c
-audit.o: audit.c letter.h env.h
+audit.o: audit.c env.h letter.h
+auth.o: auth.c config.h letter.h env.h
 bounce.o: bounce.c config.h letter.h env.h mbox.h bounce.h
 config.o: config.c config.h env.h
 dbm.o: dbm.c
 expire.o: expire.c
 getif.o: getif.c
 getloadavg.o: getloadavg.c
+goodness.o: goodness.c config.h
 greylist.o: greylist.c config.h letter.h env.h
 letter.o: letter.c config.h letter.h env.h mx.h spool.h
 listq.o: listq.c spool.h letter.h env.h
 local.o: local.c letter.h env.h
 mail.o: mail.c config.h letter.h env.h
 mapfd.o: mapfd.c
-mbox.o: mbox.c mbox.h env.h mx.h
-mx.o: mx.c mx.h
+mbox.o: mbox.c config.h mbox.h env.h mx.h
+mx.o: mx.c config.h mx.h
 newaliases.o: newaliases.c config.h aliases.h env.h
 ns.o: ns.c
 postoffice.o: postoffice.c config.h letter.h env.h smtp.h
-recipient.o: recipient.c letter.h env.h
+prt.o: prt.c
+recipient.o: recipient.c config.h letter.h env.h
 remote.o: remote.c config.h letter.h env.h mbox.h bounce.h
 runq.o: runq.c config.h spool.h letter.h env.h bounce.h
 server.o: server.c config.h letter.h env.h smtp.h mx.h
-smtp.o: smtp.c config.h letter.h env.h smtp.h
-spool.o: spool.c spool.h letter.h env.h mx.h
+smtp.o: smtp.c config.h letter.h env.h smtp.h mx.h
+spool.o: spool.c config.h spool.h letter.h env.h mx.h
 userok.o: userok.c config.h letter.h env.h aliases.h
 virusscan.o: virusscan.c config.h letter.h env.h

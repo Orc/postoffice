@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sysexits.h>
 
 #ifdef WITH_TCPWRAPPERS
 #include <tcpd.h>
@@ -31,6 +32,7 @@ int allow_severity = 0;
 #include "letter.h"
 #include "smtp.h"
 #include "env.h"
+#include "mx.h"
 
 enum cmds { HELO, EHLO, MAIL, RCPT, DATA, RSET,
             VRFY, EXPN, QUIT, NOOP, DEBU, MISC };
@@ -75,7 +77,47 @@ psstat(struct letter *let, char *action)
 }
 
 
-jmp_buf bye;
+
+/*
+ * write a message to the client, linewrapping at 70 columns.
+ */
+void
+message(FILE *f, int code, char *fmt, ...)
+{
+    va_list ptr;
+    static char bfr[10240];
+    int size;
+    int i, j, k;
+    int dash = (code < 0);
+
+    va_start(ptr, fmt);
+    size = vsnprintf(bfr, sizeof bfr, fmt, ptr);
+    va_end(ptr);
+
+    if (dash) code = -code;
+
+    for (i=0; i < size; i = j+1) {
+	for (j=i; j < i+70 && j < size && bfr[j] != '\n'; j++)
+	    ;
+	if ( (j >= i + 70) && !isspace(bfr[j]) ) {
+	    do {
+		--j;
+	    } while ( (j > i) && !isspace(bfr[j]) );
+
+	    if (j == i)
+		j = i + 70;
+	}
+
+	fprintf(f, "%03d%c", code, (dash || (j<size-1)) ? '-' : ' ');
+	for ( ;i < j; i++)
+	    fputc(toupper(bfr[i]), f);
+	fputs("\r\n", f);
+	fflush(f);
+    }
+}
+
+
+static jmp_buf bye;
 
 static void
 zzz(int signo)
@@ -123,6 +165,346 @@ smtpbugcheck(struct letter *let)
 }
 
 
+static struct address *
+parse_address(struct letter *let, char *p, int to)
+{
+    int reason;
+    struct address *ret;
+
+    if ( (ret = verify(let,p,1,&reason)) != 0)
+	return ret;
+
+    switch (reason) {
+    default:
+    case V_NOMX:
+	message(let->out, 553, to ? "I cannot deliver mail to %s"
+				  : "I do not accept mail from %s", p);
+	break;
+    case V_WRONG:
+	message(let->out, 553, "You must have a wrong number.");
+	syslog(LOG_INFO, "WRONG NUMBER: %s from (%s[%s])", p,
+			    let->deliveredby,let->deliveredIP);
+	greylist(let, 1);
+	break;
+    case V_BOGUS:
+	message(let->out, 555, "Unrecognisable %s address.", to?"to":"from");
+	break;
+    case V_ERROR:
+	message(let->out, 451, "System error");
+	break;
+    }
+    return 0;
+}
+
+
+static int
+from(struct letter *let, char *line)
+{
+    char *p;
+    struct address *from;
+    long left;
+
+    if (let->from) {
+	message(let->out, 550, "Too many cooks spoil the broth.");
+	return 5;
+    }
+
+    p = skipspace(line+4);
+    if ( strncasecmp(p, "FROM", 4) != 0 || *(p = skipspace(p+4)) != ':' ) {
+	message(let->out, 501, "Badly formatted mail from: command.");
+	return 5;
+    }
+
+    p = skipspace(p+1);
+
+    if ( (from = parse_address(let, p, 0)) == 0)
+	return 5;
+
+    if ( from->local && from->user && !let->env->relay_ok ) {
+	message(let->out, 553, "You are not a local client.");
+	freeaddress(from);
+	return 5;
+    }
+    else if ( (from->user == 0) && let->env->nodaemon ) {
+	message(let->out, 553, "Not Allowed.");
+	freeaddress(from);
+	return 5;
+
+    }
+    else
+	let->from = from;
+
+    if ( (let->env->relay_ok == 0) && (left = greylist(let, 0)) > 1 ) { 
+	message(let->out, 450, "System busy.  Try again in %d seconds.", left);
+	freeaddress(from);
+	let->from = 0;
+	return 4;
+    }
+
+    /* check for esmtp mail extensions.
+     */
+    p += strlen(p);
+    while (p > line && *--p != '>')
+	;
+
+    if (*p == '>') {
+
+	while (*++p) {
+	    while (*p && isspace(*p))
+		++p;
+	    if (strncasecmp(p, "size=", 5) == 0) {
+		unsigned long size = atol(p+5);
+
+		if (let->env->largest
+			&& (size > let->env->largest)) {
+
+		    message(let->out, 552,
+			    "I don't accept messages longer than %lu bytes.",
+			    let->env->largest);
+		    freeaddress(from);
+		    let->from = 0;
+		    return 5;
+		}
+	    }
+	    else if (strncasecmp(p, "body=", 5) == 0)
+		; /* body=<something>.  We don't care.  */
+
+	    while (*p && !isspace(*p))
+		++p;
+	}
+    }
+
+    return 2;
+}
+
+
+static int
+to(struct letter *let, char *line)
+{
+    char *p = skipspace(line+4);
+    char *result;
+    int len;
+    char *q;
+    char *temp;
+    struct address *a;
+    struct iplist mxes;
+    int rc = 0;
+
+    if (strncasecmp(p, "TO", 2) != 0 || *(p = skipspace(p+2)) != ':') {
+	message(let->out, 501, "Badly formatted rcpt to: command.");
+	return 0;
+    }
+
+    if ( (a = parse_address(let, p=skipspace(p+1), 1)) == 0) return 0;
+
+    if (a->user == 0)
+	message(let->out, 555, "Who?");
+    else if (a->local || let->env->relay_ok) {
+	if ((rc = recipients(let, a)) < 0) {
+	    message(let->out, 451, "System error.");
+	    rc = 0;
+	}
+	else if (rc == 0)
+	    message(let->out, 555, "Who?");
+    }
+    else
+	message(let->out, 502, "You may not relay through this server.");
+
+    freeaddress(a);
+    return rc;
+}
+
+
+static int
+data(struct letter *let)
+{
+#define CRLF	0x100
+    register c = 0;
+    register c1 = CRLF;
+    register c2 = 0;
+
+    if (mkspool(let) == 0) {
+	message(let->out, 451,
+		"Cannot store message body. Try again later.");
+	return 0;
+    }
+
+    message(let->out, 354, "Bring it on.");
+
+    while (1) {
+	alarm(let->env->timeout);
+
+	if ( (c = fgetc(let->in)) == EOF) {
+	    syslog(LOG_ERR, "EOF during DATA from %s", let->deliveredby);
+	    message(let->out, 451, "Unexpected EOF?");
+	    break;
+	}
+	else if (c == '\r') {
+	    if ( (c = fgetc(let->in)) == '\n')
+		c = CRLF;
+	    else {
+		fputc('\r', let->body);
+	    }
+	}
+	else if ( c == '\n')	/* let \n stand in for \r\n */
+	    c = CRLF;
+
+	if (c2 == CRLF && c1 == '.') {
+	    if (c == CRLF) {
+		alarm(0);
+		return examine(let);
+	    }
+	    else
+		c2 = 0;
+	}
+
+	if (c2) {
+	    if ( fputc( (c1 == CRLF) ? '\n' : c1, let->body) == EOF ) {
+		syslog(LOG_ERR, "spool write error: %m");
+		message(let->out, 451,
+		    "Cannot store message body. Try again later.");
+		break;
+	    }
+	}
+	c2 = c1;
+	c1 = c;
+    }
+    alarm(0);
+    reset(let);
+    return 0;
+}
+
+
+static int
+post(struct letter *let)
+{
+    int ok, didmsg=0;
+    char *ptr;
+
+    if (svspool(let) == 0)
+	return 0;
+
+    ok = (runlocal(let) == let->local.count) && !let->fatal;
+
+    if ( !ok ) {
+	/* something went wrong.  Report it */
+	char *ptr;
+	size_t size;
+
+	fseek(let->log, SEEK_END, 0);
+
+	if (let->log && (ptr = mapfd(fileno(let->log), &size)) ) {
+	    message(let->out, 552, "Local mail delivery failed:\n%.*s",
+		    size, ptr);
+	    munmap(ptr, size);
+	    didmsg = 1;
+	}
+	if (!didmsg)
+	    message(let->out, 552,
+		    let->fatal ? "Catastrophic error delivering local mail!"
+			       : "Local mail delivery failed!");
+
+	if (let->fatal)
+	    byebye(let, EX_OSERR);
+    }
+
+    reset(let);
+    return ok;
+}
+
+
+static int
+helo(struct letter *let, enum cmds cmd, char *line)
+{
+    int i;
+    struct iplist list;
+    char *p;
+
+    let->helo = 1;
+    if (let->env->checkhelo && !let->env->relay_ok) {
+
+	if (p = strchr(line, '\n')) {
+	    /* trim trailing spaces */
+	    while (p > line && isspace(p[-1]) )
+		--p;
+	    *p = 0;
+	}
+
+	if (getIPa(p=skipspace(line+4), &list) > 0) {
+	    for (i=0; i < list.count; i++)
+		if (islocalhost(let->env, &(list.a[i].addr))) {
+		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 503);
+		    message(let->out, 503, "Liar, liar, pants on fire!");
+		    freeiplist(&list);
+		    return 0;
+		}
+	    freeiplist(&list);
+	}
+    }
+    return 1;
+}
+
+
+static void
+debug(struct letter *let)
+{
+    int i;
+    ENV *env = let->env;
+
+    audit(let, "DEBU", "", 250);
+    if (let->from)
+	message(let->out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/",
+		    let->from->full,
+		    let->from->user,
+		    let->from->domain,
+		    let->from->local,
+		    let->from->alias);
+
+    for (i=let->local.count; i-- > 0; )
+	describe(let->out, 250, &let->local.to[i] );
+
+    for (i=let->remote.count; i-- > 0; )
+	describe(let->out, 250, &let->remote.to[i] );
+
+    message(let->out,-250, "B1FF!!!!: T\n");
+#if WITH_TCPWRAPPERS
+    message(let->out,-250, "Tcp-Wrappers: T\n");
+#endif
+#if WITH_GREYLIST
+    message(let->out,-250, "Greylist: T\n");
+#endif
+#ifdef AV_PROGRAM
+    message(let->out,-250, "AV program: <%s>\n", AV_PROGRAM);
+#endif
+#if USE_PEER_FLAG
+    message(let->out,-250, "Peer flag: T\n");
+#endif
+#if WITH_COAL
+    message(let->out,-250, "Coal: T\n");
+#endif
+    if (env->largest)
+	message(let->out,-250, "size: %ld", env->largest);
+    message(let->out, 250, "Timeout: %d\n"
+		      "Delay: %d\n"
+		      "Max clients: %d\n"
+		      "Qreturn: %ld\n"
+		      "Relay-ok: %s\n"
+		      "CheckHELO: %s\n"
+		      "NoDaemon: %s\n"
+		      "LocalMX: %s\n"
+		      "Paranoid: %s",
+			  env->timeout,
+			  env->delay,
+			  env->max_clients,
+			  env->qreturn,
+			  env->relay_ok ? "T" : "NIL",
+			  env->checkhelo ? "T" : "NIL",
+			  env->nodaemon ? "T" : "NIL",
+			  env->localmx ? "T" : "NIL",
+			  env->paranoid ? "T" : "NIL" );
+}
+
+
 void
 smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 {
@@ -135,6 +517,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     int issock = 1;
     char bfr[1];
     int rc;
+    int score;
     int timeout = env->timeout;
 
     openlog("smtpd", LOG_PID, LOG_MAIL);
@@ -149,6 +532,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			     " because we cannot resolve your IP address."
 			     " Try again later, okay?",
 			     letter.deliveredto, letter.deliveredby);
+	    goodness(&letter, -2);
 	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
 	    audit(&letter, "CONN", "stranger", 421);
 	    byebye(&letter, 1);
@@ -164,9 +548,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    message(out, 554, "%s does not accept mail"
 			      " from %s, because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
-	    audit(&letter, "CONN", "blacklist", 554);
+	    goodness(&letter, -2);
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
+	    audit(&letter, "CONN", "blacklist", 554);
 	    ok = 0;
 	}
 #endif
@@ -213,6 +598,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     signal(SIGALRM, zzz);
 
     if (setjmp(bye) != 0) {
+	goodness(&letter, -1);
 	audit(&letter, "QUIT", "timeout", 421);
 	byebye(&letter, 1);
     }
@@ -230,6 +616,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    }
 	}
 #endif
+	score = 0;
 	alarm(timeout);
 	psstat(&letter, "gets");
 	if (fgets(line, sizeof line, in) == 0)
@@ -241,18 +628,24 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	if (ok) {
 	    switch (c) {
 	    case EHLO:
-		greeted(&letter);
-		message(out,-250, "Hello, Sailor!");
-		if (env->largest)
-		    message(out,-250, "size %ld", env->largest);
-		message(out, 250, "8bitmime");
-		audit(&letter, "EHLO", line, 250);
+		if (ok = helo(&letter, c, line)) {
+		    message(out,-250, "Hello, Sailor!");
+		    if (env->largest)
+			message(out,-250, "size %ld", env->largest);
+		    message(out, 250, "8bitmime");
+		    audit(&letter, "EHLO", line, 250);
+		}
+		else
+		    score = -4;
 		break;
 
 	    case HELO:
-		greeted(&letter);
-		message(out, 250, "A wink is as good as a nod.");
-		audit(&letter, "HELO", line, 250);
+		if (ok = helo(&letter, c, line)) {
+		    message(out, 250, "A wink is as good as a nod.");
+		    audit(&letter, "HELO", line, 250);
+		}
+		else
+		    score = -4;
 		break;
 	    
 	    case MAIL:
@@ -263,14 +656,16 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    audit(&letter, "MAIL", line, 250);
 		    message(out, 250, "Okay fine.");
 		    timeout = env->timeout;
+		    score = 1;
 		}
 		else {
-		    /* After a MAIL FROM:<> fails, but the
+		    /* After a MAIL FROM:<> fails, put the
 		     * caller on a really short input timer
 		     * in case their tiny brain has popped
 		     * as the result of getting a non 2xx
 		     * reply
 		     */
+		    score = -2;
 		    audit(&letter, "MAIL", line, rc);
 		    timeout = env->timeout / 10;
 		}
@@ -278,11 +673,14 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
 	    case RCPT:
 		if (to(&letter, line)) {
+		    score = 1;
 		    message(out, 250, "Sure, I love spam!");
 		    audit(&letter, "RCPT", line, 250);
 		}
-		else
+		else {
+		    score = -2;
 		    audit(&letter, "RCPT", line, 5);
+		}
 		break;
 
 	    case DATA:
@@ -304,9 +702,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			    if (smtpbugcheck(&letter) && post(&letter) ) {
 				audit(&letter, "DATA", "", 250);
 				message(out, 250, "Okay fine."); 
+				score = 2;
 			    }
-			    else
+			    else {
+				score = -1;
 				audit(&letter, "DATA", "", 5);
+			    }
 			}
 		    }
 		    reset(&letter);
@@ -340,54 +741,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    
 	    case DEBU:
 		if (env->debug) {
-		    int i;
-
-		    audit(&letter, "DEBU", "", 250);
-		    if (letter.from)
-			message(out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/",
-				    letter.from->full,
-				    letter.from->user,
-				    letter.from->domain,
-				    letter.from->local,
-				    letter.from->alias);
-
-		    for (i=letter.local.count; i-- > 0; )
-			describe(out, 250, &letter.local.to[i] );
-
-		    for (i=letter.remote.count; i-- > 0; )
-			describe(out, 250, &letter.remote.to[i] );
-
-		    message(out,-250, "B1FF!!!!: T\n");
-#ifdef WITH_TCPWRAPPERS
-		    message(out,-250, "Tcp-Wrappers: T\n");
-#endif
-#ifdef WITH_GREYLIST
-		    message(out,-250, "Greylist: T\n");
-#endif
-#ifdef AV_PROGRAM
-		    message(out,-250, "AV program: <%s>\n", AV_PROGRAM);
-#endif
-#ifdef USE_PEER_FLAG
-		    message(out,-250, "Peer flag: T\n");
-#endif
-		    if (env->largest)
-			message(out,-250, "size: %ld", env->largest);
-		    message(out, 250, "Timeout: %d\n"
-				      "Delay: %d\n"
-				      "Max clients: %d\n"
-				      "Qreturn: %ld\n"
-				      "Relay-ok: %s\n"
-				      "NoDaemon: %s\n"
-				      "LocalMX: %s\n"
-				      "Paranoid: %s",
-					  env->timeout,
-					  env->delay,
-					  env->max_clients,
-					  env->qreturn,
-					  env->relay_ok ? "T" : "NIL",
-					  env->nodaemon ? "T" : "NIL",
-					  env->localmx ? "T" : "NIL",
-					  env->paranoid ? "T" : "NIL" );
+		    debug(&letter);
 		    break;
 		}
 		/* otherwise fall into the default failure case */
@@ -398,7 +752,6 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    }
 	}
 	else {
-	    sleep(30);
 	    if (c == QUIT) {
 		audit(&letter, "QUIT", "", 221);
 		message(out,221,"Be seeing you.");
@@ -406,12 +759,16 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    }
 	    else {
 		audit(&letter, line, line, 503);
+		sleep(30);
 		message(out,503,"I'm sorry Dave, I'm afraid I can't do that.");
 	    }
 	}
+	if (score)
+	    goodness(&letter, score);
 	fflush(out);
 	fflush(in);
     } while ( !(feof(out) || feof(in)) );
+    goodness(&letter, -1);
     audit(&letter, "QUIT", "EOF", 421);
     byebye(&letter,1);
 }

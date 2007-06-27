@@ -19,16 +19,17 @@ struct env {
     uid_t sender;		/* user who called postoffice */
     int   delay;		/* greylist delay */
     int   qreturn;		/* how long to leave mail in the queue? */
-    int   nodaemon:1;		/* refuse MAIL FROM:<> */
-    int   verbose:1;		/* be chattery */
-    int   paranoid:1;		/* don't accept email from clients we can't
+    unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
+    unsigned int   verbose:1;	/* be chattery */
+    unsigned int   paranoid:1;	/* don't accept email from clients we can't
 				 * resolve */
-    int   doublecheck:1;	/* resolve caller IP->name, then name->IP */
-    int   relay_ok:1;		/* Is it okay to mail to remote machines? */
-    int   debug:1;		/* enable debugging commands */
-    int   forged:1;		/* from address set by -f */
-    int   trawl:1;		/* scrape headers for recipients (pine sucks) */
-    int   localmx:1;		/* if I am the mx for a client, that
+    unsigned int   doublecheck:1;/* resolve caller IP->name, then name->IP */
+    unsigned int   relay_ok:1;	/* Is it okay to mail to remote machines? */
+    unsigned int   debug:1;	/* enable debugging commands */
+    unsigned int   forged:1;	/* from address set by -f */
+    unsigned int   trawl:1;	/* scrape headers for recipients (pine sucks) */
+    unsigned int   checkhelo:1;	/* verify HELO/EHLO header */
+    unsigned int   localmx:1;	/* if I am the mx for a client, that
 				 * client can relay.  DANGEROUS!  */
 } ;
 
@@ -39,6 +40,7 @@ char *mapfd(int, size_t*);
 
 void set_option(char *, ENV*);
 int  configfile(char *, ENV*);
+void message(FILE *f, int code, char *fmt, ...);
 
 
 #endif/*END_D*/

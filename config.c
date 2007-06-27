@@ -46,7 +46,9 @@ set_option(char *option, ENV *env)
     int val;
 
     switch (option[0]) {
-    case 'c':   isopt(option, "clients", &env->max_clients, 0);
+    case 'c':   if (isopt(option, "checkhelo", &val, 0))
+		    env->checkhelo = val;
+		isopt(option, "clients", &env->max_clients, 0);
 		return;
     case 'p':   if (isopt(option, "paranoid", &val, 0))
 		    env->paranoid = val;

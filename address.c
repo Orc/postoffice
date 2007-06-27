@@ -27,27 +27,30 @@ freeaddress(struct address *ptr)
 struct address *
 mkaddress(char *full)
 {
-    struct address *ret;
     char *q;
+    int size;
+    struct address *ret;
 
     if (full == 0)
 	return 0;
 
-    if ( (ret=calloc(1,sizeof *ret)) && (ret->full = strdup(full)) ) {
+    if ( (ret=calloc(sizeof *ret, 1)) && (ret->full = strdup(full)) ) {
 
 	if ( q = strrchr(full, '@') ) {
 	    ret->domain = strdup(q+1);
-	    if ( ret->domain && (ret->user = malloc(q-full)) ) {
-		memcpy(ret->user, full, q-full);
-		ret->user[q-full] = 0;
+	    size = q-full;
+	    if ( ret->domain && (ret->user = malloc(size+1)) ) {
+		strncpy(ret->user, full, size);
+		ret->user[size] = 0;
 		return ret;
 	    }
 	}
 	else if (q = strchr(full, '!')) {
 	    ret->user = strdup(q+1);
-	    if ( ret->user && (ret->domain = malloc(q-full)) ) {
-		memcpy(ret->domain, full, q-full);
-		ret->domain[q-full] = 0;
+	    size = q-full;
+	    if ( ret->user && (ret->domain = malloc(size+1)) ) {
+		strncpy(ret->domain, full, size);
+		ret->domain[size] = 0;
 		return ret;
 	    }
 	}

@@ -345,6 +345,42 @@ addresslist(struct iplist *list, struct mxlist *mx)
 }
 
 
+int
+getIPa(char *host, struct iplist *ipp)
+{
+    char *fqn, *p;
+
+    memset(ipp, 0, sizeof *ipp);
+
+    if ( *host == 0 || (fqn = malloc(strlen(host)+2)) == 0)
+	return 0;
+
+    strcpy(fqn, host);
+    p = fqn + strlen(fqn);
+
+    if ( (*fqn == '[') && (p[-1] == ']') ) {
+	long int ip;
+
+	p[-1] = 0;
+	if ( (ip = inet_addr(1+fqn)) != -1)
+	    NewIP(ipp, 0, (struct in_addr*)&ip);
+    }
+    else {
+	_res.options |= RES_USEVC|RES_STAYOPEN;
+	if ( !(_res.options & RES_INIT) )
+	    res_init();
+
+	if (p[-1] != '.') {
+	    *p++ = '.';
+	    *p = 0;
+	}
+	address(ipp, 0, fqn);
+    }
+    free(fqn);
+    return ipp->count;
+}
+
+
 static int
 cmp(struct ipa *a, struct ipa *b)
 {
@@ -429,6 +465,7 @@ getMXes(char *host, struct iplist *ipp)
 	if ( wildcard = malloc(strlen(fq)+5) ) {
 	    sprintf(wildcard, "*.%s", fq);
 	    mx(wildcard, &list);
+	    free(wildcard);
 	}
 	else {
 	    free(candidate);

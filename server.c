@@ -29,42 +29,20 @@
 #include "mx.h"
 
 
+
 /*
- * write a message to the client, linewrapping at 70 columns.
+ * is this IP address one of our local ones?
  */
-void
-message(FILE *f, int code, char *fmt, ...)
+int
+islocalhost(ENV *env, struct in_addr *host)
 {
-    va_list ptr;
-    static char bfr[10240];
-    int size;
-    int i, j, k;
-    int dash = (code < 0);
+    struct in_addr *p;
 
-    va_start(ptr, fmt);
-    size = vsnprintf(bfr, sizeof bfr, fmt, ptr);
-    va_end(ptr);
+    for ( p = env->local_if; p->s_addr; p++ )
+	if (host->s_addr == p->s_addr)
+	    return 1;
 
-    if (dash) code = -code;
-
-    for (i=0; i < size; i = j+1) {
-	for (j=i; j < i+70 && j < size && bfr[j] != '\n'; j++)
-	    ;
-	if ( (j >= i + 70) && !isspace(bfr[j]) ) {
-	    do {
-		--j;
-	    } while ( (j > i) && !isspace(bfr[j]) );
-
-	    if (j == i)
-		j = i + 70;
-	}
-
-	fprintf(f, "%03d%c", code, (dash || (j<size-1)) ? '-' : ' ');
-	for ( ;i < j; i++)
-	    fputc(toupper(bfr[i]), f);
-	fputs("\r\n", f);
-	fflush(f);
-    }
+    return 0;
 }
 
 
@@ -198,7 +176,6 @@ do_smtp_connection(int client, ENV *env)
 	message(out, 451, "System error.  Please try again later.");
     }
     else if (child == 0) {
-	struct in_addr *p;
 
 	signal(SIGCHLD, SIG_DFL);
 	signal(SIGUSR2, SIG_IGN);
@@ -211,14 +188,8 @@ do_smtp_connection(int client, ENV *env)
 	sprintf(env->argv0, "SMTP %s       ", peername);
 	alarm(300);	/* give the client 5 minutes to set up a connection */
 
-	env->relay_ok = 0;
+	env->relay_ok = islocalhost(env, &window[i].customer.sin_addr);
 
-	for ( p = env->local_if; p->s_addr; p++ ) {
-	    if (window[i].customer.sin_addr.s_addr == p->s_addr) {
-		env->relay_ok = 1;
-		break;
-	    }
-	}
 	if ( env->localmx && !env->relay_ok ) {
 	    /* Dangerous option:  if we're an MX for a client,
 	     * they can relay through us.   The danger here is
@@ -232,13 +203,12 @@ do_smtp_connection(int client, ENV *env)
 	    getMXes(peername, &mx);
 
 	    for ( i = mx.count; i-- > 0; )
-		for ( p = env->local_if; p->s_addr; p++ )
-		    if ( p->s_addr == mx.a[i].addr.s_addr ) {
-			syslog(LOG_INFO, "%s is a local mx", peername);
-			env->relay_ok = 1;
-			goto fin;
-		    }
-	fin:freeiplist(&mx);
+		if (islocalhost(env, &mx.a[i].addr)) {
+		    syslog(LOG_INFO, "%s is a local mx", peername);
+		    env->relay_ok = 1;
+		    break;
+		}
+	    freeiplist(&mx);
 	}
 	smtp(in, out, &window[i].customer, env);
 	exit(EX_OK);

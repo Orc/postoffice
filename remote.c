@@ -161,7 +161,7 @@ forward(struct letter *let)
 	    let->remote.to[i].status = PENDING;
 
 	if (f = session(let->env, let->remote.to[i].host, 25)) {
-	    if ( (rc = SMTPpost(f, let, i, j, &denied)) <= 0 || denied > 0 ) {
+	    if ( (rc = SMTPpost(f, let, i, j, &denied)) < 0 || denied > 0 ) {
 		logsize = ftell(f->log);
 		fflush(f->log);
 		if (logtext = mapfd(fileno(f->log), &mapsize)) {

@@ -1,8 +1,5 @@
 #include "config.h"
 
-#include "aliases.h"
-#include "env.h"
-
 #include <stdio.h>
 #include <unistd.h>
 #include <ndbm.h>
@@ -17,6 +14,9 @@
 #else
 #   include <malloc.h>
 #endif
+
+#include "aliases.h"
+#include "env.h"
 
 
 static datum
