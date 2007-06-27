@@ -1,0 +1,115 @@
+.\" Copyright (c) 1983, 1987 The Regents of the University of California.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms are permitted
+.\" provided that the above copyright notice and this paragraph are
+.\" duplicated in all such forms and that any documentation,
+.\" advertising materials, and other materials related to such
+.\" distribution and use acknowledge that the software was developed
+.\" by the University of California, Berkeley.  The name of the
+.\" University may not be used to endorse or promote products derived
+.\" from this software without specific prior written permission.
+.\" THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+.\" IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+.\" WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.\"	%A%
+.\"
+.Dd Apr 1, 2004
+.Dt MAILADDR 7
+.Os MASTODON 4
+.Sh NAME
+.Nm mailaddr
+.Nd mail addressing description
+.Sh DESCRIPTION
+Mail addresses are based on the ARPANET protocol listed at the end of this
+manual page.  These addresses are in the general format
+.Bl -tag -width orc@brazil.pell.UUCP
+.It user@domain
+.El
+.Pp
+where a domain is a hierarchical dot separated list of subdomains.  For
+example, the address
+.Bl -tag -width orc@brazil.pell.UUCP
+.It orc@brazil.pell.UUCP
+.El
+.Pp
+is normally interpreted from right to left: the
+message should go to the
+.Nm pell.UUCP
+gateway, after which it should go to the local host
+brazil.  When the message reaches brazil it is delivered to the user
+.Ql orc .
+.Pp
+Unlike some other forms of addressing, this does not imply any routing.
+Thus, although this address is specified as an ARPA address, it might
+travel by an alternate route if that were more convenient or efficient.
+For example, at Pell, the associated message would probably go directly
+to brazil over the Ethernet rather than going via UUCP.
+
+.Ss Abbreviation.
+Under certain circumstances it may not be necessary to type the entire
+domain name.  In general, anything following the first dot may be omitted
+if it is the same as the domain from which you are sending the message.
+For example, a user on
+.Ql gehenna.pell.UUCP
+could send to
+.Ql orc@brazil
+without adding the
+.Ql pell.UUCP
+since it is the same on both sending
+and receiving hosts.
+
+.Ss Compatibility.
+Certain old address formats are converted to the new format to provide
+compatibility with the previous mail system.
+In particular,
+.Bl -tag -width orc@brazil.pell.UUCP
+.It host:user
+.El
+is converted to
+.Bl -tag -width orc@brazil.pell.UUCP
+.It user@host
+.El
+to be consistent with the \fIrcp\fP(1) command.
+.Pp
+Also, the syntax
+.Bl -tag -width orc@brazil.pell.UUCP
+.It host1!host2!...!hostN!user
+.El
+.Pp
+is converted to:
+.Bl -tag -width orc@brazil.pell.UUCP
+.It host2!...!hostN!user@host1
+.El
+.Pp
+When being sent through a TCP network. (Under the hope that the mail server
+at
+.Em host1
+will understand UUCP syntax too.)
+.Ss Case Distinctions.
+Domain names (i.e., anything after the ``@'' sign) may be given in any mixture
+of upper and lower case with the exception of UUCP hostnames.  Many hosts
+do
+.Em NOT
+accept any combination of case in user names (MULTICS and many Unix
+hosts), so as a general rule you should assume that the user
+.Nm Orc
+is not the same person as
+.Nm orc .
+
+.Ss Postmaster.
+Every site is required to have a user or user alias designated
+.Ql postmaster
+to which problems with the mail system may be addressed.
+.Sh BUGS
+The RFC822 group syntax (``group:user1,user2,user3;'') is not supported.
+.Pp
+UUCP- and ARPANET-style addresses do not coexist politely.
+.Sh SEE ALSO
+.Xr mail 1 ,
+.Xr postoffice 8 ;
+.Pp
+DARPA
+Internet Request For Comments
+.%T RFC822 .

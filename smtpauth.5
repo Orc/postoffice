@@ -1,0 +1,52 @@
+.\"
+.\"     %A%
+.\"
+.Dd Mar 31, 2004
+.Dt SMTPAUTH 5
+.Os MASTODON
+.Sh NAME
+.Nm smtpauth
+.Nd greylist file for
+.Nm postoffice
+.Sh SYNOPSIS
+.Nm /var/db/smtpauth.db
+.Sh DESCRIPTION
+This file records client access to the
+.Nm postoffice
+SMTP server.
+It contains records that have the
+.Bl -tag -width ClientAddress -compact
+.It username
+given in the SMTP
+.Ql MAIL FROM:
+command, the
+.It IP address
+That the client is connecting from, the
+.It date
+when this client & username can send mail
+to the
+.Nm postoffice
+server, and the
+.It date
+when this client & username last connected
+to the server.
+.El
+.Pp
+This file is a
+.Xr dbm 3
+database and is not human readable; the
+.Xr authexpire 8
+program is used to maintain it and remove old records.
+.Pp
+The record format used in this database is:
+.Bl -tag -width USER@[IP] -compact
+.It USER@[IP]
+The key
+.It DATE DATE
+When the client can connect and when the client last connected (both
+in seconds after the epoch).
+.El
+.Sh SEE ALSO
+.Xr dbm 3 ,
+.Xr authexpire 8 ,
+.Xr postoffice 8

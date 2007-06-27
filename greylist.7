@@ -1,0 +1,83 @@
+.\"
+.\"	%A%
+.\"
+.Dd Apr 2, 2004
+.Dt GREYLIST 7
+.Os MASTODON
+.Sh NAME
+.Nm greylist
+.Nd how the 
+.Xr postoffice 8
+greylist works
+.Sh DESCRIPTION
+A greylist is a way to slow down spammers by temporarily refusing access
+to the mail server.
+The greylist used by the
+.Xr postoffice 8
+SMTP server is a
+.Xr dbm 3
+database containing the
+.Em MAIL FROM:
+and IP addresses of SMTP clients,
+the time they are permitted to send mail,
+and the time they last sent mail.
+.Pp
+When a client connects to the SMTP server and issues a 
+.Em MAIL FROM:
+command, the server looks up that username and the IP address that
+the client is calling from in the greylist.   If it's later than
+the time the client is permitted to send mail, 
+.Em RCPT TO:
+commands will be processed normally, otherwise the mail server will
+refuse the command with a temporary failure error.
+.Pp
+In
+.Xr postoffice 8 ,
+new connections are typically greylisted for 
+.Em 60
+minutes with longer delays for connections coming from
+.Bl -tag -width xxx
+.It a
+Hosts that do not have a valid reverse DNS entry
+(twice the regular delay), or
+.It b
+mail from the
+.Nm MAILER-DAEMON
+at the client (four times the regular delay; five times
+if the host doesn't have a valid reverse DNS entry.)
+.El
+.Pp
+Furthermore, mail from the
+.Nm MAILER-DAEMON
+is only accepted for 
+.Em 10
+minutes after the greylist entry expires.
+This may be a bug, or it may not.  On the machine 
+.Nm Pell ,
+there are a grand total of two real users and on any
+given day there are up to 500 pieces of mail coming from
+.Nm MAILER-DAEMON .
+And on a typical day,
+.Em zero
+of those pieces of mail are real messages.
+Junk mail can cool its heels for a long long time as far
+as I'm concerned.
+.Sh BUGS
+If mail is sent from a domain that uses a
+lot of machines to round-robin outgoing mail,
+it will be delayed for a much longer time than
+the nominal 60 minute delay.
+If the mail is from the 
+.Nm MAILER-DAEMON
+at that host,
+it may never be accepted by the machine with the greylist.
+.Sh AUTHOR
+David Parsons
+.%T orc@pell.chi.il.us .
+.Sh SEE ALSO
+.Xr postoffice 8 ,
+.Xr smtpauth 5 ,
+.Xr authexpire 8 ;
+.Pp
+The web page
+.%T http://projects.puremagic.com/greylisting .

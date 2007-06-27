@@ -1,0 +1,137 @@
+.\" Copyright (c) 1988, 1991 The Regents of the University of California.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. All advertising materials mentioning features or use of this software
+.\"    must display the following acknowledgement:
+.\"	This product includes software developed by the University of
+.\"	California, Berkeley and its contributors.
+.\" 4. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"     %A%
+.\"
+.Dd April 2, 2004
+.Dt SENDMAIL 8
+.Os MASTODON
+.Sh NAME
+.Nm sendmail
+.Nd Berkeley sendmail emulation for 
+.Nm postoffice
+.Sh SYNOPSIS
+.Nm sendmail
+.Op Ar flags
+.Op Ar address ...
+.Sh DESCRIPTION
+.Nm Sendmail
+is a more-like-Berkeley-sendmail emulation for 
+.Nm postoffice .
+It sends a message to one or more
+.Em recipients
+specified on the command line, or, with the
+.Ql t
+option, in the headers of the mail message.
+.Nm Sendmail
+is intended as a user interface routine for programs
+that expect that a program named
+.Nm sendmail
+will be the program that you can get from
+.Em sendmail.org .
+.Pp
+With no flags,
+.Nm sendmail
+reads its standard input
+up to an end-of-file
+and sends a copy of the message found there
+to all of the addresses listed.
+Flags are:
+.Bl -tag -width Fl
+.It Fl bm
+Deliver mail in the usual way (default).
+.It Fl bs
+Use the SMTP
+protocol as described in
+.Em RFC821
+on standard input and output.
+.It Fl F Ns Ar fullname
+Set the full name of the sender (ignored).
+.It Fl f Ns Ar name
+Sets the name of the ``from'' person
+(i.e., the sender of the mail).
+.Fl f
+can only be used
+by ``trusted'' users
+(normally
+.Em root )
+or if the person you are trying to become
+is the same as the person you are.
+.It Fl o Ns Ar x Em value
+Set option
+.Ar x
+to the specified
+.Em value .
+(ignored)
+.It Fl r Ns Ar name
+An alternate form of the
+.Fl f
+flag.
+.It Fl t
+Read message for recipients.
+To:, Cc:, and Bcc: lines will be scanned for recipient addresses.
+The Bcc: line will be deleted before transmission.
+Any addresses in the argument list will be
+.Em ignored.
+.It Fl v
+Go into verbose mode.
+.El
+.Pp
+.Nm Sendmail
+returns an exit status
+describing what it did.
+The codes are defined in
+.Aq Pa sysexits.h :
+.Bl -tag -width EX_UNAVAILABLE -compact -offset indent
+.It Dv EX_OK
+Successful completion on all addresses.
+.It Dv EX_NOUSER
+User name not recognized.
+.It Dv EX_UNAVAILABLE
+Catchall meaning necessary resources
+were not available.
+.It Dv EX_SYNTAX
+Syntax error in address.
+.It Dv EX_SOFTWARE
+Internal software error,
+including bad arguments.
+.It Dv EX_OSERR
+Temporary operating system error,
+such as
+.Dq cannot fork .
+.El
+.Sh SEE ALSO
+.Xr postoffice 8
+.Sh HISTORY
+The
+.Nm
+command appeared in
+.Bx 4.2 .

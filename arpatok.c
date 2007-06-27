@@ -1,0 +1,94 @@
+/*
+ * break arpa addresses out of a line (via RFC822)
+ */
+#include <stdio.h>
+#include <ctype.h>
+
+
+char *
+arpatok(char **res)
+{
+    char *src, *dst, *ret;
+    unsigned int quot = 0;
+    unsigned int comment = 0;
+    unsigned int broket = 0;
+    unsigned char c;
+
+    if (res == 0 || *res == 0 || **res == 0)
+	return 0;
+
+    src = ret = dst = *res;
+
+    while (c = *src++) {
+	if (c == '"')
+	    quot = !quot;
+	else if (c == '\\' && *src)
+	    *dst++ = *src++;
+	else if (!quot) {
+	    if (c == '(') {
+		for (comment=1; comment && *src; ++src) {
+		    if (*src =='(') comment++;
+		    else if (*src == ')') comment--;
+		}
+	    }
+	    else if (c == ',')
+		break;
+	    else if (isspace(c))
+		;
+	    else if (c == '<') {
+		if ( !broket ) {
+		    broket = 1;
+		    dst = ret;
+		}
+	    }
+	    else if (broket && (c == '>')) {
+		*dst++ = 0;
+	    }
+	    else  {
+		*dst++ = c;
+	    }
+	}
+	else
+	    *dst++ = c;
+    }
+    *dst = 0;
+
+    if (res) *res = c ? src : 0;
+
+    return ret;
+}
+
+#if DEBUG
+
+
+show(char *address)
+{
+    char *bfr = alloca(strlen(address)+1);
+    char *q;
+
+    strcpy(bfr, address);
+
+    printf("[%s]\n", address);
+
+    while ( q = arpatok(&bfr) )
+	printf(" => %s\n", q);
+}
+
+main()
+{
+    show("orc@pell");
+    show("orc(david parsons)@pell(.portland.or.us)");
+    show(",orc(david parsons)@pell(.portland.or.us)");
+    show("\"orc@pell.portland.or.us\"(david parsons)");
+    show("orc,(david parsons)orc,orc(david parsons)@pell.portland.or.us");
+    show("david parsons<orc@pell.chi.il.us>,orc@pell(<david@pell.chi.il.us>)");
+    show("(david(parsons)<orc@tsfr.org>)<orc@pell.chi.il.us>orc@tsfr.org,root");
+    show("<orc@pell.><orc@tsfr.org>david parsons");
+    show("orc@pell\n"
+	 "       <orc@tsfr.\n"
+	 "        org>david parsons");
+    show("");
+    show(",");
+    show(" (nothing but whitespace and comments here) ");
+}
+#endif

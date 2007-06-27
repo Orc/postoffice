@@ -1,0 +1,57 @@
+.\"
+.\"     %A%
+.\"
+.Dd March 31, 2004
+.Dt AUTHEXPIRE 8
+.Os MASTODON
+.Sh NAME
+.Nm authexpire
+.Nd do housekeeping on the greylist
+.Sh SYNOPSIS
+.Nm /usr/libexec/authexpire
+.Op Fl nzvl
+.Ar age
+.Sh DESCRIPTION
+.Nm Authexpire
+examines the 
+.Em greylist
+database, removing entries that have not been active for
+.Xr age
+seconds.
+.Xr Age
+may be specified as a tagged number,
+with
+.Ql h
+being hours,
+.Ql d
+being days,
+and
+.Ql w
+being weeks.
+For example,
+.Ql timeout=2h
+or
+.Ql timeout=7200
+both set the expiration to two hours.
+
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl z
+Unconditionally remove entries from mailer daemons.
+.It Fl v
+Be chattery about what we're doing.
+.It Fl n
+Just pretend to be cleaning out the database.
+.It Fl l
+Just list the contents of the greylist.
+.El
+.Sh FILES
+.Pp
+.Bl -tag -width /var/db/smtpauth.db -compact
+.It /var/db/smtpauth.db
+The greylist
+.El
+.Sh SEE ALSO
+.Xr smtpauth 5 ,
+.Xr postoffice 8

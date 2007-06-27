@@ -1,0 +1,391 @@
+.\" Copyright (c) 1988, 1991 The Regents of the University of California.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. All advertising materials mentioning features or use of this software
+.\"    must display the following acknowledgement:
+.\"	This product includes software developed by the University of
+.\"	California, Berkeley and its contributors.
+.\" 4. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"     %A%
+.\"
+.Dd March 31, 2004
+.Dt POSTOFFICE 8
+.Os MASTODON 4
+.Sh NAME
+.Nm postoffice
+.Nd internet mail server
+.Sh SYNOPSIS
+.Nm postoffice
+.Op Ar flags
+.Op Ar address ...
+.Nm newaliases
+.Nm mailq
+.Nm runq
+.Op Fl v
+.Sh DESCRIPTION
+.Nm Postoffice
+accepts and delivers mail on
+.Em TCP/IP
+networks. It includes a mail
+.Em greylist ,
+uses 
+.Nm "TCP wrappers"
+to restrict client access,
+and can be configured to run antivirus
+.\" and antispam
+software before accepting mail for delivery.
+.Pp
+With no flags,
+.Nm postoffice
+reads its standard input
+up to an end-of-file
+and sends a copy of the message found there
+to all of the addresses listed on the command line.
+.Pp
+Local addresses are looked up in a file
+and aliased appropriately.
+.Pp
+Flags are:
+.Bl -tag -width Fl
+.It Fl bd
+Run as a daemon.  This requires Berkeley IPC.
+.Nm Postoffice
+will fork and run in background
+listening on socket 25 for incoming SMTP
+connections.
+.It Fl bi
+Initialize the alias database.
+.It Fl bm
+Deliver mail in the usual way (default).
+.It Fl bp
+Print a listing of the queue.
+.It Fl bq
+Process saved messages in the queue.
+.It Fl bs
+Use the SMTP
+protocol as described in
+.Em RFC821
+on standard input and output.
+.It Fl C Ns Ar file
+Read options from the named configuration file.
+.It Fl d Ns Ar X
+Set debugging value to
+.Ar X .
+.It Fl f Ns Ar name
+Sets the name of the
+.Ql from
+person
+(i.e., the sender of the mail).
+.Fl f
+can only be used
+by 
+.Em root
+or if the person you are trying to become
+is the same as the person you are.
+.It Fl o Ns Ar x Ns = Ns value
+Set option
+.Ar x
+to the specified
+.Em value .
+Options are described below.
+.It Fl q
+An alternate form of the
+.Fl bd
+flag.
+.\" .It Fl M Ns Ar ident
+.\" Process the queued message with the queue id
+.\" .Ar ident .
+.\" .It Fl R Ns Ar addr
+.\" Process the queued messages that have the string
+.\" .Ar addr
+.\" in one of the recipient addresses.
+.\" .It Fl S Ns Ar addr
+.\" Process the queued messages that have the string
+.\" .Ar addr
+.\" in the sender address.
+.It Fl r Ns Ar name
+An alternate form of the
+.Fl f
+flag.
+.It Fl v
+Go into verbose mode. This makes 
+.Nm
+more chatty for debugging purposes.
+.El
+.Pp
+When 
+.Nm
+is running as a SMTP
+server, there are a number of processing options that may be set.
+Options may be set either on the command line
+using the
+.Fl o
+flag
+or in a configuration file.
+The options are:
+.Bl -tag -width Fl
+.\" .It Li A Ns Ar file
+.\" Use alternate alias file.
+.\" .It Li D Ns Ar x
+.\" Set the delivery mode to
+.\" .Ar x .
+.\" Delivery modes are
+.\" .Ql i
+.\" for interactive (synchronous) delivery,
+.\" and
+.\" .Ql q
+.\" for queue only \- i.e.,
+.\" actual delivery is done the next time the queue is run.
+.\" .It Li e Ns Ar x
+.\" Set error processing to mode
+.\" .Ar x .
+.\" Valid modes are
+.\" .Ql m
+.\" to mail back the error message,
+.\" and
+.\" .Ql q
+.\" to throw away error messages
+.\" (only exit status is returned).
+.\" .It Li cq Ns Ar =N
+.\" Checkpoint the queue file after every
+.\" .Ar N
+.\" successful deliveries (default 10).
+.\" This avoids excessive duplicate deliveries
+.\" when sending to long mailing lists
+.\" interrupted by system crashes.
+.\" .It Li queue Ns = Ns Ar queuedir
+.\" Select the directory in which to queue messages.
+.It Li clients Ns = Ns Ar N
+Allow only 
+.Ar N
+clients at a time to connect to the server.
+.It Li delay Ns = Ns Ar N
+Set the
+.Em greylist Ns ing
+delay to
+.Ar N
+seconds.
+The 
+.Xr delay
+may be specified as a tagged number,
+with
+.Ql m
+being minutes.
+and
+.Ql h
+being hours.
+.It Li load Ns = Ns Ar N
+When the load average is above
+.Ar N ,
+.Nm postoffice
+will not accept SMTP connections (the default is 4).
+.It Li nodaemon
+Do not accept mail from
+.Em <> .
+This can be useful for blocking spammers and viruses, but
+it also violates
+.%T RFC821 ,
+and means that nobody at your site (including mailing lists)
+will ever get bounce messages when mail cannot be delivered.
+If your machine is connected to a public network,
+.Em DON'T
+.Em SET
+.Em THIS
+.Em OPTION
+unless you're under attack from a malicious spammer.
+.It Li paranoid
+Do not accept connections from clients that are not registered in
+the 
+.Dv DNS .
+.It Li hops Ns = Ns Ar N
+Set the hop count to
+.Ar N .
+The hop count is incremented every time the mail is
+processed.
+When it reaches this limit,
+the mail is returned with an error message,
+.It Li localmx
+Treat connections from sites that use this machine as an MX
+as if they were local, and give them the permissions that
+local clients have.
+.It Li relay
+Allow all clients to relay mail through this
+server.   If your machine is connected to a public network,
+.Em DON'T
+.Em SET
+.Em THIS
+.Em OPTION ,
+unless you really want to end up on every antispam blacklist on
+the planet.
+.It Li stat
+Enable the ESMTP
+.Ql STAT
+command, which 
+.Nm postoffice
+uses to display various internal settings.
+.It Li size Ns = Ns Ar size
+Sets the 
+largest message size that 
+.Nm postoffice
+will accept.
+.Xr size
+is given as a tagged number,
+with
+.Ql k
+being kilobytes,
+and
+.Ql m
+being megabytes.
+.It Li timeout Ns = Ns Ar timeout
+Drop the connection to a client if they are idle
+longer than
+.Ar timeout .
+This option violates the word (if not the intent) of the SMTP
+specification,
+so the timeout should probably be fairly large.
+The 
+.Xr timeout
+may be specified as a tagged number,
+with
+.Ql m
+being minutes,
+.Ql h
+being hours,
+and
+.Ql d
+being days.
+For example,
+.Ql timeout=60m
+or 
+.Ql timeout=1h
+both set the timeout to one hour.
+.\" .It Li stats Ns Ar file
+.\" Save statistics in the named file.
+.\" .It Li return Ns Ar time
+.\" Set the timeout on undelivered messages in the queue to the specified time.
+.\" After delivery has failed
+.\" (e.g., because of a host being down)
+.\" for this amount of time,
+.\" failed messages will be returned to the sender.
+.\" The default is three days.
+.\" .It Li U Ns Ar userdatabase
+.\" If set, a user database is consulted to get forwarding information.
+.\" You can consider this an adjunct to the aliasing mechanism,
+.\" except that the database is intended to be distributed;
+.\" aliases are local to a particular host.
+.\" This may not be available if your postoffice does not have the
+.\" .Dv USERDB
+.\" option compiled in.
+.\" .It Li u Ns Ar N
+.\" Set the default user id for mailers.
+.El
+.Pp
+In aliases,
+the first character of a name may be
+a vertical bar to cause interpretation of
+the rest of the name as a command
+to pipe the mail to.
+It may be necessary to quote the name
+to keep
+.Nm postoffice
+from suppressing the blanks from between arguments.
+For example, a common alias is:
+.Pp
+.Bd -literal -offset indent -compact
+msgs: "|/usr/bin/msgs -s"
+.Ed
+.Pp
+.Nm postoffice
+returns an exit status
+describing what it did.
+The codes are defined in
+.Aq Pa sysexits.h :
+.Bl -tag -width EX_UNAVAILABLE -compact -offset indent
+.It Dv EX_OK
+Successful completion on all addresses.
+.It Dv EX_NOUSER
+User name not recognized.
+.It Dv EX_UNAVAILABLE
+Catchall meaning necessary resources
+were not available.
+.It Dv EX_SYNTAX
+Syntax error in address.
+.It Dv EX_SOFTWARE
+Internal software error,
+including bad arguments.
+.It Dv EX_OSERR
+Temporary operating system error,
+such as
+.Dq cannot fork .
+.It Dv EX_NOPERM
+You do not have sufficient permissions.
+.It Dv EX_IOERR
+.Nm postoffice
+was unable to create or write a file.
+.El
+.Pp
+If invoked as
+.Nm newaliases ,
+.Nm postoffice
+will rebuild the alias database.
+If invoked as
+.Nm mailq ,
+.Nm postoffice
+will print the contents of the mail queue.
+If invoked as
+.Nm runq ,
+.Nm postoffice
+will run through the mail queue and make what deliveries are possible.
+.Sh FILES
+.Pp
+.Bl -tag -width /var/db/smtpauth.db -compact
+.It Pa /etc/aliases
+raw data for alias names
+.It Pa /etc/aliases.db
+data base of alias names
+.It Pa /var/log/mail.stat
+collected statistics
+.It Pa /var/spool/mqueue/*
+temp files
+.It Pa /var/db/smtpauth.db
+.Nm greylist
+database.
+.El
+.Sh SEE ALSO
+.Xr mail 1 ,
+.Xr rmail 1 ,
+.Xr syslog 3 ,
+.Xr authexpire 8 ,
+.Xr sendmail 8 ,
+.Xr smtpauth 5 ,
+.Xr aliases 5 ,
+.Xr mailaddr 7 ;
+.Pp
+DARPA
+Internet Request For Comments
+.%T RFC819 ,
+.%T RFC821 ,
+.%T RFC822 .
