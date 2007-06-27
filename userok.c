@@ -32,8 +32,19 @@ _see(struct letter *let, struct address *try, DBhandle alias)
     if ( (value == 0) && (em = getemail(try)) != 0 )
 	return 1;
 
-    if ( (value == 0) && alias && isvhost(try->dom) )
+    if ( (value == 0) && alias && isvhost(try->dom) ) {
 	value = dbif_get(alias, "*");
+	if ( (value[0] == '*') && (value[1] == '@') ) {
+	    int sz = strlen(try->user) + strlen(value);
+	    if ( try->alias = malloc(sz) ) {
+		sprintf(try->alias, "%s%s", try->user, 1+value);
+		return 1;
+	    }
+	    syslog(LOG_ERR, "(%s) %m", try->user);
+	    return 0;
+
+	}
+    }
 
     if (value) {
 	if (try->alias = strdup(value))
