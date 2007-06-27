@@ -262,8 +262,15 @@ mail(char *from, int argc, char **argv, ENV *env)
 	pid_t id;
 	if ( (id=fork()) == 0 ) {
 	    setsid();
-	    if (fork() == 0)
-		runjob(&let, let.qid);
+	    if (fork() == 0) {
+		struct letter rsvp;
+
+		if ( prepare(&rsvp, stdin, stdout, env) && runlock() ) {
+		    runjob(&rsvp, let.qid);
+		    rununlock();
+		    close_sessions();
+		}
+	    }
 	    exit(0);
 	}
 	else if (id < 0)

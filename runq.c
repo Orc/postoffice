@@ -27,8 +27,8 @@ too_old(struct letter *let, char *dfile)
     return (difftime(time(0), finfo.st_mtime)  > let->env->qreturn);
 }
 
-void
-runjob(struct letter *let, char *qid)
+static void
+runremote(struct letter *let, char *qid)
 {
     char dfile[sizeof(DATAPFX) + 10];
     char cfile[sizeof(CTRLPFX) + 10];
@@ -100,21 +100,67 @@ runjob(struct letter *let, char *qid)
 }
 
 
-int
-runq(struct env *env)
+runjob(struct letter *let, char *qid)
 {
-    DIR *d;
-    struct dirent *de;
-    FILE *f;
-    int fd;
-    struct letter let;
-    time_t t = time(0);
-    char timeofday[80];
-
-    strftime(timeofday, sizeof timeofday, "%I:%M %p  %b %d, %Y", localtime(&t));
-
-    setproctitle("runq @ %s", timeofday);
 #ifdef NO_FLOCK
+    pid_t qpid;
+    int runit;
+    FILE *f;
+
+    strcpy(xtemp, QRUNPFX);
+    strcat(xtemp, qid);
+
+    while ( !(runit = (link(pidf, xtemp) != -1)) && (errno == EEXIST)) {
+	/* if I can't take the xfile, see if the
+	 * xfile is owned by someone who still
+	 * exists.
+	 */
+	qpid = -1;
+	if (f = fopen(xtemp, "r")) {
+	    fscanf(f, "%d", &qpid);
+	    fclose(f);
+	}
+	if ( (qpid != -1) && (kill(qpid, 0) == 0) )
+	    break;
+
+	syslog(LOG_INFO, (qpid == -1) ? "Zombie QID %s"
+				      : "Zombie QID %s (pid %d)",
+			  qid, qpid);
+	unlink(xtemp);
+    }
+
+    if (runit) {
+	runremote(let, qid);
+	unlink(xtemp);
+    }
+    else if ( let->env->verbose && (errno != EEXIST) )
+	perror(qid);
+#else
+    int fd;
+
+    sprintf(xtemp, QUEUEDIR "/%s", qid);
+    if ( (fd = open(xtemp, O_RDWR)) == -1) {
+	if (errno != ENOENT)
+	    perror(qid);
+    }
+    else {
+	if ( flock(fd, LOCK_EX|LOCK_NB) == 0 ) {
+	    runremote(let, qid);
+	    flock(fd, LOCK_UN);
+	}
+	else if (errno != EWOULDBLOCK)
+	    perror(qid);
+	close(fd);
+    }
+#endif
+}
+
+int
+runlock()
+{
+#ifdef NO_FLOCK
+    int fd;
+
     sprintf(pidf, QUEUEDIR "qXXXXXX");
     if ( (fd = mkstemp(pidf)) == -1) {
 	syslog(LOG_ERR, "%s: %m", pidf);
@@ -126,7 +172,34 @@ runq(struct env *env)
 	write(fd, pidline, strlen(pidline));
 	close(fd);
     }
+    return 1;
 #endif
+}
+
+
+void
+rununlock()
+{
+#ifdef NO_FLOCK
+    unlink(pidf);
+#endif
+}
+
+
+int
+runq(struct env *env)
+{
+    DIR *d;
+    struct dirent *de;
+    struct letter let;
+    time_t t = time(0);
+    char timeofday[80];
+
+    strftime(timeofday, sizeof timeofday, "%I:%M %p  %b %d, %Y", localtime(&t));
+
+    setproctitle("runq @ %s", timeofday);
+
+    if ( !runlock() ) return 0;
 
     if ( (d = opendir(QUEUEDIR)) == 0 ) {
 	syslog(LOG_ERR, "%s: %m", QUEUEDIR);
@@ -135,65 +208,13 @@ runq(struct env *env)
 
     prepare(&let, stdin, stdout, env);
 
-    while (de = readdir(d)) {
-	if (Qpicker(de)) {
-#ifdef NO_FLOCK
-	    pid_t qpid;
-	    int runit;
-
-	    strcpy(xtemp, QRUNPFX);
-	    strcat(xtemp, de->d_name + 2);
-
-	    while ( !(runit = (link(pidf, xtemp) != -1)) && (errno == EEXIST)) {
-		/* if I can't take the xfile, see if the
-		 * xfile is owned by someone who still
-		 * exists.
-		 */
-		qpid = -1;
-		if (f = fopen(xtemp, "r")) {
-		    fscanf(f, "%d", &qpid);
-		    fclose(f);
-		}
-		if ( (qpid != -1) && (kill(qpid, 0) == 0) )
-		    break;
-
-		syslog(LOG_INFO, (qpid == -1) ? "Zombie QID %s"
-					      : "Zombie QID %s (pid %d)",
-				  de->d_name+2, qpid);
-		unlink(xtemp);
-	    }
-
-	    if (runit) {
-		runjob(&let, de->d_name + 2);
-		unlink(xtemp);
-	    }
-	    else if ( env->verbose && (errno != EEXIST) )
-		perror(de->d_name + 2);
-#else
-	    sprintf(xtemp, QUEUEDIR "/%s", de->d_name);
-	    if ( (fd = open(xtemp, O_RDWR)) == -1) {
-		if (errno != ENOENT)
-		    perror(de->d_name + 2);
-	    }
-	    else {
-		if ( flock(fd, LOCK_EX|LOCK_NB) == 0 ) {
-		    runjob(&let, de->d_name + 2);
-		    flock(fd, LOCK_UN);
-		}
-		else if (errno != EWOULDBLOCK)
-		    perror(de->d_name + 2);
-		close(fd);
-	    }
-#endif
-	}
-    }
+    while (de = readdir(d))
+	if (Qpicker(de))
+	    runjob(&let, de->d_name + 2);
     
     closedir(d);
     close_sessions();
 
-#ifdef NO_FLOCK
-    unlink(pidf);
-#endif
-
+    rununlock();
     return 1;
 }
