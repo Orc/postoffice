@@ -48,7 +48,7 @@ dbm:	dbm.c dbif.o
 tools:  $(TOOLS)
 
 mx:     mx.c
-	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c @LIBS@
 
 b64:    b64.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
@@ -60,51 +60,51 @@ install: install.@WHICH@ install.man
 
 
 install.man: $(MANPAGES)
-	@INSTALL_DIR@ $(mandir)/man8
-	@INSTALL_DIR@ $(mandir)/man7
-	@INSTALL_DIR@ $(mandir)/man5
-	@INSTALL_DIR@ $(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(mandir)/man8
-	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(mandir)/man7
-	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(mandir)/man7; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(mandir)/man5
-	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(mandir)/man5; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c dbm.1 $(mandir)/man1/@NDBM@.1
+	@INSTALL_DIR@ $(TARGET)$(mandir)/man8
+	@INSTALL_DIR@ $(TARGET)$(mandir)/man7
+	@INSTALL_DIR@ $(TARGET)$(mandir)/man5
+	@INSTALL_DIR@ $(TARGET)$(mandir)/man1
+	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(TARGET)$(mandir)/man8
+	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(TARGET)$(mandir)/man7
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(TARGET)$(mandir)/man7; fi
+	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(TARGET)$(mandir)/man5
+	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(TARGET)$(mandir)/man5; fi
+	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(TARGET)$(mandir)/man1
+	@INSTALL_DATA@ -m 444 -c dbm.1 $(TARGET)$(mandir)/man1/@NDBM@.1
 
 install.common.binaries:
-	@INSTALL_DIR@ $(libexec)
-	@INSTALL_DIR@ $(bindir)
-	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
-	@INSTALL_PROGRAM@ -c dbm $(bindir)/@NDBM@
+	@INSTALL_DIR@ $(TARGET)$(libexec)
+	@INSTALL_DIR@ $(TARGET)$(bindir)
+	@INSTALL_PROGRAM@ -c expire $(TARGET)$(libexec)/authexpire
+	@INSTALL_PROGRAM@ -c dbm $(TARGET)$(bindir)/@NDBM@
 
 install.programs: $(PGMS) install.common.binaries
-	@INSTALL_DIR@ $(libdir)
-	@INSTALL@ -m 4711 -c postoffice $(libdir)
-	@INSTALL_DIR@ $(bindir)
-	@INSTALL_DIR@ $(sbindir)
+	@INSTALL_DIR@ $(TARGET)$(libdir)
+	@INSTALL@ -m 4711 -c postoffice $(TARGET)$(libdir)
+	@INSTALL_DIR@ $(TARGET)$(bindir)
+	@INSTALL_DIR@ $(TARGET)$(sbindir)
 	for x in runq mailq newaliases sendmail; do \
-	    rm -f $(bindir)/$$x; \
-	    ln -s $(libdir)/postoffice $(bindir)/$$x; \
+	    rm -f $(TARGET)$(bindir)/$$x; \
+	    ln -s $(libdir)/postoffice $(TARGET)$(bindir)/$$x; \
 	done
 	for x in sendmail smtpd; do \
-	    rm -f $(sbindir)/$$x; \
-	    ln -s $(libdir)/postoffice $(sbindir)/$$x; \
+	    rm -f $(TARGET)$(sbindir)/$$x; \
+	    ln -s $(libdir)/postoffice $(TARGET)$(sbindir)/$$x; \
 	done
-	rm -f $(libdir)/sendmail
-	ln -s $(libdir)/postoffice $(libdir)/sendmail
+	rm -f $(TARGET)$(libdir)/sendmail
+	ln -s $(libdir)/postoffice $(TARGET)$(libdir)/sendmail
 
 install.mailfilter: $(PGMS) install.common.binaries
-	@INSTALL_DIR@ $(libexec)
-	@INSTALL_DIR@ $(bindir)
-	@INSTALL@ -m 4711 -c postoffice $(libexec)
-	ln -fs @MAILWRAPPER@ $(bindir)/runq
-	echo "# emulate sendmail with postoffice" > @MAILERCONF@.new
+	@INSTALL_DIR@ $(TARGET)$(libexec)
+	@INSTALL_DIR@ $(TARGET)$(bindir)
+	@INSTALL@ -m 4711 -c postoffice $(TARGET)$(libexec)
+	ln -fs @MAILWRAPPER@ $(TARGET)$(bindir)/runq
+	echo "# emulate sendmail with postoffice" > $(TARGET)@MAILERCONF@.new
 	for x in sendmail send-mail mailq newaliases runq; do \
 	    echo "$$x	$(libexec)/postoffice"; \
-	done >> @MAILERCONF@.new
-	cp -f @MAILERCONF@ @MAILERCONF@.old
-	mv @MAILERCONF@.new @MAILERCONF@
+	done >> $(TARGET)@MAILERCONF@.new
+	cp -f $(TARGET)@MAILERCONF@ $(TARGET)@MAILERCONF@.old
+	mv $(TARGET)@MAILERCONF@.new $(TARGET)@MAILERCONF@
 
 clean:
 	rm -f *.o $(PGMS) $(TOOLS)

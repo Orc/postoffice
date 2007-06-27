@@ -183,13 +183,13 @@ query(char *host, short qtype, DNS_REC *dp)
     int rc;
     char *name;
 
-    dp->eod = (char*)dp;
+    dp->eod = (char*)(&dp->h);
 
-   size = res_query(host, C_IN, qtype, (char*)&dp->h, dp->alloc);
+   size = res_query(host, C_IN, qtype, (char*)(&dp->h), dp->alloc);
     if (size < sizeof(HEADER))
 	return 0;
 
-    dp->eod = size + (char*)dp;
+    dp->eod = size + (char*)(&dp->h);
 
     if (dp->h.tc || (dp->h.rcode != 0) )
 	return 0;
