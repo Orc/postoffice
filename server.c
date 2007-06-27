@@ -135,16 +135,16 @@ attach(int port)
 }
 
 
-static void
+static int
 do_smtp_connection(int client, ENV *env)
 {
-    int i;
-    int cs;
-    FILE *in, *out;
+    FILE *in = 0,
+	 *out = 0;
     double loadavg[3];
     pid_t child;
     time_t now;
     char *peername;
+    int ret = 0, i, cs;
 
     for (i=nwindow; i-- > 0; )
 	if (window[i].clerk == -1)
@@ -163,8 +163,8 @@ do_smtp_connection(int client, ENV *env)
 	message(out, 451, "I'm too busy. Please try again later.");
     }
     else if (getpeername(client, &window[i].customer, &cs) == -1) {
-	syslog(LOG_ERR, "getpeername: %m");
 	message(out, 451, "System error.  Please try again later.");
+	ret = -1;
     }
     else if (isconnected(i)) {
 	message(out, 451, "You are already connected to "
@@ -215,6 +215,8 @@ do_smtp_connection(int client, ENV *env)
     }
     if (in) fclose(in);
     if (out) fclose(out);
+
+    return ret;
 }
 
 
@@ -225,7 +227,7 @@ server(ENV *env)
     int port = proto ? proto->s_port : htons(25);
     unsigned int errcount;
     int sock, client;
-    int nul, i;
+    int status, nul, i;
     pid_t daemon;
 
     nwindow = env->max_clients;
@@ -291,8 +293,12 @@ server(ENV *env)
 	    if (errcount)
 		--errcount;
 
-	    do_smtp_connection(client, env);
+	    status = do_smtp_connection(client, env);
 	    close(client);
+	    if (status < 0) {
+		syslog(LOG_ERR, "%m -- restarting daemon");
+		break;
+	    }
 	}
     }
     syslog(LOG_ERR, "daemon aborting: %m");

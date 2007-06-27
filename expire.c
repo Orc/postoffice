@@ -75,6 +75,7 @@ scrub(DBM *db, long age)
 
     do {
 	gone = total = 0;
+	bzero(&key, sizeof key);
 	for (key = dbm_firstkey(db); key.dptr; key = dbm_nextkey(db)) {
 	    total++;
 	    value = dbm_fetch(db, key);
@@ -83,23 +84,26 @@ scrub(DBM *db, long age)
 		case 1: last = delay;
 		case 2: if (last+age < now) {
 		default:    gone++;
-			    if (dryrun)
+			    if (dryrun || verbose)
 				printf("delete [%.*s]\n", key.dsize, key.dptr);
-			    else
+
+			    if (!dryrun)
 				dbm_delete(db, key);
 			}
 			else if ( nulluser && !strncmp(key.dptr, "<>@", 3) ) {
 			    gone++;
-			    if (dryrun)
+			    if (dryrun || verbose)
 				printf("delete [%.*s]\n", key.dsize, key.dptr);
-			    else
+
+			    if (!dryrun)
 				dbm_delete(db, key);
 			}
 			else if ((last < delay) && unretried) {
 			    gone++;
-			    if (dryrun)
+			    if (dryrun || verbose)
 				printf("delete [%.*s]\n", key.dsize, key.dptr);
-			    else
+
+			    if (!dryrun)
 				dbm_delete(db,key);
 			}
 			break;

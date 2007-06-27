@@ -163,20 +163,15 @@ static int
 post(struct letter *let, struct recipient *to)
 {
     char mailfile[sizeof _PATH_MAILDIR + 1 + 16 + 1];
+    struct passwd *dest = getpwemail(to->user);
 
-
-    if (strlen(to->user) > 16) {
-	fprintf(let->log, SuspiciousName, to->user);
-	syslog(LOG_ERR, "<%s> is *much* too long for a username", to->user);
-	return 0;
-    }
-    if (strchr(to->user, '/')) {
+    if ( dest == 0 || strchr(dest->pw_name, '/') != 0 ) {
 	fprintf(let->log, SuspiciousName, to->user);
 	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
 	return 0;
     }
 
-    sprintf(mailfile, _PATH_MAILDIR "/%s", to->user);
+    sprintf(mailfile, _PATH_MAILDIR "/%s", dest->pw_name);
 
     return mbox(let, to, mailfile);
 }

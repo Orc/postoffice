@@ -85,6 +85,34 @@ lowercase(char *q)
 
 
 /*
+ * try to match a name in /etc/passwd (case not significant)
+ */
+struct passwd *
+getpwemail(char *q)
+{
+    static struct passwd *p = 0;
+
+#if 0
+    /* cache the most recent lookup -- works if nobody scribbles on
+     * the struct passwd * that the getpwXXX() functions use
+     */
+    if ( p && (strcasecmp(q, p->pw_name) == 0) )
+	return p;
+
+    /* and if that fails, rewind and look through the whole passwd file
+     */
+#endif
+    setpwent();
+
+    while ( ( p = getpwent()) != 0)
+	if (strcasecmp(q, p->pw_name) == 0)
+	    return p;
+
+    return 0;
+}
+
+
+/*
  * getemail() gets password information for a user and the contents
  *            of their .forward file, if one exists (owned by and only
  *            writable by the user.)
@@ -100,10 +128,7 @@ getemail(struct address *u)
     char *forward;
     char *p;
 
-    if ( (pwd = getpwnam(u->user)) == 0 )
-	pwd = getpwnam(lowercase(u->user));
-
-    if (pwd == 0)
+    if ( (pwd = getpwemail(u->user)) == 0 )
 	return 0;
 
     ret.user = pwd->pw_name;
