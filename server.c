@@ -251,8 +251,14 @@ do_smtp_connection(int client, ENV *env)
 static void
 crash(int sig)
 {
-    syslog(LOG_ERR, "CRASH with signal %d", sig);
-    abort();
+    if (sig == SIGALRM) {
+	syslog(LOG_ERR, "CRASH when alarm() expired");
+	exit(EX_TEMPFAIL);
+    }
+    else {
+	syslog(LOG_ERR, "CRASH with signal %d", sig);
+	abort();
+    }
 }
 
 
