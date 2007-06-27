@@ -93,7 +93,7 @@ mkspool(struct letter *let)
     static char tempfile[sizeof(TEMPPFX)+20+1];
     int f;
 
-#if HAVE_STATFS || HAVE_STATVFS
+#if HAVE_STRUCT_STATFS || HAVE_STRUCT_STATVFS
 #if HAVE_STATFS
 #   define STATFS statfs
 #   define F_BSIZE f_bsize

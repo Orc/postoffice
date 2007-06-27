@@ -346,6 +346,44 @@ EOF
 
 
 #
+# check to see if some structure exists
+#
+# usage: AC_CHECK_STRUCT structure {include ...}
+#
+AC_CHECK_STRUCT () {
+    AC_PROG_CC
+    struct=$1
+    shift
+
+    rm -f /tmp/ngc$$.c
+
+    for include in $*; do
+	echo "#include <$include>" >> /tmp/ngc$$.c
+    done
+
+    cat >> /tmp/ngc$$.c << EOF
+main()
+{
+    struct $struct foo;
+}
+EOF
+
+    LOGN "checking for struct $struct"
+
+    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $AC_LIBS 2>>config.log; then
+	AC_DEFINE HAVE_STRUCT_`echo ${struct} | tr 'a-z' 'A-Z'`
+	TLOG " (found)"
+	rc=0
+    else
+	TLOG " (not found)"
+	rc=1
+    fi
+    rm -f /tmp/ngc$$.c /tmp/ngc$$
+    return $rc
+}
+
+
+#
 # check to see if some structure contains a field
 #
 # usage: AC_CHECK_FIELD structure field {include ...}
