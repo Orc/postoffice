@@ -366,7 +366,7 @@ getIPa(char *host, struct iplist *ipp)
 	    NewIP(ipp, 0, (struct in_addr*)&ip);
     }
     else {
-	_res.options |= RES_USEVC|RES_STAYOPEN;
+	/*_res.options |= RES_USEVC|RES_STAYOPEN;*/
 	if ( !(_res.options & RES_INIT) )
 	    res_init();
 
@@ -440,7 +440,7 @@ getMXes(char *host, struct iplist *ipp)
 	return ipp->count;
     }
 
-    _res.options |= RES_USEVC|RES_STAYOPEN;
+    /*_res.options |= RES_USEVC|RES_STAYOPEN;*/
     if ( !(_res.options & RES_INIT) )
 	res_init();
 

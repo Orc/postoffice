@@ -45,7 +45,8 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 
     writembox(session, session->esmtp ? "MAIL FROM:<%s> SIZE=%ld"
 			              : "MAIL FROM:<%s>",
-		      let->from->full, (long)(let->bodysize * 1.25));
+		      let->from ? let->from->full : "",
+		      (long)(let->bodysize * 1.25));
 
     if ( (status = statii[code = reply(session, 0)]) != MAILED) {
 	for (i=first; i < last; i++)
@@ -76,7 +77,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 		    (*denied)++;
 		    syslog(LOG_INFO,
 			    "delivery failed from %s (qid %s) to %s (%s)",
-			    let->from->full,
+			    let->from ? let->from->full : "MAILER-DAEMON",
 			    let->qid,
 			    let->remote.to[i].fullname,
 			    let->remote.to[i].host);

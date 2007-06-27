@@ -45,7 +45,7 @@ goodness(struct letter *let, int score)
 
 	contents.dptr = bfr;
 	contents.dsize = strlen(bfr);
-	contents.dptr[contents.dsize-1] = 0;
+	((char*)contents.dptr)[contents.dsize-1] = 0;
 
 	dbm_store(db, key, contents, DBM_REPLACE);
 

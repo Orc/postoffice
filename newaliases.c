@@ -45,11 +45,11 @@ token(char *p, char sep, char **next)
 	    if ( (ret.dptr = malloc(2 + (q-p))) != 0 ) {
 		for (i=0; (*p != sep) && (p <= q); p++, i++) {
 		    if ( isascii(*p) && isupper(*p) )
-			ret.dptr[i] = tolower(*p);
+			((char*)ret.dptr)[i] = tolower(*p);
 		    else
-			ret.dptr[i] = *p;
+			((char*)ret.dptr)[i] = *p;
 		}
-		ret.dptr[i++] = 0;
+		((char*)ret.dptr)[i++] = 0;
 		ret.dsize = i;
 	    }
 	}
@@ -98,7 +98,7 @@ newaliases()
 
 		key = token(p, ':', &p);
 
-		if ( key.dptr && (key.dptr[0] != '#') ) {
+		if ( key.dptr && (((char*)key.dptr)[0] != '#') ) {
 
 		    /* slurp in continuation lines */
 		    while ( (nl < end-1) && isspace(nl[1]) ) {
@@ -117,7 +117,7 @@ newaliases()
 		    value.dsize = (q-p)+2;
 		    if ( (q > p) && (value.dptr = malloc(value.dsize)) != 0 ) {
 			memcpy(value.dptr, p, value.dsize);
-			value.dptr[value.dsize-1] = 0;
+			((char*)value.dptr)[value.dsize-1] = 0;
 
 			rv = dbm_store(aliasdb, key, value, DBM_INSERT);
 

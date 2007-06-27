@@ -11,11 +11,11 @@ MAN1PAGES=newaliases.1 mailq.1 runq.1
 MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES)
 
 prefix=@prefix@
-libdir=$(prefix)/lib
-libexec=$(prefix)/libexec
-bindir=$(prefix)/bin
-sbindir=$(prefix)/sbin
-mandir=$(prefix)/man
+libdir=@libdir@
+libexec=@libexec@
+bindir=@exedir@
+sbindir=@sbindir@
+mandir=@mandir@
 
 OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
@@ -35,11 +35,18 @@ dbm:	dbm.c
 	$(CC) $(CFLAGS) -o dbm dbm.c @LIBS@
 
 install: $(PGMS) $(MANPAGES)
+	@INSTALL_DIR@ $(libdir)
 	@INSTALL@ -m 4711 -c postoffice $(libdir)
+	@INSTALL_DIR@ $(mandir)/man8
+	@INSTALL_DIR@ $(mandir)/man7
+	@INSTALL_DIR@ $(mandir)/man5
+	@INSTALL_DIR@ $(mandir)/man1
 	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(mandir)/man8
 	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(mandir)/man7
 	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(mandir)/man5
 	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(mandir)/man1
+	@INSTALL_DIR@ $(bindir)
+	@INSTALL_DIR@ $(libexec)
 	@INSTALL_PROGRAM@ -c dbm $(bindir)/ndbm
 	@INSTALL_PROGRAM@ -c expire $(libexec)/authexpire
 	for x in runq mailq newaliases sendmail; do \

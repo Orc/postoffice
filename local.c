@@ -141,6 +141,7 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 	receivedby(f, let, to);
 	addheaders(f, let);
 	copybody(f, let);
+	putc('\n', f);
 
 	flock(fileno(f), LOCK_UN);
 	fclose(f);

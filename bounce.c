@@ -33,42 +33,32 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
     if (logtext && (logsize == -1))
 	logsize = strlen(logtext);
 
-    if (let->from->user == 0 || strlen(let->from->user) == 0) {
-	/* can't bounce to <>; drop it on the floor?  Send it to
-	 * the local postmaster?
-	 */
-	st = 0;
-    }
-    else
-	st = recipients(&bounce, let->from);
+    if ( (st = let->from ? addto(&bounce, let->from->full) : 0) == 0)
+	st = addto(&bounce, "postmaster");
 
-    if (st <= 0) {
-	int ok;
-	ok = (postmaster = verify(&bounce, "postmaster", 1, &st)) &&
-			       (recipients(&bounce, postmaster) > 0);
-	if (postmaster)
-	    freeaddress(postmaster);
-
-	if ( !ok ) {
-	    syslog(LOG_ERR, "double-bounce: no postmaster?");
-	    reset(&bounce);
-	    return;
-	}
+    if (st == 0) {
+	syslog(LOG_ERR, "double-bounce: no postmaster?");
+	reset(&bounce);
+	return;
     }
+
     if ( bounce.from = mkaddress("") ) {
 	if (mkspool(&bounce)) {
 	    fprintf(bounce.body, "Subject: Undeliverable mail\n"
 				 "From: Mail <MAILER-DAEMON@%s>\n"
-				 "MIME-Version: 1.0\n"
 				 "Content-Type: multipart/report;\n"
 				 "              report-type=delivery-status;\n"
 				 "              boundary=\"%s\"\n"
-				 "\n"
+				 "MIME-Version: 1.0\n"
+				 "\n\n"
 				 "--%s\n", let->env->localhost,
 					     boundary, boundary);
-	    fprintf(bounce.body, "\nThe mail service on %s was unable to \n"
-				 "deliver your mail to\n",
-				    let->env->localhost);
+	    fprintf(bounce.body, "content-type: text/plain\n\n"
+	                         "The mail service on %s was unable to \n"
+				 "deliver your mail from %s to\n",
+				    let->env->localhost,
+				    let->from ? let->from->full
+					      : "MAILER-DAEMON");
 
 	    picky = logtext && (strncmp(logtext, "To <", 4) == 0);
 
@@ -77,10 +67,12 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
 		    fprintf(bounce.body, "\t%s\n", let->remote.to[i].fullname);
 	    fputc('\n', bounce.body);
 	    if (logtext && !picky) {
+#if 0
 		fprintf(bounce.body, "\n\n-%s\n"
 				     "content-type: text/plain\n"
 				     "content-description: mail log\n"
 				     "\n", boundary);
+#endif
 		fwrite(logtext, logsize, 1, bounce.body);
 	    }
 

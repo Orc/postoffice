@@ -524,18 +524,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	letter.deliveredIP = peer ? inet_ntoa(peer->sin_addr) : "127.0.0.1";
 	letter.deliveredto = env->localhost;
 
-	if (env->paranoid && !strcmp(letter.deliveredby,letter.deliveredIP)) {
-	    message(out, 421, "%s is not accepting mail from %s,"
-			     " because we cannot resolve your IP address."
-			     " Try again later, okay?",
-			     letter.deliveredto, letter.deliveredby);
-	    goodness(&letter, -2);
-	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
-	    audit(&letter, "CONN", "stranger", 421);
-	    byebye(&letter, 1);
-	}
 #ifdef WITH_TCPWRAPPERS
-	else if (!hosts_ctl("smtp", letter.deliveredby,
+	if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
 	    char *why;
 
@@ -551,8 +541,18 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    audit(&letter, "CONN", "blacklist", 554);
 	    ok = 0;
 	}
+	else
 #endif
-
+	if (env->paranoid && !strcmp(letter.deliveredby,letter.deliveredIP)) {
+	    message(out, 421, "%s is not accepting mail from %s,"
+			     " because we cannot resolve your IP address."
+			     " Correct this, then try again later, okay?",
+			     letter.deliveredto, letter.deliveredby);
+	    goodness(&letter, -8);
+	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
+	    audit(&letter, "CONN", "stranger", 421);
+	    byebye(&letter, 1);
+	}
 	else {
 	    int fd;
 	    char *blurb = 0;
