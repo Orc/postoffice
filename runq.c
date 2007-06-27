@@ -1,6 +1,8 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
@@ -9,10 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-
-#if OS_DARWIN
 #include <string.h>
-#endif
 
 #include "spool.h"
 #include "bounce.h"
@@ -37,7 +36,6 @@ runremote(struct letter *let, char *qid)
     char dfile[sizeof(DATAPFX) + 10];
     char cfile[sizeof(CTRLPFX) + 10];
     extern char replytext[];
-    int status = 0;
     int fd;
 
     sprintf(cfile, CTRLPFX "%.9s", qid);

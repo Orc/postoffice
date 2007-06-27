@@ -262,6 +262,7 @@ database.
 .Xr mailaudit 5 ,
 .Xr postoffice.cf 5 ,
 .Xr smtpauth 5 ,
+.Xr usermap 7 ,
 @VHOST@.Xr vhosts 7 ,
 .Xr mailaddr 7 ,
 .Xr authexpire 8 ,

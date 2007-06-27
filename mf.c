@@ -4,13 +4,15 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#if OS_FREEBSD
-#include <stdlib.h>
-#else
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+#include <ctype.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -32,6 +34,7 @@
 #endif
 #include "mf.h"
 #include "mx.h"
+#include "socklib.h"
 
 
 extern void message(FILE *f, int code, char *fmt, ...);
@@ -262,7 +265,7 @@ mfprintf(int f, char cmd, char *fmt, ...)
     DWORD  nw32;
     WORD   nw16;
     char   c[1];
-    int    rc, len;
+    int    rc = 0, len;
 
     va_start(ptr,fmt);
 
@@ -270,13 +273,13 @@ mfprintf(int f, char cmd, char *fmt, ...)
 	if ( (*p == '%') && p[1]) {
 	    switch (*++p) {
 	    case 'l':   size += 4;
-			va_arg(ptr,DWORD);
+			(void)va_arg(ptr,DWORD);
 			break;
 	    case 'd':   size += 2;
-			va_arg(ptr,int);
+			(void)va_arg(ptr,int);
 			break;
 	    case 'c':   size++;
-			va_arg(ptr,int);
+			(void)va_arg(ptr,int);
 			break;
 	    case '*':	size += va_arg(ptr,int);
 			break;
@@ -348,7 +351,6 @@ static int
 handshake(struct letter *let, char *channel)
 {
     int f;
-    int rc;
     struct mfdata *ret;
     struct sockaddr_un urk;
     int len;
@@ -357,9 +359,8 @@ handshake(struct letter *let, char *channel)
     if (channel[0] == '/') {
 	/* connect to named socket
 	 */
-	if (strlen(channel) > sizeof urk.sun_path) {
+	if (strlen(channel) > sizeof urk.sun_path)
 	    return -1;
-	}
 
 	if ( (f = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	    PERROR("socket");
@@ -394,18 +395,16 @@ handshake(struct letter *let, char *channel)
 	if ( (port = atoi(p)) <= 0)
 	    return -1;	/* bogus port */
 
-	if (getIPa(ipchan, &list) > 0) {
+	if (getIPa(ipchan, &list) <= 0)
+	    return 0;
 
-	    for (i=list.count; i > 0; --i)
-		if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
-		    break;
-	    freeiplist(&list);
+	for (i=list.count; i > 0; --i)
+	    if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
+		break;
 
-	    if (i <= 0)
-		return -1;	/* could not connect to socket */
-	}
-	else
-	    return -1;
+	freeiplist(&list);
+	if (i <= 0)
+	    return -1;	/* could not connect to socket */
     }
 
 
@@ -568,8 +567,6 @@ mfdata(struct letter *let)
 #define MCHUNKSIZE	65535
 
     for (p = map; p < end; p = 1+q) {
-	int checked = 0;
-
 	/* find a newline */
 	if ( (q = memchr(p, '\n', size - (p - map))) == 0)
 		break;

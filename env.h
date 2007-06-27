@@ -6,6 +6,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+struct usermap {
+    char *pat;
+    char *map;
+    struct usermap *next;
+};
+
 struct env {
     struct in_addr *local_if;	/* ip addresses assigned to the local machine */
     char *localhost;		/* name of localhost */
@@ -21,10 +27,7 @@ struct env {
     char *relay_host;		/* mail relay */
     long  minfree;		/* don't run if the spool directory has less
 				 * than this many bytes free */
-    struct usermap{		/* map usernames (personal aliases) */
-	char *pat;		/* ie: '*-~' */
-	char *map;		/* ie: '~/alias,bounce' */
-    } usermap;
+    struct usermap *usermap;	/* map usernames (personal aliases) */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */
     unsigned int   paranoid:1;	/* don't accept email from clients we can't

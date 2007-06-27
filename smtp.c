@@ -92,7 +92,7 @@ message(FILE *f, int code, char *fmt, ...)
     va_list ptr;
     static char bfr[10240];
     int size;
-    int i, j, k;
+    int i, j;
     int dash = (code < 0);
     int shout = 1;
 
@@ -312,12 +312,7 @@ static int
 to(struct letter *let, char *line)
 {
     char *p = skipspace(line+4);
-    char *result;
-    int len;
-    char *q;
-    char *temp;
     struct address *a;
-    struct iplist mxes;
     int rc = 0;
 
     if (strncasecmp(p, "TO", 2) != 0 || *(p = skipspace(p+2)) != ':') {
@@ -429,7 +424,6 @@ static int
 post(struct letter *let)
 {
     int ok, didmsg=0;
-    char *ptr;
 
     if (svspool(let) == 0)
 	return 0;
@@ -512,7 +506,7 @@ describe(FILE *f, int code, struct recipient *to)
 	message(f,-code, "to: file [%s] %d %d", to->fullname, to->uid, to->gid);
 	break;
     case emEXE:
-	message(f,-code, "to: prog [%s] %d %d", to->fullname, to->uid, to->gid);
+	message(f,-code, "to: prog <[%s]> %d %d", to->fullname, to->uid, to->gid);
 	break;
     case emUSER:
 	if (to->host)
@@ -531,7 +525,7 @@ debug(struct letter *let)
 
     audit(let, "DEBU", "", 250);
     if (let->from)
-	message(let->out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/",
+	message(let->out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/\n",
 		    let->from->full,
 		    username(let->from->dom,let->from->user),
 		    let->from->domain,
@@ -558,6 +552,13 @@ debug(struct letter *let)
 #ifdef WITH_MILTER
     mflist(let->out,-250);
 #endif
+    {   struct usermap *um;
+
+	for (um = env->usermap; um; um = um->next)
+	    message(let->out, -250, "User map: <(%s)> to <(%s)>\n",
+			um->pat, um->map);
+    }
+
 #if USE_PEER_FLAG
     message(let->out,-250, "Peer flag: T\n");
 #endif
@@ -603,10 +604,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     enum cmds c;
     int ok = 1;
     char *why = 0;
-    int issock = 1;
     int patience = 5;
     int delay = 0;
-    char bfr[1];
     int rc, score, traf = 0;
     int timeout = env->timeout;
 #ifdef SMTP_AUTH

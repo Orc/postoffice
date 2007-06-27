@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -8,12 +9,11 @@
 #include <string.h>
 #include <errno.h>
 #include <sysexits.h>
-
+#include <ctype.h>
+#include <sys/mman.h>
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "dbif.h"
@@ -70,7 +70,7 @@ rebuild_db(char *domain)
     int longest = 0;
     int total = 0;
     int rv;
-    char *key, *value;
+    char *key;
     DBhandle aliasdb;
     char *q;
     struct domain *dom = getdomain(domain);

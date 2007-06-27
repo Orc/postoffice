@@ -239,6 +239,11 @@ For example,
 or 
 .Ql timeout=1h
 both set the timeout to one hour.
+.It Li usermap Ns = Ns Ar pattern:target(s)
+Define personal aliases
+(the format is described in the
+.Xr usermap 7
+manpage.)
 .It Li verify-from Ns = Ns Ar flag
 Check the validity of MAIL FROM addresses.  If
 nonzero (the default), the address will be rejected if it's
@@ -248,4 +253,5 @@ okay with
 .Sy postoffice .
 .El
 .Sh SEE ALSO
+.Xr usermap 7 ,
 .Xr postoffice 8

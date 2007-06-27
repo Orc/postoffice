@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <string.h>
@@ -9,11 +10,11 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "letter.h"
@@ -178,7 +179,6 @@ int
 mail(char *from, int argc, char **argv, ENV *env)
 {
     struct letter let;
-    char *ptr;
     int reason;
     int count;
     int total = 0;
@@ -287,7 +287,8 @@ mail(char *from, int argc, char **argv, ENV *env)
 
 	    if ( ptr = mapfd(fileno(let.log), &size) ) {
 		syslog(LOG_ERR, "Local mail delivery failed");
-		fprintf(stderr, "Local mail delivery failed:\n%.*s", size, ptr);
+		fprintf(stderr, "Local mail delivery failed:\n%.*s",
+				    (int)size, ptr);
 		munmap(ptr, size);
 	    }
 	    byebye(&let, let.fatal ? EX_OSERR : EX_SOFTWARE );

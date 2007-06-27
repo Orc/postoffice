@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <signal.h>
+#include <time.h>
+
 #include "env.h"
 #include "letter.h"
 

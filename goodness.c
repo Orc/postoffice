@@ -5,6 +5,7 @@
 #include <time.h>
 #include <syslog.h>
 #include <sysexits.h>
+#include <stdlib.h>
 
 #define SANTA "/var/db/goodness"
 

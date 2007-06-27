@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <pwd.h>
@@ -10,8 +11,6 @@
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "letter.h"
@@ -138,7 +137,6 @@ int
 localprocess(struct letter *let, struct address *u, struct back *b)
 {
     struct email *em = getemail(u);
-    int rc;
 
     if (let == 0)
 	return -1;

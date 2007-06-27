@@ -15,10 +15,8 @@
 #include <string.h>
 #endif
 
-#if OS_DARWIN
 #include <stdlib.h>
-#include <strings.h>
-#endif
+#include <string.h>
 
 
 int verbose = 0;

@@ -6,15 +6,19 @@
 #include <syslog.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 #include "letter.h"
 #include "mbox.h"
 #include "bounce.h"
 #include "socklib.h"
 
+#if 0
 static enum r_status
              /*  EOF      1dd     2dd      3dd      4dd     5dd   */
 statii[10] = { PENDING, PENDING, ACCEPTED, PENDING, PENDING, REFUSED };
+#endif
 
 static int
 SMTPwrite(MBOX *f, char *text, unsigned long size)
@@ -53,12 +57,10 @@ SMTPwrite(MBOX *f, char *text, unsigned long size)
 static int
 SMTPpost(MBOX *session, struct letter *let, int first, int last)
 {
-    enum r_status status;
     int ok, accepted=0, code;
     int i;
     int denied = 0;
     off_t base = 0;
-    int slowpoke = 0;
 
     rewind(session->log);
 
@@ -199,7 +201,6 @@ send_to_remote(struct letter *let, char *host, int i, int j)
     char *logtext;
     long logsize;
     size_t mapsize;
-    int rc;
 
     if (f = session(let->env, host, 25)) {
 	if ( SMTPpost(f, let, i, j) > 0 ) {

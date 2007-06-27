@@ -47,7 +47,7 @@ char *pgm;
 float
 main(int argc, char **argv)
 {
-    int i, opt;
+    int opt;
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
     static ENV env;

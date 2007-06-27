@@ -4,13 +4,12 @@
 
 #include "config.h"
 
+#include <stdlib.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#if OS_DARWIN
-#define BIND_8_COMPAT
-#endif
 #include <arpa/nameser.h>
 #include <resolv.h>
 
@@ -19,8 +18,6 @@
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "mx.h"
@@ -227,8 +224,6 @@ static char *
 cname(char *host)
 {
     char *name;
-    short dclass, dtype;
-    long dttl;
     short reclen;
     char *p;
     int count = 0;
@@ -252,8 +247,6 @@ char *
 ptr(struct in_addr *ip)
 {
     char *name;
-    short dclass, dtype;
-    long dttl;
     short reclen;
     char *p, *q;
     char candidate[DNSIZE];
@@ -300,7 +293,6 @@ mx(char *host, struct mxlist *list)
     char *p;
     int   count, reclen;
     short prio;
-    int   i;
 
 
     if (p = query(host, T_MX, &dns_rec)) {
@@ -431,8 +423,6 @@ freemxlist(struct mxlist *p)
 void
 freeiplist(struct iplist *p)
 {
-    int i;
-
     free(p->a);
     p->size = p->count = 0;
     p->a = 0;

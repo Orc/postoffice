@@ -14,14 +14,11 @@ void
 bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
 {
     struct letter bounce;
-    struct address *postmaster;
     int st;
-    FILE *bf;
     static char boundary[] = "OH,NO!";
     char *ptr, *eptr;
     int i;
     int count;
-    int comma = 0;
     int picky = 0;
 
     for (count=i=0; i < let->remote.count; i++)

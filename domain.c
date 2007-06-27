@@ -77,7 +77,6 @@ int
 initdomain()
 {
     FILE *f;
-    int size;
 
     if (domains) return 1;
 
@@ -88,7 +87,6 @@ initdomain()
     if ( f = fopen(VPATH "/domains.cf", "r") ) {
 	char bfr[200];
 	char *owner, *domain, *active;
-	struct passwd *pwd;
 
 	while (fgets(bfr, sizeof bfr, f)) {
 	    owner = strtok(bfr, ":");

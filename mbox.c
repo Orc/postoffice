@@ -1,6 +1,8 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/socket.h>
@@ -8,8 +10,8 @@
 #include <netdb.h>
 #include <errno.h>
 #include <syslog.h>
-#include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "mbox.h"
 #include "socklib.h"
@@ -20,8 +22,6 @@
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "mbox.h"
@@ -51,8 +51,7 @@ getsize(MBOX *f, char *line)
 MBOX *
 newmbox(struct in_addr *ip, int port, int verbose)
 {
-    struct servent *p;
-    char *c, *host;
+    char *host;
     MBOX *ret = calloc(sizeof *ret, 1);
 
     if (ret == 0)
@@ -110,7 +109,6 @@ readmbox(MBOX *f)
 {
     static char *buf = 0;
     static int alloc = 0,
-               base  = 0,
 	       len   = 0;
 
     int c;

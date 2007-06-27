@@ -1,7 +1,10 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "letter.h"
 #include "dbif.h"
@@ -32,13 +35,12 @@ static int
 authmeharder(struct letter *let, char *user, char *pass)
 {
     struct address *addr;
-    struct domain *dom;
     struct passwd *pw;
     int ret = 0;
 
     if ( addr = mkaddress(user) ) { 
 #if AUTH_PASSWD
-	dom = getdomain(addr->domain);
+	struct domain *dom = getdomain(addr->domain);
 	pw = dom ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
 #else
 	pw = getvpwemail(getdomain(addr->domain), addr->user);
@@ -87,7 +89,6 @@ authlogin(struct letter *let, char *restofline)
 {
     char *user, *pass;
     char *res;
-    char line[512];
     char auser[40];
     int err, ok = 0, code;
 
@@ -121,9 +122,6 @@ done:
     case 0:
 	message(let->out, code=235, "Pass, friend!");
 	break;
-    case 1:
-	message(let->out, code=421, "Hello?");
-	break;
     case 2:
 	message(let->out, code=501, "That's not a code I recognise!");
 	break;
@@ -132,6 +130,9 @@ done:
 	break;
     case 4:
 	message(let->out, code=535, "I do not recognise you.");
+	break;
+    default:
+	message(let->out, code=421, "Hello?");
 	break;
     }
     audit(let, "AUTH", auser, code);

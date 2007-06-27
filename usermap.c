@@ -29,7 +29,7 @@ back(char *string, char *start, char c)
 static int
 map(char *pat, char *string, struct address *try, struct passwd **mapuser)
 {
-    char *r, *p;
+    char *r;
 
     if (string == 0 || pat == 0)
 	return 0;
@@ -86,65 +86,64 @@ map(char *pat, char *string, struct address *try, struct passwd **mapuser)
 }
 
 
-char*
-usermap(struct letter *let, struct address *try)
+static char*
+expandmap(struct usermap *um, struct address *try, struct passwd *user)
 {
-    struct passwd *mapuser  = 0;
-    char *p, *q;
+    char *p;
     char *cut;
 
-    if ( !(let->env->usermap.pat && let->env->usermap.map) )
-	return 0;
-
-    if ( !map(let->env->usermap.pat, try->user, try, &mapuser) )
-	return 0;
-
-#if 0
-    printf("%s -> %s", try->user, let->env->usermap.map);
-    if (mapuser)
-	printf(" (user = %s)", mapuser->pw_name);
-    putchar('\n');
-#endif
-
-    if ( (cut = alloca(strlen(let->env->usermap.map)+1)) == 0 )
+    if ( (cut = alloca(strlen(um->map)+1)) == 0 )
 	return 0;	/* need to throw a 4xx and die */
 
-    strcpy(cut, let->env->usermap.map);
+    strcpy(cut, um->map);
     for ( p = strtok(cut, ","); p; p = strtok(NULL, ",") )
-	if (p[0] == '~' && p[1] == '/') {
-	    if ( mapuser && !isvhost(try->dom) ) {
-		char *file = alloca(strlen(mapuser->pw_dir) + strlen(p+1) + 1);
+	if ( (p[0] == '~') && user) {
+	    if (p[1] == 0)
+		return strdup(user->pw_name);
+	    else if ( p[1] == '/' && !isvhost(try->dom) ) {
+		char *file = alloca(strlen(user->pw_dir) + strlen(p+1) + 1);
 		int ulen = strlen(try->user);
 		char line[400];
 		FILE *f;
 
 		if ( file == 0 )
 		    return 0;	/* need to throw a 4xx and die */
-		strcpy(file, mapuser->pw_dir);
+		strcpy(file, user->pw_dir);
 		strcat(file, p+1);
 
-		if ( !goodfile(file, mapuser) )
+		if ( !goodfile(file, user) )
 		    continue;
 
 		if ( f = fopen(file, "r") ) {
 		    while (fgets(line, sizeof line, f)) {
-			if ( strncmp(line, try->user, ulen) == 0
-					    && line[ulen] == ':' ) {
+			if ( strncasecmp(line, try->user, ulen) == 0
+						&& line[ulen] == ':' ) {
 			    fclose(f);
 			    strtok(line, "\n");
-			    if ( q = strdup(line+ulen+1) )
-				return q;
-			    return 0; /* need to throw a 4xx and die */
+			    return strdup(line+ulen+1);
 			}
 		    }
 		    fclose(f);
 		}
 	    }
 	}
-	else if ( q = strdup(p) )
-	    return q;
 	else
-	    return 0; /* need to throw a 4xx and die */
+	    return strdup(p);
+    return 0;
+}
 
+
+char*
+usermap(struct letter *let, struct address *try)
+{
+    struct passwd *mapuser;
+    struct usermap *um;
+
+
+    for (um = let->env->usermap; um; um = um->next) {
+	mapuser = 0;
+	if ( map(um->pat, try->user, try, &mapuser) )
+	    return expandmap(um, try, mapuser);
+    }
     return 0;
 }

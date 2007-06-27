@@ -109,7 +109,7 @@ isconnected(int i)
 }
 
 
-void
+static void
 reaper(int sig)
 {
     int i, status;
@@ -140,7 +140,6 @@ attach(int port)
 {
     struct sockaddr service;
     struct sockaddr_in *af_inet = (struct sockaddr_in*)&service;
-    int size;
     int ret;
     int on = 1;
 
@@ -173,7 +172,6 @@ do_smtp_connection(int client, ENV *env)
 	 *out = 0;
     double loadavg[3];
     pid_t child;
-    time_t now;
     char *peername;
     int ret = 0, i, cs;
 
@@ -303,7 +301,7 @@ daemonize(ENV *env, int debug, char *what)
 }
 
 
-void
+static void
 catchsigs(void (*newsig)(int))
 {
     int i;

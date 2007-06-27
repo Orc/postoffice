@@ -3,7 +3,7 @@
  * from64() decode a base64 string
  */
 /*
- *		Copyright (C) 2004-2005 David Loren Parsons.
+ *		Copyright (C) 2004-2007 David Loren Parsons.
  *			All rights reserved.
  *
  *  Permission is hereby granted, free of charge, to any person
@@ -30,10 +30,11 @@
  *  OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
 #include <string.h>
-#if __FreeBSD__
-#  include <stdlib.h>
-#else
+#include <stdlib.h>
+#include <ctype.h>
+#if HAVE_MALLOC_H
 #  include <malloc.h>
 #endif
 
@@ -86,7 +87,7 @@ to64(char *clear)
 
 
 char *
-from64(char *code)
+from64(unsigned char *code)
 {
     int sz;
     int cvt = 0;

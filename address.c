@@ -1,12 +1,12 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "letter.h"

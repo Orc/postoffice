@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -8,10 +9,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <sysexits.h>
-
-#if OS_DARWIN
-#include <stdlib.h>
-#endif
+#include <time.h>
 
 #include "spool.h"
 
@@ -72,7 +70,6 @@ listq()
     char comment[200];
     char date[40];
     struct stat st;
-    struct dirent *q;
     int i;
 
     if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, Qcompare)) < 0) {

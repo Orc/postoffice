@@ -1,12 +1,10 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-
-#if OS_DARWIN
-#include <stdlib.h>
-#endif
+#include <ctype.h>
 
 #if HAVE_LIBGEN_H
 #include <libgen.h>
@@ -50,8 +48,6 @@ create(int argc, char **argv, int mode)
 int
 clear(int argc, char **argv, int mode)
 {
-    char *fqdbname;
-
     if (dbname == 0)
 	if (argc < 1)
 	    usage("clear", 1);
@@ -134,7 +130,7 @@ dbreopen(char *name, int mode)
 int
 delete(int argc, char **argv, int mode)
 {
-    int i, rc;
+    int i, rc = 0;
 
     if (dbname == 0)
 	usage("delete", 1);
@@ -177,7 +173,6 @@ load(int argc, char **argv, int mode)
     char line[1024];
     char *p;
     char *q;
-    int opt;
 
     if ( (rc = clear(argc, argv, mode)) != 0)
 	return rc;
@@ -260,6 +255,7 @@ dbif_perror(char *text)
 }
 
 
+float
 main(int argc, char **argv)
 {
     register opt;

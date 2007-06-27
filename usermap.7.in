@@ -1,0 +1,109 @@
+.\"
+.\"	%A%
+.\"
+.Dd Jun 10, 2007
+.Dt USERMAP 7
+.Os MASTODON
+.Sh NAME
+.Nm usermap
+.Nd how
+.Xr postoffice 8
+personal aliases work
+.Sh DESCRIPTION
+Personal aliases are a way of slowing down spammers by allowing users
+on a system to define aliases as needed without having to give them
+superuser access so they can add entries to the
+.Xr aliases 5
+file.   Personal aliases are configured in
+.Xr postoffice.cf 5
+(the
+.Em usermap
+configuration setting,) and may point to
+.Xr aliases 5 -format Ns
+files in a users home directory.
+
+
+The format of a
+.Em usermap
+is
+.Em pattern Ns : Ns Ar target{,...} ,
+defined as follows:
+
+.Bl -tag -width Fl
+.It Ar pattern
+This defines the format of the personal alias. 
+It is a shell-format wildcard, with 
+.Em *
+matching multiple characters and 
+.Em ~
+matching a valid user name.   The two standard personal
+alias formats (user-suffix and prefix-user) can be described
+as 
+.Ar ~ Ns - Ns Ar *
+and
+.Ar * Ns - Ns Ar ~ ,
+but many other formats are possible.
+.It Ar target
+This is what the personal alias maps to.  It can be a simple
+token like you'd find in the
+.Xr aliases 5
+file, but it may also be the token
+.Em ~ Ns ,
+which maps to the matched user name, or
+.Em ~/ Ns Ar filename ,
+which tells 
+.Xr postoffice 8
+to search the user's personal alias file 
+.Em filename
+for matching aliases.
+.Pp
+If multiple targets are present,
+.Xr postoffice 8
+searches them one by one, stopping when a match is made.   Every
+target except
+.Em ~/ Ar filename
+always matches, while 
+.Em ~/ Ar filename
+only matches if the alias is found in it.
+.El
+
+.Sh EXAMPLES
+To set up personal aliases of the form
+.Em prefix Ns - Ns Em user ,
+and have them only exist if they're listed in the file
+.Em ~/ Ns Ar .alias ,
+you would define
+.Em usermap (in 
+.Xr postoffice.cf 5 )
+as
+.Em *-~ Ns : Ns Ar ~/.alias,bounce (
+.Em ``bounce''
+or any other name that's not a valid user,)
+and users would have an
+.Xr aliases 5 -format
+file containing the desired aliases in their home directory.
+.Pp
+If, instead, you want all aliases to point at the user
+except for ones that have been explicitly redefined, 
+.Em usermap
+would look like
+.Em *-~ Ns : Ns Ar ~/.alias,~
+
+
+.Sh BUGS
+You may only match
+.Em ~
+once in a usermap.
+.Pp
+The personal alias file is treated just like a .forward file, and the
+user may do anything there that they are allowed in the .forward file.
+.Pp
+Users in personal domains are not able to use personal aliases because
+they have no actual home directories on the machine.
+
+.Sh AUTHOR
+David Parsons
+.%T orc@pell.chi.il.us .
+.Sh SEE ALSO
+.Xr aliases 5 ,
+.Xr postoffice 8

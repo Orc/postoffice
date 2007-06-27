@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <pwd.h>
@@ -14,8 +15,6 @@
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #include "letter.h"
@@ -129,7 +128,6 @@ getemail(struct address *u)
     static char bfr[200];
     int fd;
     char *forward;
-    char *p;
 
     pwd = getpwemail(u->dom, u->user);
 
@@ -165,8 +163,6 @@ getemail(struct address *u)
 int
 prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 {
-    char *p;
-
     memset(let, 0, sizeof *let);
 
     if (let->in = in)

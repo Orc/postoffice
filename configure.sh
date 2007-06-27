@@ -122,10 +122,10 @@ fi
 
 test -z "$DB" && AC_FAIL "$TARGET requires ndbm"
 
-AC_LIBRARY res_query -lresolv || AC_FAIL "$TARGET requires res_query"
+AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
 if [ "$WITH_TCPWRAPPERS" ]; then
-    TLOGN	"Checking for libwrap "
+    TLOGN	"checking for libwrap "
 cat << EOF > $$.c
 #include <tcpd.h>
 int allow_severity = 1;
@@ -332,7 +332,7 @@ rm -f uid
 # just as copies of it), install in a way that's compatable with them.
 
 if [ "$USE_MAILWRAPPERS" ]; then
-    TLOGN "Checking mailwrappers"
+    TLOGN "checking mailwrappers"
 
     if [ -x /usr/sbin/mailwrapper ]; then
 	for x in /usr/sbin/sendmail /usr/bin/newaliases /usr/bin/mailq;do
@@ -379,7 +379,7 @@ fi
 
 AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 \
                    greylist.7 smtpauth.5 postoffice.cf.5 aliases.5 \
-		   authexpire.8
+		   authexpire.8 usermap.7
 
 
 # final warning checks, put here to put directory errors out where they

@@ -668,15 +668,25 @@ AC_LIBRARY() {
     SRC=$1
     shift
 
+    __acllibs=
+    __aclhdrs=
+
+    for x in "$@"; do
+	case X"$x" in
+	X-l*) __acllibs="$__acllibs $x" ;;
+	*)    __aclhdrs="$__aclhdrs $x" ;;
+	esac
+    done
+
     # first see if the function can be found in any of the
     # current libraries
-    AC_QUIET AC_CHECK_FUNCS $SRC && return 0
+    AC_QUIET AC_CHECK_FUNCS $SRC $__aclhdrs && return 0
 
     # then search through the list of libraries
     __libs="$LIBS"
-    for x in $*; do
+    for x in $__acllibs; do
 	LIBS="$__libs $x"
-	if AC_QUIET AC_CHECK_FUNCS $SRC; then
+	if AC_QUIET AC_CHECK_FUNCS $SRC $__aclhdrs; then
 	    AC_LIBS="$AC_LIBS $x"
 	    return 0
 	fi
@@ -1035,6 +1045,52 @@ EOF
 
 
 #
+# AC_CHECK_RESOLVER finds out whether the berkeley resolver is
+# present on this system.
+#
+AC_CHECK_RESOLVER () {
+    AC_PROG_CC
+
+    TLOGN "checking for the Berkeley resolver library"
+
+    cat > /tmp/ngc$$.c << EOF
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+
+main()
+{
+    char bfr[256];
+
+    res_init();
+    res_query("hello", C_IN, T_A, bfr, sizeof bfr);
+}
+EOF
+
+    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c; then
+	true
+    elif $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
+	AC_LIBS="$AC_LIBS -lresolv"
+    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c; then
+	# compensate for Darwin brokeness.
+	AC_DEFINE BIND_8_COMPAT 1
+    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
+	# double compensate for Darwin brokeness.
+	AC_DEFINE BIND_8_COMPAT 1
+	AC_LIBS="$AC_LIBS -lresolv"
+    else
+	TLOG " (not found)"
+	rm -f /tmp/ngc$$.c
+	return 1
+    fi
+    TLOG " (found)"
+    rm -f /tmp/ngc$$.c
+    return 0
+}
+
+
+#
 # AC_PROG_INSTALL finds the install program and guesses whether it's a 
 # Berkeley or GNU install program
 #
@@ -1202,6 +1258,12 @@ AC_MAK() {
 # AC_DEFINE adds a #define to config.h
 AC_DEFINE() {
     echo "#define $1 ${2:-1}" >> $__cwd/config.h
+}
+
+#
+# AC_INCLUDE adds a #include to config.h
+AC_INCLUDE() {
+    echo "#include \"$1\"" >> $__cwd/config.h
 }
 
 #

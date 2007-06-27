@@ -5,19 +5,17 @@
 #include "config.h"
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <syslog.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <paths.h>
 #include <errno.h>
 #include <sysexits.h>
 #include <string.h>
-
-#if OS_DARWIN
-#include <stdlib.h>
-#endif
 
 #include "letter.h"
 
@@ -157,7 +155,6 @@ int
 exe(struct letter *let, struct recipient *to)
 {
     pid_t child = fork();
-    int status;
 
     if (child == -1) {
 	fprintf(let->log, CannotWrite, to->user, strerror(errno));
@@ -184,7 +181,6 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
     int status = 0;
     FILE *f;
     uid_t saveuid = getuid();
-    gid_t savegid = getgid();
 
     if ( setregid(-1, to->gid) || setreuid(-1, to->uid) ) {
 	syslog(LOG_ERR, "cannot drop privileges: %m\n");
@@ -278,6 +274,8 @@ runlocal(struct letter *let)
 	case emUSER:rc = post(let, &(let->local.to[count]) );
 		    break;
 	case emFILE:rc = file(let, &(let->local.to[count]) );
+		    break;
+	default:    rc = 0;
 		    break;
 	}
 

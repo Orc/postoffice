@@ -3,11 +3,10 @@
 #include "dbif.h"
 
 #include <syslog.h>
-
-#if OS_DARWIN
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#endif
+#include <time.h>
 
 #define GREYLIST "/var/db/smtpauth"
 

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include <syslog.h>
 #include <sysexits.h>
@@ -144,17 +146,27 @@ set_option(char *option, ENV *env)
     case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
 		return;
     case 'u':   if (strncasecmp(option, "usermap=", 8) == 0) {
-		    if (env->usermap.pat) {
-			free(env->usermap.pat);
-			env->usermap.pat = env->usermap.map = 0;
-		    }
-		    if ( env->usermap.pat = strdup(option+8) ) {
-			char *q = strchr(env->usermap.pat, ':');
+		    struct usermap *tmp, *t;
+		    char *q;
 
-			if (q) {
+		    if ( tmp = malloc(sizeof tmp[0] + strlen(option)) ) {
+			tmp->pat = strdup(option+8);
+			if ( (q = strchr(tmp->pat, ':')) ) {
 			    *q++ = 0;
-			    env->usermap.map = q;
+
+			    tmp->map = q;
+			    tmp->next = 0;
+
+			    if (env->usermap) {
+				for (t=env->usermap;t->next; t=t->next)
+				    ;
+				t->next = tmp;
+			    }
+			    else
+				env->usermap = tmp;
 			}
+			else	/* silently ignore null maps */
+			    free(tmp);
 		    }
 		}
 		return;

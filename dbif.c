@@ -1,9 +1,9 @@
 #include "dbif.h"
 
-#if OS_DARWIN
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-#endif
+#include <unistd.h>
+#include <string.h>
 
 
 #if HAVE_GDBM_H && !defined(DBM_SUFFIX)

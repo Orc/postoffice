@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -13,8 +14,6 @@
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
-#else
-#   include <stdlib.h>
 #endif
 
 #if HAVE_SYS_MOUNT_H
@@ -263,7 +262,7 @@ readcontrolfile(struct letter *let, char *qid)
     size_t size;
     char *sep;
     char *p, *q, *end;
-    struct address to, *tmp;
+    struct address to;
 
     sprintf(ctrlfile, CTRLPFX "%.6s", qid);
 
@@ -409,8 +408,6 @@ svspool(struct letter *let)
 {
     int retry = 10;
     char spoolfile[sizeof(DATAPFX)+6+1];
-    FILE *f;
-    int count;
 
     /* No need to spool the file if it's only going to
      * local recipients
