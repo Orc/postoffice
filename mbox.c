@@ -10,6 +10,8 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include <string.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #if HAVE_LIMITS_H
 #   include <limits.h>
@@ -43,6 +45,15 @@ getsize(MBOX *f, char *line)
     }
 }
 
+static jmp_buf timeout;
+
+static void
+bail(int sig)
+{
+    longjmp(timeout,1);
+}
+
+
 MBOX *
 newmbox(struct in_addr *ip, int port, int verbose)
 {
@@ -50,6 +61,7 @@ newmbox(struct in_addr *ip, int port, int verbose)
     struct sockaddr_in host;
     char *c;
     MBOX *ret = calloc(sizeof *ret, 1);
+    void (*oldalarm)(int);
 
     if (ret == 0)
 	return 0;
@@ -62,9 +74,28 @@ newmbox(struct in_addr *ip, int port, int verbose)
     ret->verbose = verbose;
     memcpy(&ret->ip, ip, sizeof *ip);
 
+    oldalarm = signal(SIGALRM, bail);
+
+    /* cheat here by using the longjmp as a general-purpose exit
+     * routine;  if I come back with val == 1, it's because the
+     * alarm() went off, and I need to log that timeout before I
+     * do all the cleanup.
+     * if val == 2, it's because some different error (which might
+     * be a timeout) happened, and I've already logged the reason,
+     * but still need to clean things up.
+     */
+    switch (setjmp(timeout)) {
+    case 1: syslog(LOG_ERR, "newmbox(%s): timeout", inet_ntoa(*ip));
+	    /* fall through into... */
+    case 2: alarm(0);
+	    signal(SIGALRM, oldalarm);
+	    return freembox(ret);
+    }
+    alarm(900);	/* 900 seconds to establish a connection */
+
     if ( (ret->fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	syslog(LOG_ERR, "socket(%s): %m", inet_ntoa(*ip));
-	return freembox(ret);
+	longjmp(timeout, 2);
     }
     host.sin_family = AF_INET;
     host.sin_port = htons(port);
@@ -72,8 +103,14 @@ newmbox(struct in_addr *ip, int port, int verbose)
 
     if (connect(ret->fd, (struct sockaddr*)&host, sizeof(host)) < 0) {
 	syslog(LOG_ERR, "connect(%s): %m", inet_ntoa(*ip));
-	return freembox(ret);
+	longjmp(timeout,2);
     }
+    /* connection has been established.  Shut off the alarm, restore
+     * the old signal handler, and we're on our way
+     */
+    alarm(0);
+    signal(SIGALRM, oldalarm);
+
     ret->opened = 1;
     if ( (ret->in = fdopen(ret->fd,"r")) && (ret->out = fdopen(ret->fd,"w")) ) {
 	setlinebuf(ret->in);

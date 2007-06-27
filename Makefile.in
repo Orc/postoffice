@@ -28,7 +28,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
-     dbif.o getopt.o $(AUTH_OBJS)
+     dbif.o getopt.o $(AUTH_OBJS) @MILTERLIB@
 
 
 all: $(PGMS)

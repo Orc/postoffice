@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <syslog.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #include "letter.h"
 #include "mbox.h"
@@ -32,6 +34,15 @@ SMTPwrite(MBOX *f, char *text, unsigned long size)
 }
 
 
+static jmp_buf teergrube;
+
+static void
+bail(int sig)
+{
+    longjmp(teergrube,1);
+}
+
+
 static int
 SMTPpost(MBOX *session, struct letter *let, int first, int last)
 {
@@ -41,8 +52,20 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
     int denied = 0;
     off_t base = 0;
     int slowpoke = 0;
+    void (*oldalarm)(int);
 
     rewind(session->log);
+
+    oldalarm = signal(SIGALRM, bail);
+    switch (i = setjmp(teergrube)) {
+    case 1:     syslog(LOG_INFO, "post timeout (teergrube?)");
+		/* fall through to */
+    case 2:case 3: case 4:
+		alarm(0);
+		signal(SIGALRM, oldalarm);
+		return (i == 4) ? denied : ( (i == 3) ? 1 : 0 );
+    }
+    alarm(900);
 
     writembox(session, session->sizeok ? "MAIL FROM:<%s> SIZE=%ld"
 				       : "MAIL FROM:<%s>",
@@ -54,7 +77,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
     case 5:	/* refused mail from this address */
 		for (i=first; i < last; i++)
 		    let->remote.to[i].status = REFUSED;
-		return 1;
+		longjmp(teergrube,3);
     case 0:	/* hangup */
 		if (session->verbose)
 		    fprintf(stderr, "*Hangup*\n");
@@ -62,7 +85,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
     default:
 		for (i=first;i < last; i++)
 		    let->remote.to[i].status = PENDING;
-		return 0;
+		longjmp(teergrube,2);
     }
     fseek(session->log, base, SEEK_SET);
 
@@ -92,7 +115,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
 		if (session->verbose)
 		    fprintf(stderr, "*Hangup*\n");
 		fprintf(session->log, "\tLost connection to server\n");
-		return denied;
+		longjmp(teergrube,4);
 	default:fseek(session->log, base, SEEK_SET);
 		break;
 	}
@@ -100,7 +123,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
 
     if (!accepted) {
 	/* none of our RCPT TO:'s were accepted */
-	return denied;
+	longjmp(teergrube,4);
     }
 
     fseek(session->log, base, SEEK_SET);
@@ -116,7 +139,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
 	for (i=first; i < last; i++)
 	    if (let->remote.to[i].status == ACCEPTED)
 		let->remote.to[i].status = PENDING;
-	return denied;
+	longjmp(teergrube, 4);
 
     case 3:
 	if (let->headtext) {
@@ -131,6 +154,9 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last)
 	ok = ok && SMTPwrite(session, let->bodytext, let->bodysize);
 	if (let->bodysize > 0 && let->bodytext[let->bodysize-1] != '\n')
 	    ok = ok && SMTPwrite(session, "\n", 1);
+
+	alarm(0);
+	signal(SIGALRM, oldalarm);
 
 	if (ok) {
 	    writembox(session, ".");
@@ -183,8 +209,10 @@ send_to_remote(struct letter *let, char *host, int i, int j)
     size_t mapsize;
     int rc;
 
-    if (f = session(let->env, host, 25)) {
-	if ( SMTPpost(f, let, i, j) > 0 ) {
+    if ( f = session(let->env, host, 25) ) {
+	rc = SMTPpost(f, let, i, j);
+
+	if (rc > 0) {
 	    logsize = ftell(f->log);
 	    fflush(f->log);
 	    if (logtext = mapfd(fileno(f->log), &mapsize)) {
@@ -210,6 +238,8 @@ send_to_remote(struct letter *let, char *host, int i, int j)
 forward(struct letter *let)
 {
     unsigned int i, j;
+
+    signal(SIGHUP, SIG_DFL);
 
     for (i=0; i < let->remote.count; i++)
 	let->remote.to[i].status = PENDING;

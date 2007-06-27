@@ -91,6 +91,12 @@ set_option(char *option, ENV *env)
 		    insecure("forward-all");
 		    env->forward_all = val;
 		}
+#ifdef WITH_MILTER
+		else if (strncasecmp(option, "filter=", 7) == 0) {
+		    insecure("filter");
+		    mfregister(option+7,0);
+		}
+#endif
 		return;
     case 'h':	isopt(option,"hops", &env->max_hops, 0);
 		return;

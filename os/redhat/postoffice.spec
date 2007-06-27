@@ -3,8 +3,9 @@
 %define with_greylist	yes
 %define with_tcpd	yes
 %define with_virtual	yes
+%define with_milter	yes
 
-%define codeversion	1.2.4
+%define codeversion	@VERSION@
 
 Summary: A not so widely used Mail Transport Agent (MTA)
 Name: postoffice
@@ -26,11 +27,11 @@ Provides: smtpdaemon
 
 
 %description
-The Postoffice program is a used Mail Transport Agent (MTA).  MTAs send
+The Postoffice program is a Mail Transport Agent (MTA).  MTAs send
 mail from one machine to another. Postoffice is not a client program,
 which you use to read your email. Postoffice is a behind-the-scenes
-program which actually moves your email over networks to where you want
-it to go.
+program which actually moves your email over tcp networks to where
+you want it to go.
 
 %prep
 %setup -q
@@ -47,6 +48,9 @@ OPTS="$OPTS --with-greylist"
 %endif
 %if "%{with_tcpd}" == "yes"
 OPTS="$OPTS --with-tcpwrappers"
+%endif
+%if "%{with_milter}" == "yes"
+OPTS="$OPTS --with-milter"
 %endif
 %if "%{with_virtual}" == "yes"
 OPTS="$OPTS --with-vhost --with-vuser=news.uucp"
@@ -82,10 +86,10 @@ make TARGET=$RPM_BUILD_ROOT/ install
     done  )
 
 
-install -d -m 755 -o 0 -g 0 $RPM_BUILD_ROOT/var/spool/mqueue
-install -d -m 755 -o 0 -g 0 $RPM_BUILD_ROOT/etc/rc.d/init.d
-install    -m 755 -o 0 -g 0 os/redhat/postoffice.sh \
-                            $RPM_BUILD_ROOT/etc/rc.d/init.d/postoffice
+install -d -m 755  -o 0 -g 0 $RPM_BUILD_ROOT/var/spool/mqueue
+install -d -m 755  -o 0 -g 0 $RPM_BUILD_ROOT/etc/rc.d/init.d
+install    -m 755  -o 0 -g 0 os/redhat/postoffice.sh \
+                             $RPM_BUILD_ROOT/etc/rc.d/init.d/postoffice
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -116,6 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 					%{_mandir}/man7/po.mailaddr.7.gz \
     --initscript postoffice
 
+mkdir -p /var/spool/mail
+chmod 1777 /var/spool/mail
+chown root.root /var/spool/mail
 %{_bindir}/newaliases       >/dev/null 2>&2
 /etc/rc.d/init.d/postoffice start >/dev/null 2>&2
 /sbin/chkconfig --add postoffice
@@ -138,5 +145,9 @@ exit 0
 /var/spool/mqueue
 
 %changelog
+* Tue Mar 28 2006 David Parsons <orc@pell.chi.il.us> 1.2.6-1
+- replace the hardcoded version with @VERSION@ and do version
+  substitution during publication.
+
 * Fri Feb 24 2006 David Parsons <orc@pell.chi.il.us> 1.2.3-1
 - Initial version with rpm building support

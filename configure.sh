@@ -8,11 +8,12 @@
 ac_help='
 --use-peer-flag		enable -opeer (for debugging)
 --use-mailwrappers	use mailwrappers if available
---with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-tcpwrappers	use tcp wrappers
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --with-auth		enable smtp authentication (for AUTH LOGIN)
+--with-milter		Use sendmail-style milters for message authentication
+--with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
 --with-vspool=PATH	virtual host mailspool (/var/spool/virtual)
 --with-vuser=USER	user (or uid:gid) that should own vspool (mail)'
@@ -27,6 +28,7 @@ AC_INIT $TARGET
 
 AC_PROG_CC
 
+AC_SCALAR_TYPES
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
@@ -158,11 +160,14 @@ fi
 test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1
 test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
+if [ "$WITH_MILTER" ]; then
+    AC_DEFINE WITH_MILTER 
+    AC_SUB MILTERLIB mf.o
+fi
 case "$WITH_AV" in
 \|*) AC_DEFINE AV_PROGRAM \""$WITH_AV"\" ;;
 ?*) AC_DEFINE AV_PROGRAM \"\|"$WITH_AV"\" ;;
 esac
-
 
 AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
 
@@ -339,8 +344,22 @@ if [ "$USE_MAILWRAPPERS" ]; then
 fi
 
 if [ "$USE_MAILWRAPPERS" ]; then
+    # FreeBSD puts mailer.conf into /etc/mail, NetBSD and OpenBSD put
+    # mailer.conf into /etc
+    if [ "$OS_FREEBSD" -o "$OS_DRAGONFLY" ]; then
+	AC_SUB MAILERCONF /etc/mail/mailer.conf
+    elif [ "$OS_LINUX" ]; then
+	# Gentoo Linux uses, or can use, mailwrappers, but the location
+	# of the mailer.conf file varies.
+	if [ -r /etc/mail/mailer.conf ]; then
+	    AC_SUB MAILERCONF /etc/mail/mailer.conf
+	else
+	    AC_SUB MAILERCONF /etc/mailer.conf
+	fi
+    else
+	AC_SUB MAILERCONF /etc/mailer.conf
+    fi
     AC_SUB WHICH mailfilter
-    AC_SUB MAILERCONF /etc/mail/mailer.conf
     AC_SUB MAILWRAPPER /usr/sbin/mailwrapper
 else
     MF_PATH_INCLUDE FALSE false

@@ -298,7 +298,7 @@ catchsigs(void (*newsig)(int))
 
 	if (i == SIGABRT)
 	    continue;
-	else if ( (sig = signal(i, crash)) != SIG_DFL) {
+	else if ( (sig = signal(i, newsig)) != SIG_DFL) {
 	    signal(i, sig);
 	    syslog(LOG_INFO, "signal %d was set by postoffice", i);
 	}
@@ -394,7 +394,6 @@ runqd(ENV *env, int qrunwhen)
 				/* minutes */
     }
 
-    catchsigs(SIG_IGN);
     signal(SIGHUP,  no_op);
     signal(SIGINT,  sigexit);
     signal(SIGQUIT, sigexit);
@@ -402,8 +401,9 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGTERM, sigexit);
     signal(SIGUSR1, no_op);
     signal(SIGUSR2, sigexit);
-    signal(SIGCHLD, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
+
+    catchsigs(SIG_IGN);
+    signal(SIGCHLD, SIG_DFL);
 
     setproctitle("postoffice: runq every %d minutes", qrunwhen);
 

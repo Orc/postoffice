@@ -33,6 +33,9 @@ int allow_severity = 0;
 #include "smtp.h"
 #include "env.h"
 #include "mx.h"
+#include "mf.h"
+
+#define do_reset(x)	mfreset(x),reset(x)
 
 enum cmds { HELO, EHLO, MAIL, RCPT, DATA, RSET,
             VRFY, EXPN, QUIT, NOOP, DEBU, MISC,
@@ -136,6 +139,23 @@ zzz(int signo)
 static int
 smtpbugcheck(struct letter *let)
 {
+#if WITH_MILTER
+    if (mfdata(let) != MF_OK) {
+	int code = mfcode();
+	char *what = mfresult();
+
+	message(let->out, -code, "The committee has rejected this letter:");
+	mfcomplain(let, "It is suspicious");
+
+	if (what)
+	    syslog(LOG_ERR, "VIRUS from (%s,%s): %s",
+			    let->deliveredby, let->deliveredIP, what);
+	else
+	    syslog(LOG_ERR, "VIRUS from (%s,%s)",
+			    let->deliveredby, let->deliveredIP);
+	return 0;
+    }
+#else
     int code = virus_scan(let);
     char *msg;
     char *p, *q;
@@ -168,6 +188,7 @@ smtpbugcheck(struct letter *let)
 	}
 	return 0;
     }
+#endif
     return 1;
 }
 
@@ -223,6 +244,11 @@ from(struct letter *let, char *line, int *delay)
     }
 
     p = skipspace(p+1);
+
+    if (mffrom(let, p) != MF_OK) {
+	mfcomplain(let, "Not Allowed");
+	return mfcode() / 100;
+    }
 
     if ( (from = parse_address(let, p, 0)) == 0)
 	return 5;
@@ -297,7 +323,14 @@ to(struct letter *let, char *line)
 	return 0;
     }
 
-    if ( (a = parse_address(let, p=skipspace(p+1), 1)) == 0) return 0;
+    p = skipspace(p+1);
+
+    if (mfto(let,p) != MF_OK) {
+	mfcomplain(let, "Not Allowed");
+	return 0;
+    }
+
+    if ( (a = parse_address(let, p, 1)) == 0) return 0;
 
     if (a->user == 0) {
 	a->alias = strdup("MAILER-DAEMON");
@@ -375,7 +408,7 @@ data(struct letter *let)
 	c1 = c;
     }
     alarm(0);
-    reset(let);
+    do_reset(let);
     return 0;
 }
 
@@ -413,7 +446,7 @@ post(struct letter *let)
 	    byebye(let, EX_OSERR);
     }
 
-    reset(let);
+    do_reset(let);
     return ok;
 }
 
@@ -424,6 +457,11 @@ helo(struct letter *let, enum cmds cmd, char *line)
     int i;
     struct iplist list;
     char *p;
+
+    if (mfhelo(let,line) != MF_OK) {
+	mfcomplain(let, "How ill-mannered");
+	return 0;
+    }
 
     let->helo = 1;
     if (let->env->checkhelo && !let->env->relay_ok) {
@@ -561,6 +599,11 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	letter.deliveredIP = peer ? inet_ntoa(peer->sin_addr) : "127.0.0.1";
 	letter.deliveredto = env->localhost;
 
+	if ( (rc = mfconnect(&letter)) != MF_OK ) {
+	    mfcomplain(&letter, "There's something wrong here");
+	    audit(&letter, "CONN", "milter", 421);
+	    byebye(&letter, 1);
+	}
 #ifdef WITH_TCPWRAPPERS
 	if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
@@ -688,7 +731,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    case MAIL:
 		traf++;
 		if (letter.from)	/* rfc821 */
-		    reset(&letter);
+		    do_reset(&letter);
 
 		if ( (rc = from(&letter, line, &delay)) == 2 ) {
 		    audit(&letter, "MAIL", line, 250);
@@ -774,7 +817,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			    }
 			}
 		    }
-		    reset(&letter);
+		    do_reset(&letter);
 		}
 		else {
 		    audit(&letter, "DATA", "", 503);
@@ -791,11 +834,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
 	    case RSET:
 		audit(&letter, "RSET", "", 250);
-		reset(&letter);
+		do_reset(&letter);
 		message(out, 250, "Deja vu!");
 		break;
 
 	    case QUIT:
+		mfquit(&letter);
 		audit(&letter, "QUIT", "", 221);
 		if (!traf)
 		    goodness(&letter, -1);
