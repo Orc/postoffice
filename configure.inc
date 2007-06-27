@@ -806,6 +806,21 @@ AC_PROG_FIND () {
 
 
 #
+# AC_PROG_AWK looks for the awk program and sets the AWK environment
+# variable
+#
+AC_PROG_AWK () {
+    if test -z "$AC_AWK_PROG"; then
+	MF_PATH_INCLUDE AWK awk
+	rc=$?
+	AC_AWK_PROG=$DEST
+	return $rc
+    fi
+    return 0
+}
+
+
+#
 # AC_PROG_SED looks for the sed program and sets the SED environment
 # variable
 #

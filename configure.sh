@@ -60,6 +60,8 @@ else
 fi
 
 
+AC_PROG_AWK || exit 1
+
 if [ -z "$OS_LINUX" ]; then
     # can we use ifconfig -a inet to pick up local ip addresses?
 
@@ -69,7 +71,7 @@ if [ -z "$OS_LINUX" ]; then
 	# the format we're looking for is inet x.x.x.x [other stuff]
 
 	fail=
-	res=`grep inet /tmp/if$$.out | awk '{print $2}'`
+	res=`grep inet /tmp/if$$.out | $AC_AWK_PROG '{print $2}'`
 	for x in $res; do
 	    res=`expr $x : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'`
 	    if [ "$res" -eq 0 ]; then
@@ -93,7 +95,7 @@ fi
 DB=
 if [ -z "$USE_GDBM" ]; then
     if AC_CHECK_HEADERS ndbm.h; then
-	if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
+	if AC_QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
 	    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
 	    AC_SUB NDBM ndbm
 	    DB=ndbm
@@ -103,7 +105,7 @@ fi
 
 if [ -z "$DB" ]; then
     if AC_CHECK_HEADERS gdbm.h; then
-	if QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm; then
+	if AC_QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm;then
 	    LOG "Found gdbm_open()" ${AC_LIBS:+in ${AC_LIBS}}
 	    AC_SUB NDBM gdbm
 	    DB=gdbm
@@ -258,6 +260,19 @@ else
     AC_SUB VSPOOL ''
     AC_SUB VPATH  ''
     AC_SUB VHOST  '.\\"'
+fi
+
+if [ "$WITH_AUTH" ]; then
+    TLOGN "checking for the crypt function "
+    if AC_QUIET AC_CHECK_FUNCS crypt; then
+	TLOG "(found)"
+    elif AC_LIBRARY crypt -lcrypt; then
+	TLOG "(in -lcrypt)"
+    else
+	TLOG "(not found)"
+	AC_FAIL "Cannot build AUTH support without a crypt() function"
+	unset WITH_AUTH
+    fi
 fi
 
 if [ "$WITH_AUTH" ]; then

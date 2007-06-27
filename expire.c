@@ -1,10 +1,19 @@
 /* expire records out of the greylist
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #include "dbif.h"
+
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+#if !HAVE_BASENAME
+#include <string.h>
+#endif
 
 
 int verbose = 0;
@@ -141,9 +150,18 @@ main(int argc, char **argv)
     DBhandle db;
     int opt;
     char *e;
-    char *pgm = basename(argv[0]);
+    char *pgm;
     char *user = 0;
     long age;
+
+#if HAVE_BASENAME
+    pgm = basename(argv[0]);
+#else
+    if (pgm = strrchr(argv[0], '/'))
+	++pgm;
+    else
+	pgm = argv[0];
+#endif
 
     opterr = 1;
     while ( (opt = getopt(argc, argv, "?a:lnuvz")) != EOF) {

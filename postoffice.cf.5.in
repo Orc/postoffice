@@ -134,10 +134,6 @@ If your machine is connected to a public network,
 .Em OPTION
 unless you're under attack from a malicious spammer.
 .It Li paranoid
-Do not accept connections from clients that are not registered in
-the 
-.Dv DNS .
-.It Li paranoid
 Do not accept mail from sites unless we can resolve their dns address.
 .It Li qreturn Ns = Ns Ar N
 Bounce undeliverable mail after 
