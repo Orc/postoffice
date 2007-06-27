@@ -20,8 +20,17 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
     static char boundary[] = "OH,NO!";
     char *ptr, *eptr;
     int i;
+    int count;
     int comma = 0;
     int picky = 0;
+
+    for (count=i=0; i < let->remote.count; i++)
+	if (let->remote.to[i].status == code)
+	    count++;
+
+    if (count == 0)		/* don't bounce messages if there are no */
+	return 0;		/* bounced recipients */
+
 
     prepare(&bounce, 0, 0, let->env);
 

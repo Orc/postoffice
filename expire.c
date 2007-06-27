@@ -111,17 +111,45 @@ scrub(DBhandle db, long age)
 }
 
 
+void
+approve(DBhandle db, char *key)
+{
+    char *value;
+    char bfr[80];
+    time_t delay, last;
+
+    if ( value = dbif_get(db,key) ) {
+	time(&delay);
+
+	switch (sscanf(value, "%ld %ld", &delay, &last)) { 
+	default:
+	    time(&last);
+	case 2:
+	    delay = last-1;
+	    break;
+	}
+	snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
+	dbif_put(db,key,bfr, DBIF_REPLACE);
+    }
+    else
+	perror(key);
+}
+
+
 main(int argc, char **argv)
 {
     DBhandle db;
     int opt;
     char *e;
     char *pgm = basename(argv[0]);
+    char *user = 0;
     long age;
 
     opterr = 1;
-    while ( (opt = getopt(argc, argv, "?lnuvz")) != EOF) {
+    while ( (opt = getopt(argc, argv, "?a:lnuvz")) != EOF) {
 	switch (opt) {
+	case 'a':   user = optarg;
+		    break;
 	case 'n':   dryrun = 1;
 		    break;
 	case 'z':   nulluser = 1;
@@ -172,7 +200,9 @@ main(int argc, char **argv)
 
     time(&now);
 
-    if (listing)
+    if (user)
+	approve(db,user);
+    else if (listing)
 	list(db, age);
     else
 	scrub(db, age);

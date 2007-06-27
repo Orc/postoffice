@@ -73,6 +73,7 @@ struct letter {
     unsigned int messageid:1;	/*                        or a messageid:? */
     unsigned int mesgfrom:1;	/*			       or a from:? */
     unsigned int mboxfrom:1;	/* Is the first header line ``From ...'' */
+    unsigned int reject:1;	/* don't process this letter */
 } ;
 
 int prepare(struct letter *, FILE *, FILE *, ENV *);

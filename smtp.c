@@ -89,6 +89,7 @@ message(FILE *f, int code, char *fmt, ...)
     int size;
     int i, j, k;
     int dash = (code < 0);
+    int shout = 1;
 
     va_start(ptr, fmt);
     size = vsnprintf(bfr, sizeof bfr, fmt, ptr);
@@ -109,8 +110,14 @@ message(FILE *f, int code, char *fmt, ...)
 	}
 
 	fprintf(f, "%03d%c", code, (dash || (j<size-1)) ? '-' : ' ');
-	for ( ;i < j; i++)
-	    fputc(toupper(bfr[i]), f);
+	for ( ;i < j; i++) {
+	    if (bfr[i] == '<')
+		--shout;
+	    else if (bfr[i] == '>')
+		++shout;
+	    else
+		fputc(shout ? toupper(bfr[i]) : bfr[i], f);
+	}
 	fputs("\r\n", f);
 	fflush(f);
     }
@@ -205,7 +212,7 @@ from(struct letter *let, char *line, int *delay)
     long left;
 
     if (let->from) {
-	message(let->out, 550, "Too many cooks spoil the broth.");
+	message(let->out, 501, "Too many cooks spoil the broth.");
 	return 5;
     }
 
@@ -223,16 +230,12 @@ from(struct letter *let, char *line, int *delay)
     if ( from->local && from->user
 		     && let->env->verify_from
 		     && !(isvhost(from->dom) || let->env->relay_ok) ) {
-	message(let->out, 553, "You are not a local client.");
+	message(let->out, 501, "You are not a local client.");
 	freeaddress(from);
 	return 5;
     }
-    else if ( (from->user == 0) && let->env->nodaemon ) {
-	message(let->out, 553, "Not Allowed.");
-	freeaddress(from);
-	return 5;
-
-    }
+    else if ( (from->user == 0) && let->env->nodaemon )
+	return 2;
     else
 	let->from = from;
 
@@ -296,18 +299,21 @@ to(struct letter *let, char *line)
 
     if ( (a = parse_address(let, p=skipspace(p+1), 1)) == 0) return 0;
 
-    if (a->user == 0)
-	message(let->out, 555, "Who?");
-    else if (a->local || let->env->relay_ok) {
+    if (a->user == 0) {
+	a->alias = strdup("MAILER-DAEMON");
+	let->reject |= let->env->nodaemon;
+    }
+
+    if (a->local || let->env->relay_ok) {
 	if ((rc = recipients(let, a)) < 0) {
 	    message(let->out, 451, "System error.");
 	    rc = 0;
 	}
 	else if (rc == 0)
-	    message(let->out, 555, "Who?");
+	    message(let->out, 550, "Who?");
     }
     else
-	message(let->out, 502, "You may not relay through this server.");
+	message(let->out, 550, "You may not relay through this server.");
 
     freeaddress(a);
     return rc;
@@ -393,13 +399,13 @@ post(struct letter *let)
 	fseek(let->log, SEEK_END, 0);
 
 	if (let->log && (ptr = mapfd(fileno(let->log), &size)) ) {
-	    message(let->out, 552, "Local mail delivery failed:\n%.*s",
+	    message(let->out, 554, "Local mail delivery failed:\n%.*s",
 		    size, ptr);
 	    munmap(ptr, size);
 	    didmsg = 1;
 	}
 	if (!didmsg)
-	    message(let->out, 552,
+	    message(let->out, 554,
 		    let->fatal ? "Catastrophic error delivering local mail!"
 			       : "Local mail delivery failed!");
 
@@ -432,8 +438,8 @@ helo(struct letter *let, enum cmds cmd, char *line)
 	if (getIPa(p=skipspace(line+4), &list) > 0) {
 	    for (i=0; i < list.count; i++)
 		if (islocalhost(let->env, &(list.a[i].addr))) {
-		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 503);
-		    message(let->out, 503, "Liar, liar, pants on fire!");
+		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 521);
+		    message(let->out, 521, "Liar, liar, pants on fire!");
 		    freeiplist(&list);
 		    return 0;
 		}
@@ -542,6 +548,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     int ok = 1;
     char *why = 0;
     int issock = 1;
+    int patience = 5;
     int delay = 0;
     char bfr[1];
     int rc, score, traf = 0;
@@ -560,14 +567,15 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    if ( (why=getenv("WHY")) == 0)
 		why = "We get too much spam from your domain";
 
-	    message(out, 554, "%s does not accept mail"
+	    message(out, 421, "%s does not accept mail"
 			      " from %s, because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
-	    goodness(&letter, -2);
+	    goodness(&letter, -10);
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
-	    audit(&letter, "CONN", "blacklist", 554);
+	    audit(&letter, "CONN", "blacklist", 421);
 	    ok = 0;
+	    /*byebye(&letter, 1);*/
 	}
 	else
 #endif
@@ -576,7 +584,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			     " because we cannot resolve your IP address."
 			     " Correct this, then try again later, okay?",
 			     letter.deliveredto, letter.deliveredby);
-	    goodness(&letter, -8);
+	    goodness(&letter, -10);
 	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
 	    audit(&letter, "CONN", "stranger", 421);
 	    byebye(&letter, 1);
@@ -714,22 +722,26 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		if (letter.from && (letter.local.count || letter.remote.count) ) {
 		    traf++;
 
-		    if (delay > 0) {
+		    if (letter.reject) {
+			audit(&letter, "DATA", "reject", 501);
+			message(out, 501, "Not Allowed.");
+		    }
+		    else if (delay > 0) {
 			char buf[40];
 			sprintf(buf,"delay %d", delay);
-			audit(&letter, "DATA", buf, 450);
-			message(out, 450, "System busy.  Try again in %d seconds.",
+			audit(&letter, "DATA", buf, 451);
+			message(out, 451, "System busy.  Try again in %d seconds.",
 					  delay);
 		    }
 		    else if ( data(&letter) ) {
 			if (env->largest && (letter.bodysize > env->largest)) {
-			    audit(&letter, "DATA", "size", 550);
-			    message(out, 550, "I don't accept messages longer "
+			    audit(&letter, "DATA", "size", 552);
+			    message(out, 552, "I don't accept messages longer "
 					    "than %lu bytes.", env->largest);
 			}
 			else if (letter.hopcount > env->max_hops) {
-			    audit(&letter, "DATA", "looping", 550);
-			    message(out, 550, "Too many Received: fields in "
+			    audit(&letter, "DATA", "looping", 554);
+			    message(out, 554, "Too many Received: fields in "
 					      "the message header.  Is it "
 					      "looping?");
 			}
@@ -749,15 +761,15 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    reset(&letter);
 		}
 		else {
-		    audit(&letter, "DATA", "", 550);
-		    message(out, 550, "Who is it %s?", letter.from ? "TO" : "FROM");
+		    audit(&letter, "DATA", "", 503);
+		    message(out, 503, "Who is it %s?", letter.from ? "TO" : "FROM");
 		}
 		break;
 
 	    case VRFY:
 	    case EXPN:
-		audit(&letter, line, "", (c==VRFY)?252:550);
-		message(out, (c==VRFY)?252:550, "What's your clearance, Citizen?");
+		audit(&letter, line, "", (c==VRFY)?250:502);
+		message(out, (c==VRFY)?250:502, "What's your clearance, Citizen?");
 		break;
 
 	    case RSET:
@@ -797,10 +809,14 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		byebye(&letter, 0);
 	    }
 	    else {
-		audit(&letter, line, line, 503);
-		sleep(30);
-		message(out, 503, "Sorry, but %s.", why);
-		/*message(out, 503,"I'm sorry Dave, I'm afraid I can't do that.");*/
+		audit(&letter, line, line, 502);
+		if (--patience < 1) {
+		    byebye(&letter, 0);
+		}
+		else {
+		    sleep(30);
+		    message(out, 502, "Sorry, but %s.", why);
+		}
 	    }
 	}
 	if (score)

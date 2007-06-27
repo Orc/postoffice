@@ -33,15 +33,15 @@ SMTPwrite(MBOX *f, char *text, unsigned long size)
 
 
 static int
-SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
+SMTPpost(MBOX *session, struct letter *let, int first, int last)
 {
     enum r_status status;
     int ok, accepted=0, code;
     int i;
+    int denied = 0;
     off_t base = 0;
     int slowpoke = 0;
 
-    *denied = 0;
     rewind(session->log);
 
     writembox(session, session->sizeok ? "MAIL FROM:<%s> SIZE=%ld"
@@ -54,7 +54,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
     case 5:	/* refused mail from this address */
 		for (i=first; i < last; i++)
 		    let->remote.to[i].status = REFUSED;
-		return 0;
+		return 1;
     case 0:	/* hangup */
 		if (session->verbose)
 		    fprintf(stderr, "*Hangup*\n");
@@ -76,9 +76,11 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 	case 2:	let->remote.to[i].status = ACCEPTED;
 		accepted++;
 		break;
+	case 4: let->remote.to[i].status = PENDING;
+		break;
 	case 5: let->remote.to[i].status = REFUSED;
+		denied++;
 		base = ftell(session->log);
-		(*denied)++;
 		syslog(LOG_INFO,
 			"delivery failed from %s (qid %s) to %s (%s)",
 			let->from ? let->from->full : "MAILER-DAEMON",
@@ -90,7 +92,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 		if (session->verbose)
 		    fprintf(stderr, "*Hangup*\n");
 		fprintf(session->log, "\tLost connection to server\n");
-		return 0;
+		return denied;
 	default:fseek(session->log, base, SEEK_SET);
 		break;
 	}
@@ -98,7 +100,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 
     if (!accepted) {
 	/* none of our RCPT TO:'s were accepted */
-	return 0;
+	return denied;
     }
 
     fseek(session->log, base, SEEK_SET);
@@ -114,7 +116,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 	for (i=first; i < last; i++)
 	    if (let->remote.to[i].status == ACCEPTED)
 		let->remote.to[i].status = PENDING;
-	return 0;
+	return denied;
 
     case 3:
 	if (let->headtext) {
@@ -148,25 +150,27 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 				let->remote.to[i].fullname,
 				let->remote.to[i].host);
 		    }
-		return 1;
+		return denied;
 	    case 5:
 		/* message body not accepted */
 		for (i=first; i < last; i++)
 		    if (let->remote.to[i].status == ACCEPTED)
 			let->remote.to[i].status = REFUSED;
-		*denied = last - first;
-		return 0;
-	    }
+		return 1;
 	    /* else fall through into default */
+	    }
 	}
 	/* else fall through into default */
-    default:
-	for (i=first; i<last; i++)
-	    if (let->remote.to[i].status == ACCEPTED)
-		let->remote.to[i].status = PENDING;
-	fprintf(session->log, "\tError sending mail: %s\n", strerror(errno));
-	return 0;
     }
+
+    /* default;  if we get here, put all recipients back to pending,
+     * log an error in the session log, and fail
+     */
+    for (i=first; i<last; i++)
+	if (let->remote.to[i].status == ACCEPTED)
+	    let->remote.to[i].status = PENDING;
+    fprintf(session->log, "\tError sending mail: %s\n", strerror(errno));
+    return denied;
 }
 
 
@@ -174,17 +178,13 @@ static void
 send_to_remote(struct letter *let, char *host, int i, int j)
 {
     MBOX *f;
-    unsigned int denied;
     char *logtext;
     long logsize;
     size_t mapsize;
     int rc;
 
     if (f = session(let->env, host, 25)) {
-	if ( (rc = SMTPpost(f, let, i, j, &denied)) == 0 || denied > 0 ) {
-
-	    if (f->verbose)
-		fprintf(stderr, "SMTPpost returned %d, denied=%d\n", rc, denied);
+	if ( SMTPpost(f, let, i, j) > 0 ) {
 	    logsize = ftell(f->log);
 	    fflush(f->log);
 	    if (logtext = mapfd(fileno(f->log), &mapsize)) {
