@@ -4,12 +4,12 @@ LDFLAGS=@LDFLAGS@
 
 PGMS = postoffice dbm expire
 TOOLS = mx b64 getopt
-MAN8PAGES=postoffice.8 authexpire.8 sendmail.8 smtpd.8
+MAN8PAGES=postoffice.8 authexpire.8 sendmail.8
 MAN7PAGES=mailaddr.7 greylist.7
 VMAN7PAGES=vhosts.7
 MAN5PAGES=aliases.5 smtpauth.5 mailaudit.5 postoffice.cf.5
 VMAN5PAGES=domains.cf.5
-MAN1PAGES=newaliases.1 mailq.1 runq.1
+MAN1PAGES=newaliases.1 mailq.1 runq.1 smtpd.1
 
 MANPAGES=$(MAN8PAGES) $(MAN7PAGES) $(MAN5PAGES) $(MAN1PAGES) \
 	 $(VMAN5PAGES) $(VMAN7PAGES)

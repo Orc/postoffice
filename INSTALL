@@ -35,6 +35,14 @@ Configure.sh has a few options that can be set:
     --with-vspool=DIR	(vhost mail spool in DIR) (/var/spool/virtual)
     --with-vuser[=user]	(vhost mail files owned by) [mail]
 
+Alternatively, if you're running a recent version of redhat Linux (or its
+derivatives;  I've built the rpm package of postoffice 1.2.3 on Centos 4,
+Centos 3, RHEL3, and Redhat 8.0), you can build postoffice as an rpm
+package.   To do this, you need to copy the postoffice tarball into
+/usr/src/redhat/SOURCES, then extract the file
+postoffice-(version)/os/redhat/postoffice.spec and do a
+"rpmbuild -ba postoffice.spec", then rpm -ivh the resulting package.
+
 
 3) Cautions and features
 

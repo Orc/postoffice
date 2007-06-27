@@ -4,7 +4,7 @@
 %define with_tcpd	yes
 %define with_virtual	yes
 
-%define codeversion	1.2.3
+%define codeversion	1.2.4
 
 Summary: A not so widely used Mail Transport Agent (MTA)
 Name: postoffice
@@ -83,9 +83,9 @@ make TARGET=$RPM_BUILD_ROOT/ install
 
 
 install -d -m 755 -o 0 -g 0 $RPM_BUILD_ROOT/var/spool/mqueue
-install -d -m 755 -o 0 -g 0 $RPM_BUILD_ROOT/%{initdir}
+install -d -m 755 -o 0 -g 0 $RPM_BUILD_ROOT/etc/rc.d/init.d
 install    -m 755 -o 0 -g 0 os/redhat/postoffice.sh \
-                            $RPM_BUILD_ROOT/%{initdir}/postoffice
+                            $RPM_BUILD_ROOT/etc/rc.d/init.d/postoffice
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -117,12 +117,12 @@ rm -rf $RPM_BUILD_ROOT
     --initscript postoffice
 
 %{_bindir}/newaliases       >/dev/null 2>&2
-%{initdir}/postoffice start >/dev/null 2>&2
+/etc/rc.d/init.d/postoffice start >/dev/null 2>&2
 /sbin/chkconfig --add postoffice
 
 %preun
 if [ $1 = 0 ]; then
-	%{initdir}/postoffice stop >/dev/null 2>&1
+	/etc/rc.d/init.d/postoffice stop >/dev/null 2>&1
 	/sbin/chkconfig --del postoffice
 	/usr/sbin/alternatives --remove mta %{_sbindir}/postoffice
 fi
@@ -132,7 +132,9 @@ exit 0
 %{_mandir}
 %{_bindir}
 %{_sbindir}
-%{initdir}
+/usr/lib
+/usr/libexec
+/etc/rc.d/init.d
 /var/spool/mqueue
 
 %changelog
