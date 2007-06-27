@@ -29,6 +29,8 @@ AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 
 AC_CHECK_FUNCS statfs
+AC_CHECK_HEADERS sys/vfs.h || AC_CHECK_HEADERS sys/param.h sys/mount.h
+
 
 DB=
 if [ -z "$USE_GDBM" ]; then

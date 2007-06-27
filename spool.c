@@ -18,7 +18,12 @@
 #endif
 
 #if HAVE_STATFS
-#   include <sys/vfs.h>
+#   if HAVE_SYS_VFS_H
+#       include <sys/vfs.h>
+#   elif HAVE_SYS_MOUNT_H
+#       include <sys/param.h>
+#       include <sys/mount.h>
+#   endif
 #endif
 
 #include "spool.h"
