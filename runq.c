@@ -114,7 +114,6 @@ runq(struct env *env)
     strftime(timeofday, sizeof timeofday, "%I:%M %p  %b %d, %Y", localtime(&t));
 
     setproctitle("runq @ %s", timeofday);
-    syslog(LOG_INFO, "runq");
 #ifdef NO_FLOCK
     sprintf(pidf, QUEUEDIR "qXXXXXX");
     if ( (fd = mkstemp(pidf)) == -1) {
