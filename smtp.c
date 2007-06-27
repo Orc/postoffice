@@ -198,7 +198,7 @@ parse_address(struct letter *let, char *p, int to)
 
 
 static int
-from(struct letter *let, char *line)
+from(struct letter *let, char *line, int *delay)
 {
     char *p;
     struct address *from;
@@ -234,12 +234,9 @@ from(struct letter *let, char *line)
     else
 	let->from = from;
 
-    if ( (let->env->relay_ok == 0) && (left = greylist(let, 0)) > 1 ) { 
-	message(let->out, 450, "System busy.  Try again in %d seconds.", left);
-	freeaddress(from);
-	let->from = 0;
-	return 4;
-    }
+    *delay = 0;
+    if ( (let->env->relay_ok == 0) && (left = greylist(let, 0)) > 1 )
+	*delay = left;
 
     /* check for esmtp mail extensions.
      */
@@ -515,6 +512,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     enum cmds c;
     int ok = 1;
     int issock = 1;
+    int delay = 0;
     char bfr[1];
     int rc, score, traf = 0;
     int timeout = env->timeout;
@@ -652,7 +650,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		if (letter.from)	/* rfc821 */
 		    reset(&letter);
 
-		if ( (rc = from(&letter, line)) == 2 ) {
+		if ( (rc = from(&letter, line, &delay)) == 2 ) {
 		    audit(&letter, "MAIL", line, 250);
 		    message(out, 250, "Okay fine.");
 		    timeout = env->timeout;
@@ -688,7 +686,14 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		if (letter.from && (letter.local.count || letter.remote.count) ) {
 		    traf++;
 
-		    if ( data(&letter) ) {
+		    if (delay > 0) {
+			char buf[40];
+			sprintf(buf,"delay %d", delay);
+			audit(&letter, "DATA", buf, 450);
+			message(out, 450, "System busy.  Try again in %d seconds.",
+					  delay);
+		    }
+		    else if ( data(&letter) ) {
 			if (env->largest && (letter.bodysize > env->largest)) {
 			    audit(&letter, "DATA", "size", 550);
 			    message(out, 550, "I don't accept messages longer "
@@ -714,10 +719,11 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			}
 		    }
 		    reset(&letter);
-		    break;
 		}
-		audit(&letter, "DATA", "", 550);
-		message(out, 550, "Who is it %s?", letter.from ? "TO" : "FROM");
+		else {
+		    audit(&letter, "DATA", "", 550);
+		    message(out, 550, "Who is it %s?", letter.from ? "TO" : "FROM");
+		}
 		break;
 
 	    case VRFY:

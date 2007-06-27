@@ -175,6 +175,12 @@ main(int argc, char **argv)
 		mail(from, argc-optind, argv+optind, &env);
 		break;
 	case 'q':
+		if (env.relay_host && (getuid() != 0) ) {
+		    fprintf(stderr, "%s: You may not set the relay-host.\n", pgm);
+		    syslog(LOG_CRIT,
+			    "User #%d attempted to set relay-host", getuid());
+		    exit(EX_NOPERM);
+		}
 		superpowers();
 		runq(&env);
 		break;

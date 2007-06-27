@@ -54,7 +54,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 	    *denied = last-first;
 	if (code == 0)
 	    fprintf(session->log, "\tLost connection to server\n");
-	return -1;
+	return 0;
     }
     fseek(session->log, base, SEEK_SET);
 

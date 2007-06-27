@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdio.h>
 
 #include <sys/types.h>
@@ -8,6 +10,7 @@
 
 #if OS_FREEBSD
 #   include <stdlib.h>
+#   include <string.h>
 #else
 #   include <malloc.h>
 #endif
@@ -23,7 +26,41 @@ local_if_list()
     /* need to worry about endian issues! */
     static struct in_addr localhost[2] = { 0x0100007f, 0 };
 
-#if __linux__
+#if OS_FREEBSD
+
+    struct in_addr *res = 0;
+    char bfr[1024];
+    char *p;
+    in_addr_t ipa;
+    struct in_addr ip;
+    FILE *f;
+    int szres = 0;
+    int maxres = 0;
+
+
+    if ( (f = popen("/sbin/ifconfig -a inet 2>/dev/null", "r")) ) {
+	while (fgets(bfr, sizeof bfr, f))
+	    if ( (p = strstr(bfr, "inet "))
+	      && ((ipa = inet_addr(bfr+5)) != INADDR_NONE)) {
+		if ( (szres + 2) >= maxres ) {
+		    maxres += 10;
+		    res = res ? realloc(res, maxres*sizeof(ip))
+			      : malloc(maxres*sizeof(ip));
+		}
+		if (res == 0)
+		    break;
+
+		res[szres++].s_addr = ipa;
+	    }
+	pclose(f);
+	if (res) {
+	    res[szres].s_addr = 0;
+	    return res;
+	}
+    }
+
+#elif __linux__
+
     struct in_addr *res = 0;
     int szres = 0,
 	maxres= 0;
@@ -82,7 +119,7 @@ local_if_list()
 
 #endif
 
-    return &localhost;
+    return localhost;
 }
 
 

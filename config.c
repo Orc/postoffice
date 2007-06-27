@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <syslog.h>
+#include <sysexits.h>
+
 #include "env.h"
 
 
@@ -56,11 +59,6 @@ set_option(char *option, ENV *env)
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
 		else if (strncasecmp(option, "relay-host=", 11) == 0) {
-		    if (getuid() != 0) {
-			syslog(LOG_CRIT, "User #%d attempted to set relay-host",
-					    getuid());
-			exit(EX_NOPERM);
-		    }
 		    env->relay_host = strdup(option+11);
 		}
 		return;
