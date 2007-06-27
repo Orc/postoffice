@@ -660,7 +660,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	}
     }
     else {
-	message(letter.out, 421, "System error.");
+	message(letter.out, 421, "We'd love to talk to you but "
+				 "our disk is on fire.");
 	audit(&letter, "CONN", "Error", 421);
 	byebye(&letter, 1);
     }

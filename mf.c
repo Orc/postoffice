@@ -37,7 +37,7 @@ struct milter {
     char *socket;
     int   fd;
     int   flags;
-#define SOFT	0x01
+#define HARD	0x01
 #define FAILED	0x02
 #define DEAD	0x04
 };
@@ -57,7 +57,7 @@ mfregister(char *filter, char **opts)
     else {
 	filters[nrfilters].socket = strdup(filter);
 	filters[nrfilters].fd = -1;
-	filters[nrfilters].flags = SOFT;
+	filters[nrfilters].flags = 0;
 	++nrfilters;
     }
     return nrfilters;
@@ -139,28 +139,28 @@ mfcomplain(struct letter *let, char *generic)
 static struct mfdata *
 mread(int f)
 {
-	DWORD nwsize;
-	DWORD size;
+    DWORD nwsize;
+    DWORD size;
 
-	if (xread(f, &nwsize, 4) != 4)
-		return 0;
-	
-	size = ntohl(nwsize);
+    if (xread(f, &nwsize, 4) != 4)
+	    return 0;
+    
+    size = ntohl(nwsize);
 
 
-	if (size > maxsize) {
-	    lastpkt = lastpkt ? realloc(lastpkt, sizeof(lastpkt->size) + size)
-			      : malloc(sizeof(lastpkt->size) + size);
-	    maxsize = size;
-	}
-	if (lastpkt == 0)
-		return 0;
-	
-	lastpkt->size = size;
-	if (xread(f, lastpkt->data, size) != size)
-		return 0;
+    if (size > maxsize) {
+	lastpkt = lastpkt ? realloc(lastpkt, sizeof(lastpkt->size) + size)
+			  : malloc(sizeof(lastpkt->size) + size);
+	maxsize = size;
+    }
+    if (lastpkt == 0)
+	    return 0;
+    
+    lastpkt->size = size;
+    if (xread(f, lastpkt->data, size) != size)
+	    return 0;
 
-	return lastpkt;
+    return lastpkt;
 }
 
 static int
@@ -364,7 +364,7 @@ handshake(struct letter *let, char *channel)
 	char *p;
 	struct iplist list;
 	int i, port;
-	char *ipchan = alloca(strlen(channel));
+	char *ipchan = alloca(strlen(channel)+1);
 
 	strcpy(ipchan, channel);
 
@@ -412,7 +412,7 @@ mfconnect(struct letter *let)
     for (i=0; i < nrfilters; i++) {
 	if ( (filters[i].fd = handshake(let, filters[i].socket)) == -1) {
 	    filters[i].flags |= FAILED;
-	    if ( (filters[i].flags & SOFT) == 0 )
+	    if ( filters[i].flags & HARD )
 		return MF_REJ;
 	}
     }
@@ -423,11 +423,11 @@ mfconnect(struct letter *let)
 #define FORALL(args)	\
     int i, status; \
     for (i=0; i < nrfilters; i++) \
-	if ( (filters[i].fd != -1) && (filters[i].flags & FAILED) == 0 ) { \
+	if ( (filters[i].flags & FAILED) == 0 ) { \
 	    mfprintf args; \
 	    if ( (status = mreply(filters[i].fd)) == MF_EOF) { \
 		filters[i].flags |= FAILED; \
-		if ( (filters[i].flags & SOFT) == 0 ) \
+		if ( filters[i].flags & HARD ) \
 		    return status; \
 	    } \
 	    else if (status != MF_OK) \
@@ -525,7 +525,10 @@ mfeom()
 	    do {
 		if ( (status=mreply(filters[i].fd)) == MF_EOF ) {
 		    filters[i].flags |= FAILED;
-		    return MF_REJ;
+		    if (filters[i].flags & HARD)
+			return MF_REJ;
+		    status = MF_OK;
+		    break;
 		}
 	    } while ( strchr("acdrty", lastpkt->data[0]) == 0 );
 	    if (status != MF_OK)
