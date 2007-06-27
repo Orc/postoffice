@@ -9,6 +9,7 @@ ac_help='
 --with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-tcpwrappers	use tcp wrappers
 --with-greylist		use the greylist code
+--with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --use-peer-flag		enable -opeer (for debugging)'
 
 # load in the configuration file
@@ -54,6 +55,12 @@ EOF
 	AC_FAIL "Cannot find tcp wrappers library -lwrap"
     fi
     rm -f $$.c $$.x
+fi
+
+if [ "$WITH_QUEUEDIR" ]; then
+    AC_DEFINE QUEUEDIR \"${WITH_QUEUEDIR}/\"
+else
+    AC_DEFINE QUEUEDIR \"/var/spool/mqueue/\"
 fi
 
 test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1

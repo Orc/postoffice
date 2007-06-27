@@ -141,6 +141,7 @@ addheaders(FILE *f, struct letter *let)
 {
     char msgtime[20];
     char date[80];
+    struct passwd *pwd;
 
     strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
     strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
@@ -156,7 +157,15 @@ addheaders(FILE *f, struct letter *let)
 	fprintf(f, "Message-ID: <%s.%s@%s>\n",
 		    msgtime, let->qid, let->deliveredto);
     if (!let->mesgfrom)
-	fprintf(f, "From: <%s>\n", let->from->full);
+	if (let->from->domain)
+	    fprintf(f, "From: <%s>\n", let->from->full);
+	else if ((pwd = getpwnam(let->from->full)) && pwd->pw_gecos[0] )
+	    fprintf(f, "From: \"%s\" <%s@%s>\n",
+				pwd->pw_gecos,
+				let->from->full, let->env->localhost);
+	else
+	    fprintf(f, "From: <%s@%s>\n", let->from->full, let->env->localhost);
+
     if (!let->date)
 	fprintf(f, "Date: %s\n", date);
 #if 0

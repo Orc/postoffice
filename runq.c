@@ -112,7 +112,7 @@ runq(struct env *env)
     char pidline[40];
     struct letter let;
 
-    sprintf(pidf, SPOOLDIR "qXXXXXX");
+    sprintf(pidf, QUEUEDIR "qXXXXXX");
     if ( (fd = mkstemp(pidf)) == -1) {
 	syslog(LOG_ERR, "%s: %m", pidf);
 	return 0;
@@ -121,8 +121,8 @@ runq(struct env *env)
     write(fd, pidline, strlen(pidline));
     close(fd);
 
-    if ( (d = opendir(SPOOLDIR)) == 0 ) {
-	syslog(LOG_ERR, "%s: %m", SPOOLDIR);
+    if ( (d = opendir(QUEUEDIR)) == 0 ) {
+	syslog(LOG_ERR, "%s: %m", QUEUEDIR);
 	return 0;
     }
 

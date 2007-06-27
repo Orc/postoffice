@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -68,8 +70,8 @@ listq()
     struct dirent *q;
     int i;
 
-    if (chdir(SPOOLDIR) || (count = scandir(".", &qf, Qpicker, Qcompare)) < 0) {
-	perror(SPOOLDIR);
+    if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, Qcompare)) < 0) {
+	perror(QUEUEDIR);
 	exit(EX_NOPERM);
     }
 

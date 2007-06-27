@@ -17,10 +17,13 @@ static int
 SMTPwrite(MBOX *f, char *text, unsigned long size)
 {
     register c = 0;
+    register x = 0;
 
-    while ( (size-- > 0) && !ferror(f->out) ) {
-	c = *text++;
-	if (c == '\n')
+    for ( ; (size-- > 0) && !ferror(f->out); x++, text++ ) {
+	c = *text;
+	if ( (c == '.') && (x == 0 || text[-1] == '\n') )
+	    fputc('.', f->out);
+	else if (c == '\n')
 	    fputc('\r', f->out);
 	fputc(c, f->out);
     }

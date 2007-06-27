@@ -3,13 +3,12 @@
 
 #include <stdio.h>
 #include "letter.h"
+#include "config.h"
 
-#define SPOOLDIR	"/var/spool/mqueue/"
-
-#define DATAPFX		SPOOLDIR "dm"
-#define CTRLPFX		SPOOLDIR "cm"
-#define TEMPPFX		SPOOLDIR "tm"
-#define	QRUNPFX		SPOOLDIR "xm"
+#define DATAPFX		QUEUEDIR "dm"
+#define CTRLPFX		QUEUEDIR "cm"
+#define TEMPPFX		QUEUEDIR "tm"
+#define	QRUNPFX		QUEUEDIR "xm"
 
 #define C_TO		'T'	/* username on remote system */
 #define C_FROM		'F'	/* MAIL FROM: */
