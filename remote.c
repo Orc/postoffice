@@ -121,7 +121,7 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 		    if (let->remote.to[i].status == MAILED)
 			syslog(LOG_INFO,
 				"deliver mail from %s (qid %s) to %s (%s)",
-				let->from->full,
+				let->from ? let->from->full : "MAILER-DAEMON",
 				let->qid,
 				let->remote.to[i].fullname,
 				let->remote.to[i].host);

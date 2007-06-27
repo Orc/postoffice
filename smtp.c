@@ -220,7 +220,9 @@ from(struct letter *let, char *line, int *delay)
     if ( (from = parse_address(let, p, 0)) == 0)
 	return 5;
 
-    if ( from->local && from->user && !let->env->relay_ok ) {
+    if ( from->local && from->user
+		     && let->env->verify_from
+		     && !(isvhost(from->dom) || let->env->relay_ok) ) {
 	message(let->out, 553, "You are not a local client.");
 	freeaddress(from);
 	return 5;
@@ -443,6 +445,29 @@ helo(struct letter *let, enum cmds cmd, char *line)
 
 
 static void
+describe(FILE *f, int code, struct recipient *to)
+{
+    switch (to->typ) {
+    case emALIAS:
+	/* should never happen */
+	message(f,-code, "to: ?alias [%s %s]", to->fullname, to->host);
+	break;
+    case emFILE:
+	message(f,-code, "to: file [%s] %d %d", to->fullname, to->uid, to->gid);
+	break;
+    case emEXE:
+	message(f,-code, "to: prog [%s] %d %d", to->fullname, to->uid, to->gid);
+	break;
+    case emUSER:
+	if (to->host)
+	    message(f,-code, "to: user %s [%s]", to->fullname, to->host);
+	else
+	    message(f,-code, "to: user %s", username(to->dom,to->user));
+	break;
+    }
+}
+
+static void
 debug(struct letter *let)
 {
     int i;
@@ -452,7 +477,7 @@ debug(struct letter *let)
     if (let->from)
 	message(let->out,-250,"From:<%s> /%s/%s/local=%d/alias=%s/",
 		    let->from->full,
-		    let->from->user,
+		    username(let->from->dom,let->from->user),
 		    let->from->domain,
 		    let->from->local,
 		    let->from->alias);

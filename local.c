@@ -224,17 +224,16 @@ runlocal(struct letter *let)
 
 	if (rc > 0) {
 	    syslog(LOG_INFO, "deliver mail from %s (%s) to %s (%s)",
-			    fromwho(let->from),
-			    let->deliveredby,
-			    let->local.to[count].user,
-			    let->local.to[count].fullname );
+		fromwho(let->from), let->deliveredby,
+		username(let->local.to[count].dom, let->local.to[count].user),
+		let->local.to[count].fullname );
 	    completed += rc;
 	}
 	else 
 	    syslog(LOG_ERR, "delivery failed from %s (%s) to %s (%s)",
-			    fromwho(let->from), let->deliveredby,
-			    let->local.to[count].user,
-			    let->local.to[count].fullname);
+		fromwho(let->from), let->deliveredby,
+		username(let->local.to[count].dom, let->local.to[count].user),
+		let->local.to[count].fullname);
 
 
     }

@@ -11,8 +11,9 @@ ac_help='
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --use-peer-flag		enable -opeer (for debugging)
---with-vhost[=PATH]	enable virtual hosting
---with-vspool=PATH:id	virtual host mailspool and owner'
+--with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
+--with-vspool=PATH	virtual host mailspool (/var/spool/virtual)
+--with-vuser=USER	user (or uid:gid) that should own vspool (mail)'
 
 # load in the configuration file
 #
@@ -69,45 +70,122 @@ test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1
 test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 test "$WITH_AV"       && AC_DEFINE AV_PROGRAM \""$WITH_AV"\"
+
+
+AC_CHECK_HEADERS pwd.h grp.h sys/types.h ctype.h
+
+# compile a little test program that can handle the many permutations
+# of a user/group combo, since there doesn't seem to be a clean way of
+# doing it using just system level stuff.
+#             username  (uid,gid of this user)
+#             user.group (uid of user, gid of group)
+#             user.number (uid of user, specified gid)
+#             number.group (specified uid, gid of group)
+#             number.number (specified uid, gid)
+#
+cat << \EOF >> $$.c
+#include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/types.h>
+#include <ctype.h>
+
+main(int argc, char **argv)
+{
+    struct passwd *pwd;
+    struct group *grp;
+
+    char *p, *q;
+
+    fprintf(stderr, "%s: UID/GID dumper for configure.sh\n", argv[0]);
+    printf("av_UID=; av_GID=;\n");
+    if (argc <= 1)
+	exit(1);
+
+    for (p = argv[1]; *p && (*p != ':') && (*p != '.'); ++p)
+	;
+
+    if (*p) {
+	*p++ = 0;
+	if ( pwd = getpwnam(argv[1]) )
+	    printf("av_UID=%d;\n", pwd->pw_uid);
+	else {
+	    for (q=argv[1]; isdigit(*q); ++q)
+		;
+	    if (*q == 0)
+		printf("av_UID=%s;\n", argv[1]);
+	    else
+		exit(1);
+	}
+
+	if ( grp = getgrnam(p) )
+	    printf("av_GID=%d;\n", grp->gr_gid);
+	else {
+	    for (q=p; isdigit(*q); ++q)
+		;
+	    if (*q == 0)
+		printf("av_GID=%s;\n", q);
+	    else
+		exit(1);
+	}
+    }
+    else if (pwd = getpwnam(argv[1]) )
+	printf("av_UID=%d;\nav_GID=%d;\n", pwd->pw_uid, pwd->pw_gid);
+    else
+	exit(1);
+    exit(0);
+}
+EOF
+
+$AC_CC -o uid $$.c
+status=$?
+rm -f $$.c
+test $? -eq 0 || AC_FAIL "Could not compile UID/GID dumper"
+
 if test "$WITH_VHOST"; then
     case "$WITH_VHOST" in
     /*) VPATH=$WITH_VHOST ;;
     *)	VPATH=/etc/virtual ;;
     esac
 
-    if test "$WITH_VSPOOL"; then
-	eval `echo ${WITH_VSPOOL} | sed -e 's/:/ VUSER=/' -e 's/^/VSPOOL=/'`
-    fi
+    test -d $VPATH || LOG "WARNING! vhost directory $VPATH does not exist"
 
-    VSPOOL=${VSPOOL:-/var/spool/virtual}
-    VUSER=${VUSER:-news}
+    VSPOOL=${WITH_VSPOOL:-/var/spool/virtual}
 
-    if id $VUSER 2>/dev/null >/dev/null; then
-	AC_DEFINE VSPOOL 	\"$VSPOOL\"
-	AC_SUB    VSPOOL 	$VSPOOL
-	AC_DEFINE VPATH 	\"$VPATH\"
-	AC_SUB    VPATH 	$VPATH
-	AC_DEFINE VUSER 	\"$VUSER\"
-	AC_DEFINE VUSER_UID	"`id -u $VUSER`"
-	AC_DEFINE VUSER_GID	"`id -g $VUSER`"
-	AC_SUB VHOST ''
+    test -d $VSPOOL || LOG "WARNING! vhost directory $VSPOOL does not exist"
+
+    VUSER=${WITH_VUSER:-mail}
+
+    eval `./uid $VUSER`
+    if [ "$av_UID" -a "$av_GID" ]; then
+	AC_DEFINE VUSER_UID $av_UID
+	AC_DEFINE VUSER_GID $av_GID
     else
 	AC_FAIL "Virtual host spool owner $VUSER does not exist"
     fi
+
+    AC_DEFINE VSPOOL  \"$VSPOOL\"
+    AC_SUB    VSPOOL  $VSPOOL
+    AC_DEFINE VPATH   \"$VPATH\"
+    AC_SUB    VPATH   $VPATH
+    AC_SUB    VHOST   ''
 else
-    AC_SUB VPATH ''
     AC_SUB VSPOOL ''
-    AC_SUB VHOST '.\\"'
+    AC_SUB VPATH  ''
+    AC_SUB VHOST  '.\\"'
 fi
 
 AC_DEFINE MAX_USERLEN	16
 
-if id nobody 2>/dev/null >/dev/null; then
-    AC_DEFINE NOBODY_UID	"`id -u nobody`"
-    AC_DEFINE NOBODY_GID	"`id -g nobody`"
+eval `./uid nobody`
+if [ "$av_UID" -a "$av_GID" ]; then
+    AC_DEFINE NOBODY_UID	$av_UID
+    AC_DEFINE NOBODY_GID	$av_GID
 else
     AC_FAIL "The 'nobody' account does not exist"
 fi
+
+rm -f uid
 
 AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5
 

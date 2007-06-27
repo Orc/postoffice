@@ -27,14 +27,14 @@ struct email {
 } ;
 
 struct recipient {
-    enum r_type { emALIAS, emFILE, emEXE, emUSER, emVHOST } typ;
+    enum r_type { emALIAS, emFILE, emEXE, emUSER } typ;
     enum r_status { FAILED=0, PENDING, MAILED } status;
     char *fullname;
     char *user;
     char *host;
-    struct domain *dom;
     uid_t uid;
     gid_t gid;
+    struct domain *dom;
 };
 
 struct list {

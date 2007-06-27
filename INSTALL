@@ -30,6 +30,9 @@ Configure.sh has a few options that can be set:
     --with-greylist	use the greylist code
     --with-queuedir	where to put queued mail (/var/spool/mqueue)
     --use-peer-flag	enable -opeer (for debugging)
+    --with-vhosts[=DIR]	enable vhosts (passwd files in DIR (/etc/virtual))
+    --with-vspool=DIR	(vhost mail spool in DIR) (/var/spool/virtual)
+    --with-vuser[=user]	(vhost mail files owned by) [mail]
 
 
 3) Cautions and features
@@ -42,9 +45,9 @@ Configure.sh has a few options that can be set:
        mail messages.  If your previous MTA has left messages in this
        directory, POSTOFFICE should ignore them, but if it doesn't your
        first runq will have surprising results.
-    c) Unlike Sendmail, POSTOFFICE does not support automatic queue running,
-       but it expects you to put an entry into your crontab to run the
-       mail queue at whatever intervals you prefer.
+    c) Unlike Sendmail, POSTOFFICE does not support automatic queue running;
+       it expects you to put an entry into your crontab to run the mail
+       queue at whatever intervals you prefer.
     d) I have not done any exhaustive checks for vulnerabilities in this
        code.   It tries not to write anything as root (except for mail
        into the root mailbox, which you can and probably should override

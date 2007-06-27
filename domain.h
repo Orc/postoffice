@@ -22,6 +22,7 @@ int            isvhost(struct domain*);
 char*          mailbox(struct domain*, char*);
 char*          passwdfile(struct domain*);
 char*          aliasfile(struct domain*);
+char*          username(struct domain*, char*);
 
 int initdomain();
 

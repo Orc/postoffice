@@ -173,9 +173,11 @@ expand(struct letter *let,
     if (chop == 0) chop = token;
 
     for (word = (*chop)(&bfr); word; word = (*chop)(&bfr)) {
+	bzero(&addr, sizeof addr);
 	addr.full = word;
 	addr.user = who->user;
 	addr.domain = who->domain;
+	addr.dom = who->dom;
 	if (*word == '/') {
 	    if (uid == 0)
 		syslog(LOG_ERR, "uid 0 cannot write to file %s", 1+word);
@@ -223,40 +225,22 @@ expand(struct letter *let,
 
 		if (q) {
 		    struct back *link = prev;
-		    int sz = strlen(word)+strlen(word)+5;
+		    int sz = strlen(username(p->dom, p->user));
 		    char *msg;
 		    char *what = p->alias ? "alias" : "forward";
 
 		    if (q != prev) {
-			if (isvhost(who->dom))
-			    sz += strlen(who->dom->domain) + 1;
-
-			for ( ;link != q; link = link->next) {
-			    sz += strlen(link->user) + 5;
-			    if (isvhost(link->dom))
-				sz += strlen(link->dom->domain) + 1;
-			}
+			for ( ;link != q; link = link->next)
+			    sz += 3+strlen(username(link->dom,link->user));
 
 			if (msg = alloca(sz)) {
-			    strcpy(msg, word);
-			    if (isvhost(who->dom)) {
-				strcat(msg, "@");
-				strcat(msg, link->dom->domain);
-			    }
+			    strcpy(msg, username(p->dom, p->user));
 			    for (link = prev ; link != q; link = link->next) {
 				strcat(msg,"->");
-				strcat(msg,link->user);
-				if (isvhost(link->dom)) {
-				    strcat(msg, "@");
-				    strcat(msg, link->dom->domain);
-				}
+				strcat(msg,username(link->dom,link->user));
 			    }
 			    strcat(msg,"->");
-			    strcat(msg,link->user);
-			    if (isvhost(link->dom)) {
-				strcat(msg, "@");
-				strcat(msg, link->dom->domain);
-			    }
+			    strcat(msg, username(link->dom,link->user));
 			    syslog(LOG_ERR, "%s loop %s", what, msg);
 			}
 			else
@@ -281,30 +265,6 @@ expand(struct letter *let,
 	count += rc;
     }
     return count;
-}
-
-
-void
-describe(FILE *f, int code, struct recipient *to)
-{
-    switch (to->typ) {
-    case emALIAS:
-	/* should never happen */
-	message(f,-code, "to: alias [%s %s]", to->fullname, to->host);
-	break;
-    case emFILE:
-	message(f,-code, "to: file [%s] %d %d", to->fullname, to->uid, to->gid);
-	break;
-    case emEXE:
-	message(f,-code, "to: prog [%s] %d %d", to->fullname, to->uid, to->gid);
-	break;
-    case emUSER:
-	if (to->host)
-	    message(f,-code, "to: user %s [ %s ]", to->fullname, to->host);
-	else
-	    message(f,-code, "to: user %s", to->fullname);
-	break;
-    }
 }
 
 

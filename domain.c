@@ -183,3 +183,14 @@ getvpwemail(struct domain *dom, char* user)
     }
     return 0;
 }
+
+char *
+username(struct domain *dom, char* user)
+{
+    static char bfr[MAX_USERLEN+60];
+
+    snprintf(bfr, sizeof bfr,
+		  isvhost(dom) ? "%s@%s" : "%s",
+		  user, dom ? dom->domain : "(null)");
+    return bfr;
+}

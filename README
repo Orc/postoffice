@@ -1,0 +1,18 @@
+POSTOFFICE is a small SMTP mail server for UN*X-style systems.
+
+It supports greylisting (first-time mailers need to wait a hour before
+they are allowed to actually send email), tcp wrappers (to block domains
+and IP addresses from sending email), can be configured to do virus
+scanning of incoming mail, has a variety of runtime options to increase
+how paranoid it is about accepting mail, and it can be used to deliver
+mail to account on virtual hosts.
+
+POSTOFFICE is free software;  it is released under a BSD-style license
+that allows you to do as you wish with it as long as you don't attempt
+to claim it as your own work.
+
+
+Most of the programs included in the POSTOFFICE distribution have manual
+pages describing how they work.
+
+The file INSTALL describes how to build and install postoffice
