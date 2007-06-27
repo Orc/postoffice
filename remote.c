@@ -27,9 +27,6 @@ SMTPwrite(MBOX *f, char *text, unsigned long size)
 	    fputc('\r', f->out);
 	fputc(c, f->out);
     }
-    if (c != '\n')
-	fputs("\r\n", f->out);
-
     fflush(f->out);
     return !ferror(f->out);
 }
@@ -109,6 +106,8 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
 	    ok = 1;
 
 	ok = ok && SMTPwrite(session, let->bodytext, let->bodysize);
+	if (let->bodysize > 0 && let->bodytext[let->bodysize-1] != '\n')
+	    ok = ok && SMTPwrite(session, "\n", 1);
 
 	if (ok) {
 	    writembox(session, ".");

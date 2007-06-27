@@ -64,6 +64,13 @@ main(int argc, char **argv)
     pgm = strdup(basename(argv[0]));
     openlog(pgm, LOG_PID, LOG_MAIL);
 
+#if 0
+    {	int i;
+	for (i=0; i < argc; i++)
+	    syslog(LOG_INFO, "argv[%d] = %s", i, argv[i]);
+    }
+#endif
+
 #define SAME(a,b)	(strcasecmp(a,b) == 0)
 
     /* handle magic program names */
