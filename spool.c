@@ -93,15 +93,19 @@ mkspool(struct letter *let)
 
 #if HAVE_STATFS
     struct statfs df;
+    unsigned long size;
 
     if ( let->env && (let->env->minfree > 0) ) {
 	if (statfs(QUEUEDIR, &df) != 0) {
 	    syslog(LOG_ERR, "statfs(%s): %m", QUEUEDIR);
 	    return 0;
 	}
-	else if (let->env->minfree < df.f_bsize * df.f_bavail) {
-	    syslog(LOG_ERR, "Disk too full (need %ld, have %ld free)",
-			    let->env->minfree, df.f_bsize * df.f_bavail);
+
+	size = let->env->minfree / df.f_bsize;
+
+	if (df.f_bavail < size) { 
+	    syslog(LOG_ERR, "Disk too full (need %ld blocks, have %ld free)",
+			    let->env->minfree, df.f_bavail);
 	    return 0;
 	}
     }
