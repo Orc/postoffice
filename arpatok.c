@@ -1,8 +1,15 @@
 /*
  * break arpa addresses out of a line (via RFC822)
  */
+#include "config.h"
 #include <stdio.h>
 #include <ctype.h>
+
+#if HAVE_ALLOCA_H
+#   include <alloca.h>
+#else
+#   include <stdlib.h>
+#endif
 
 
 char *

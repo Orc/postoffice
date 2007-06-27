@@ -8,7 +8,10 @@
 #include <stdarg.h>
 #include <string.h>
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+#   include <malloc.h>
+#endif
+#if HAVE_ALLOCA_H
+#   include <alloca.h>
 #endif
 #include <ctype.h>
 #include <sys/types.h>

@@ -1,5 +1,5 @@
-#   @(#) configure.inc 1.38@(#)
-#   Copyright (c) 1999-2004 David Parsons. All rights reserved.
+#   @(#) configure.inc 1.42@(#)
+#   Copyright (c) 1999-2007 David Parsons. All rights reserved.
 #   
 #   Redistribution and use in source and binary forms, with or without
 #   modification, are permitted provided that the following conditions
@@ -1053,6 +1053,8 @@ AC_CHECK_RESOLVER () {
 
     TLOGN "checking for the Berkeley resolver library"
 
+    __ACR_rc=0
+
     cat > /tmp/ngc$$.c << EOF
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -1068,47 +1070,61 @@ main()
 }
 EOF
 
-    # first see if res_init() and res_query() actually exist...
-
     if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c; then
-	__extralib=
+	TLOG " (found)"
     elif $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
-	__extralib=-lresolv
+	TLOG " (found, needs -lresolv)"
 	AC_LIBS="$AC_LIBS -lresolv"
+    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c; then
+	TLOG " (found, needs BIND_8_COMPAT)"
+	AC_DEFINE BIND_8_COMPAT 1
+    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
+	TLOG " (found, needs BIND_8_COMPAT & -lresolv)"
+	AC_DEFINE BIND_8_COMPAT 1
     else
 	TLOG " (not found)"
-	rm -f /tmp/ngc$$.c
-	return 1
+	__ACR_rc=1
     fi
+    rm -f /tmp/ngc$$.c
+    return $__ACR_rc
+}
 
-    # if res_init() and res_query() actually exist, check to
-    # see if the HEADER structure is defined ...
 
-    cat > /tmp/ngc$$.c << EOF
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
+#
+# AC_CHECK_ALLOCA looks for alloca
+#
+AC_CHECK_ALLOCA () {
 
+    AC_PROG_CC
+    AC_CHECK_HEADERS stdlib.h
+
+    cat - > /tmp/ngc$$.c << EOF
+#if T
+# include <alloca.h>
+#else
+# include <stdlib.h>
+#endif
 main()
 {
-    HEADER hhh;
-    res_init();
+	alloca(10);
 }
 EOF
 
-    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $__extralib; then
+    LOGN "checking for the alloca function"
+    if $AC_CC -DT /tmp/ngc$$.c -o /tmp/ngc$$; then
+	AC_DEFINE 'HAVE_ALLOCA_H' 1
+	status=0
+	TLOG " (found in alloca.h)"
+    elif $AC_CC /tmp/ngc$$.c -o /tmp/ngc$$; then
 	TLOG " (found)"
-    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c $__extralib; then
-	TLOG " (bind9 with BIND_8_COMPAT)"
-	AC_DEFINE BIND_8_COMPAT 1
+	status=0
     else
-	TLOG " (broken)"
-	rm -f /tmp/ngc$$.c
-	return 1
+	TLOG " (not found)"
+	status=1
     fi
-    rm -f /tmp/ngc$$.c
-    return 0
+    rm -f /tmp/ngc$$.c /tmp/ngc
+    return $status
+
 }
 
 

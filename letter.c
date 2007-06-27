@@ -12,6 +12,9 @@
 #include <time.h>
 #include <syslog.h>
 #include <sysexits.h>
+#if HAVE_ALLOCA_H
+#   include <alloca.h>
+#endif
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>

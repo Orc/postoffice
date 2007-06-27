@@ -13,6 +13,9 @@
 #else
 #   include <stdlib.h>
 #endif
+#if HAVE_ALLOCA_H
+#   include <alloca.h>
+#endif
 
 #include "letter.h"
 #include "usermap.h"

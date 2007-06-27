@@ -144,11 +144,11 @@ writembox(MBOX *f, char *fmt, ...)
     if ( (f == 0) || feof(f->out) )
 	return 0;
 
-    va_start(ptr, fmt);
-
     if (f->verbose) {
 	fprintf(stderr, "%15s << ", inet_ntoa(f->ip));
+	va_start(ptr, fmt);
 	vfprintf(stderr, fmt, ptr);
+	va_end(ptr);
 	fputc('\n', stderr);
     }
 
@@ -156,7 +156,9 @@ writembox(MBOX *f, char *fmt, ...)
 
     if (setjmp(timer_jmp) == 0) {
 	alarm(600);
+	va_start(ptr, fmt);
 	vfprintf(f->out, fmt, ptr);
+	va_end(ptr);
 	fputs("\r\n", f->out);
 	fflush(f->out);
 	alarm(0);
@@ -169,7 +171,6 @@ writembox(MBOX *f, char *fmt, ...)
     }
     signal(SIGALRM, oldalarm);
 
-    va_end(ptr);
     return ret;
 }
 

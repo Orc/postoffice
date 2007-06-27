@@ -31,6 +31,8 @@ AC_PROG_CC
 AC_SCALAR_TYPES
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
+AC_CHECK_ALLOCA || AC_FAIL "$TARGET requires alloca()"
+
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 AC_CHECK_FUNCS memstr
 
@@ -65,7 +67,6 @@ if [ "$has_statfs" ]; then
 else
     AC_SUB STATFS  '.\\"'
 fi
-
 
 AC_PROG_AWK || exit 1
 

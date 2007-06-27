@@ -1,9 +1,13 @@
+#include "config.h"
 #include "dbif.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#if HAVE_ALLOCA_H
+#   include <alloca.h>
+#endif
 
 
 #if HAVE_GDBM_H && !defined(DBM_SUFFIX)
