@@ -29,7 +29,7 @@ bounce(struct letter *let, char *logtext, long logsize, enum r_status code)
 	    count++;
 
     if (count == 0)		/* don't bounce messages if there are no */
-	return 0;		/* bounced recipients */
+	return;			/* bounced recipients */
 
 
     prepare(&bounce, 0, 0, let->env);

@@ -29,7 +29,7 @@ AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 
 if AC_CHECK_FUNCS statvfs; then
-    AC_CHECK_STRUCT statvfs  sys/statvfs.h
+    AC_CHECK_HEADERS sys/statvfs.h && AC_CHECK_STRUCT statvfs sys/statvfs.h
 elif AC_CHECK_FUNCS statfs; then
     _h=
     if AC_CHECK_HEADERS sys/vfs.h; then
