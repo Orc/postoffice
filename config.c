@@ -87,6 +87,9 @@ set_option(char *option, ENV *env)
 		else 
 		    isopt(option, "delay", &env->delay, "m=60,h=3600,d=86400");
 		return;
+    case 'e':	if (isopt(option, "escape-from", &val, 0))
+		    env->escape_from = val;
+		return;
     case 'f':   if (isopt(option, "forward-all", &val, 0)) {
 		    insecure("forward-all");
 		    env->forward_all = val;

@@ -180,8 +180,6 @@ receivedby(FILE *f, struct letter *let, struct recipient *to)
 void
 copybody(FILE *f, struct letter *let)
 {
-    char *ptr;
-
     if (!let->has_headers)
 	fputc('\n', f);
 

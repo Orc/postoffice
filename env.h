@@ -37,6 +37,8 @@ struct env {
     unsigned int   auditing:1;	/* session logging */
     unsigned int   forward_all:1;/* forward unknown addresses to relay_host */
     unsigned int   soft_deny:1;	/* blacklist sites with 4xx instead of 5xx */
+    unsigned int   escape_from:1;/* add a '>' prefix to lines beginning with */
+				 /* 'From ' */
 } ;
 
 typedef struct env ENV;

@@ -567,7 +567,8 @@ debug(struct letter *let)
 		      "CheckHELO: %s\n"
 		      "NoDaemon: %s\n"
 		      "LocalMX: %s\n"
-		      "Paranoid: %s",
+		      "Paranoid: %s\n"
+		      "Escape-from: %s",
 			  env->timeout,
 			  env->delay,
 			  env->max_clients,
@@ -577,7 +578,8 @@ debug(struct letter *let)
 			  env->checkhelo ? "T" : "NIL",
 			  env->nodaemon ? "T" : "NIL",
 			  env->localmx ? "T" : "NIL",
-			  env->paranoid ? "T" : "NIL" );
+			  env->paranoid ? "T" : "NIL",
+			  env->escape_from ? "T" : "NIL" );
 }
 
 
@@ -597,6 +599,9 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     char bfr[1];
     int rc, score, traf = 0;
     int timeout = env->timeout;
+#ifdef SMTP_AUTH
+    int auth_ok = 0;
+#endif
 
     openlog("smtpd", LOG_PID, LOG_MAIL);
 
@@ -783,7 +788,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			message(out, 501, "Not Allowed.");
 			score -= 2;
 		    }
-		    else if (delay > 0) {
+		    else if ( (auth_ok == 0) && (delay > 0) ) {
 			char buf[40];
 #if 0
 # define GREYCODE 451
@@ -794,8 +799,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			sprintf(buf,"delay %d", delay);
 			audit(&letter, "DATA", buf, GREYCODE);
 			message(out, GREYCODE,
-				    "System busy.  Try again in %d seconds.",
-				     delay);
+				    "System busy.  Try again in %d second%s.",
+				     delay, (delay==1) ? "" : "s");
 #if GREYCODE == 421
 			audit(&letter, "QUIT", "greylist", 421);
 			byebye(&letter,1);
@@ -863,10 +868,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 #if SMTP_AUTH
 	    case AUTH:
 		if ( auth(&letter, line) ) {
-		    /* all authentication does, for now, is allow an user
-		     * to relay through this server no matter where they're
-		     * coming from.
-		     */
+		    auth_ok = 1;
 		    env->relay_ok = 1;
 		}
 		else
