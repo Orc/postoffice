@@ -1068,23 +1068,45 @@ main()
 }
 EOF
 
+    # first see if res_init() and res_query() actually exist...
+
     if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c; then
-	true
+	__extralib=
     elif $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
-	AC_LIBS="$AC_LIBS -lresolv"
-    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c; then
-	# compensate for Darwin brokeness.
-	AC_DEFINE BIND_8_COMPAT 1
-    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
-	# double compensate for Darwin brokeness.
-	AC_DEFINE BIND_8_COMPAT 1
+	__extralib=-lresolv
 	AC_LIBS="$AC_LIBS -lresolv"
     else
 	TLOG " (not found)"
 	rm -f /tmp/ngc$$.c
 	return 1
     fi
-    TLOG " (found)"
+
+    # if res_init() and res_query() actually exist, check to
+    # see if the HEADER structure is defined ...
+
+    cat > /tmp/ngc$$.c << EOF
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+
+main()
+{
+    HEADER hhh;
+    res_init();
+}
+EOF
+
+    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $__extralib; then
+	TLOG " (found)"
+    elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c $__extralib; then
+	TLOG " (bind9 with BIND_8_COMPAT)"
+	AC_DEFINE BIND_8_COMPAT 1
+    else
+	TLOG " (broken)"
+	rm -f /tmp/ngc$$.c
+	return 1
+    fi
     rm -f /tmp/ngc$$.c
     return 0
 }
