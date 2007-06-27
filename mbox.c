@@ -68,10 +68,10 @@ newmbox(struct in_addr *ip, int port, int verbose)
     if ( (host = ptr(ip)) == 0 )
 	host = inet_ntoa(*ip);
 
-    setproctitle("runq: connecting to %s", host);
+    setproctitle("connecting to %s", host);
 
     if ( (ret->fd = attach_in(ip, port)) != -1 ) {
-	setproctitle("runq: connected to %s", host);
+	setproctitle("connected to %s", host);
 
 	ret->opened = 1;
 	if ( (ret->in = fdopen(ret->fd,"r"))

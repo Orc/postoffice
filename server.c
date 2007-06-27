@@ -37,11 +37,17 @@ void
 setproctitle(char *fmt, ...)
 {
     va_list ptr;
+    extern char *pgm;
+    int pfx;
+
+    pfx = strlen(pgm)+2;
 
     if (argv0) {
 	va_start(ptr,fmt);
 	memset(argv0, 0, szargv0);
-	vsnprintf(argv0, szargv0-1, fmt, ptr);
+	strcpy(argv0, pgm);
+	strcat(argv0, ":");
+	vsnprintf(argv0+pfx, szargv0-(pfx+1), fmt, ptr);
 	va_end(ptr);
     }
 }
@@ -309,11 +315,11 @@ server(ENV *env, int debug)
 {
     struct servent *proto = getservbyname("smtp", "tcp");
     int port = proto ? proto->s_port : htons(25);
-    unsigned int errcount;
+    unsigned int retries;
     int sock, client;
     int status, i;
 
-    setproctitle("postoffice: accepting connections");
+    setproctitle("accepting connections");
     nwindow = env->max_clients;
     if ( (window = calloc(sizeof window[0], nwindow)) == 0 ) {
 	syslog(LOG_ERR, "alloc %d windows: %m", nwindow);
@@ -333,7 +339,6 @@ server(ENV *env, int debug)
     signal(SIGCHLD, reaper);
     signal(SIGPIPE, SIG_IGN);
 
-reattach:
     if ( (sock = attach(port)) == -1) {
 	syslog(LOG_ERR, "daemon cannot attach: %m");
 	exit(EX_OSERR);
@@ -346,28 +351,26 @@ reattach:
 	if ( (client = accept(sock, &j, &js)) == -1 ) {
 	    if (errno == EINTR)
 		continue;
-	    else if (errno == EBADF) {
-		syslog(LOG_ERR, "accept: %m -- restarting daemon");
-		close(sock);
-		sleep(60);
-		goto reattach;
-	    }
-	    else {
+	    else if (errno != EBADF) {
 		syslog(LOG_ERR, "accept: %m");
 		if (debug) printf("debug server:%s\n", strerror(errno));
-		errcount++;
+	    }
+	    else {
+	reattach:
+		syslog(LOG_ERR, "%m -- restarting daemon");
+		close(sock);
+		retries = 0;
+		while ( sleep(60) , ((sock = attach(port)) == -1) )
+		    syslog(LOG_ERR, "daemon cannot attach (retry %d): %m",
+			    ++retries);
 	    }
 	}
 	else {
 	    if (debug) printf("debug server:session\n");
 	    status = do_smtp_connection(client, env);
 	    close(client);
-	    if (status < 0) {
-		syslog(LOG_ERR, "%m -- restarting daemon");
-		close(sock);
-		sleep(60);
+	    if (status < 0)
 		goto reattach;
-	    }
 	}
     }
     syslog(LOG_ERR, "daemon aborting: %m");
@@ -404,7 +407,7 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGUSR2, sigexit);
 
 
-    setproctitle("postoffice: runq every %d minutes", qrunwhen);
+    setproctitle("runq every %d minutes", qrunwhen);
 
     while (1) {
 	if ( (runchild=fork()) == 0) {
