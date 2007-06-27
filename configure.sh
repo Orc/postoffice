@@ -10,7 +10,8 @@ ac_help='
 --with-tcpwrappers	use tcp wrappers
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
---use-peer-flag		enable -opeer (for debugging)'
+--use-peer-flag		enable -opeer (for debugging)
+--with-vhost=PATH	user virtual domains'
 
 # load in the configuration file
 #
@@ -67,6 +68,10 @@ test "$USE_PEER_FLAG" && AC_DEFINE USE_PEER_FLAG 1
 test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 test "$WITH_AV"       && AC_DEFINE AV_PROGRAM \""$WITH_AV"\"
+if test "$WITH_VHOST"; then
+    AC_DEFINE VPATH \"$WITH_VHOST\"
+    AC_DEFINE VSPOOL \"/var/spool/virtual\"
+fi
 
 AC_DEFINE NOBODY_UID	"`id -u nobody`"
 AC_DEFINE NOBODY_GID	"`id -u nobody`"

@@ -59,7 +59,7 @@ token(char *p, char sep, char **next)
 
 
 void
-newaliases()
+newaliases(int argc, char **argv)
 {
     char atemp[sizeof PATH_ATEMP+10];
     char alias[sizeof PATH_ALIAS+10];

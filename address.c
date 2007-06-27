@@ -64,7 +64,7 @@ mkaddress(char *full)
 
 
 struct address *
-verify(struct letter *let, char *p, int user_validate, int *reason)
+verify(struct letter *let, char *p, int flags, int *reason)
 {
     char *e = p + strlen(p);
     int bad = 0;
@@ -81,28 +81,40 @@ verify(struct letter *let, char *p, int user_validate, int *reason)
 
     if ((e > p) && (ret = mkaddress(addr(p, &bad))) ) {
 	if (ret->domain) {
-	    if (getMXes(ret->domain, &mxes) <= 0) {
+	    ret->local = 0;
+	    /* check that there is an mx (or A record) for the mail domain;
+	     * if that fails we fail unless verify_from is off and it's
+	     * a MAIL FROM:<> address
+	     */
+	    if ( (getMXes(ret->domain, &mxes) > 0) ) {
+		for (lip=let->env->local_if; lip->s_addr; lip++)
+		    for (i=0; i < mxes.count; i++)
+			if (lip->s_addr == mxes.a[i].addr.s_addr) {
+			    /* we are a legitimate mx for this address.
+			     */
+			    ret->local = 1;
+			    goto esc;
+			}
+	      esc:
+		freeiplist(&mxes);
+	    }
+	    else if ( let->env->verify_from || !(flags & VF_FROM) ) {
 		if (reason) *reason = V_NOMX;
 		freeaddress(ret);
 		return 0;
 	    }
-	    ret->local = 0;
-	    for (lip=let->env->local_if; lip->s_addr; lip++)
-		for (i=0; i < mxes.count; i++)
-		    if (lip->s_addr == mxes.a[i].addr.s_addr) {
-			/* we are a legitimate mx for this address.
-			 */
-			ret->local = 1;
-			break;
-		    }
-	    freeiplist(&mxes);
 
 	}
 	else
 	    ret->local = 1;
 
+#ifdef VPATH
+	if (ret->local && vspool(ret->domain))
+	    ret->vhost = 1;
+#endif
 
-	if (ret->local && user_validate && !userok(let, ret)) {
+
+	if (ret->local && (flags & VF_USER) && !userok(let, ret)) {
 	    if (reason) *reason = V_WRONG;
 	    freeaddress(ret);
 	    return 0;

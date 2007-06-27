@@ -221,7 +221,7 @@ do_smtp_connection(int client, ENV *env)
 
 
 void
-server(ENV *env)
+server(ENV *env, int debug)
 {
     struct servent *proto = getservbyname("smtp", "tcp");
     int port = proto ? proto->s_port : htons(25);
@@ -238,26 +238,31 @@ server(ENV *env)
     for (i=nwindow; i-- > 0; )
 	window[i].clerk = -1;
 
-    close(0);
-    close(1);
-    close(2);
-    setsid();
-
-    if ( (daemon = fork()) == -1) {
-	syslog(LOG_ERR, "starting mail server: %m");
-	exit(EX_OSERR);
+    if (debug) {
+	printf("debug server: startup\n");
     }
-    else if (daemon > 0)
-	exit(EX_OSERR);
-
-    if ( (nul = open("/dev/null", O_RDWR)) != -1
-			    && dup2(nul,0) != -1
-			    && dup2(nul,1) != -1
-			    && dup2(nul,2) != -1)
-	close(nul);
     else {
-	syslog(LOG_ERR, "Cannot attach to /dev/null: %m");
-	exit(EX_OSERR);
+	close(0);
+	close(1);
+	close(2);
+	setsid();
+
+	if ( (daemon = fork()) == -1) {
+	    syslog(LOG_ERR, "starting mail server: %m");
+	    exit(EX_OSERR);
+	}
+	else if (daemon > 0)
+	    exit(EX_OSERR);
+
+	if ( (nul = open("/dev/null", O_RDWR)) != -1
+				&& dup2(nul,0) != -1
+				&& dup2(nul,1) != -1
+				&& dup2(nul,2) != -1)
+	    close(nul);
+	else {
+	    syslog(LOG_ERR, "Cannot attach to /dev/null: %m");
+	    exit(EX_OSERR);
+	}
     }
 
 
@@ -277,6 +282,7 @@ server(ENV *env)
 	    int js = sizeof j;
 
 	    if ( (client = accept(sock, &j, &js)) < 0) {
+		if (debug) printf("debug server:session\n");
 		if (errno == EINTR)
 		    continue;
 		if (errno == EBADF) {

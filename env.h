@@ -26,6 +26,7 @@ struct env {
 				 * resolve */
     unsigned int   doublecheck:1;/* resolve caller IP->name, then name->IP */
     unsigned int   relay_ok:1;	/* Is it okay to mail to remote machines? */
+    unsigned int   verify_from:1;/* verify host of MAIL FROM:<user@host> */
     unsigned int   debug:1;	/* enable debugging commands */
     unsigned int   forged:1;	/* from address set by -f */
     unsigned int   trawl:1;	/* scrape headers for recipients (pine sucks) */

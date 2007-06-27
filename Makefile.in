@@ -21,12 +21,15 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
-     newaliases.o arpatok.o audit.o goodness.o
+     newaliases.o arpatok.o audit.o goodness.o vhost.o
 
 all: $(PGMS)
 
 postoffice: $(OBJS)
 	$(CC) $(CFLAGS) -o postoffice $(OBJS) @LIBS@
+
+postoffice.o: postoffice.c config.h letter.h env.h smtp.h VERSION
+	$(CC) $(CFLAGS) -c postoffice.c -DVERSION=\"`cat VERSION`\"
 
 expire:	expire.c
 	$(CC) $(CFLAGS) -o expire expire.c @LIBS@
@@ -89,7 +92,6 @@ mbox.o: mbox.c config.h mbox.h env.h mx.h
 mx.o: mx.c config.h mx.h
 newaliases.o: newaliases.c config.h aliases.h env.h
 ns.o: ns.c
-postoffice.o: postoffice.c config.h letter.h env.h smtp.h
 prt.o: prt.c
 recipient.o: recipient.c config.h letter.h env.h
 remote.o: remote.c config.h letter.h env.h mbox.h bounce.h

@@ -31,23 +31,25 @@ float
 main(int argc, char **argv)
 {
     int opt;
-    int val;
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
     static ENV env;
     char *from = 0;
-    char *options = "aA:B:C:F:f:r:b:o:h:R:GUimnqv";
+    char *options = "aA:B:C:dF:f:r:b:o:h:R:GUVimnqv";
     char *modes = "sqpmid";
     struct utsname sys;
     struct hostent *p;
+    int debug = 0;
 
     env.bmode = 'm';
     env.local_if = local_if_list();
     env.relay_ok = 1;		/* allow local relaying */
     env.verbose = 0;		/* be chattery */
+    env.verify_from = 1;	/* verify the host of MAIL FROM:<user@host> */
     env.nodaemon = 0;		/* allow MAIL FROM:<> */
     env.delay = 3600;		/* greylist delay */
     env.largest = 0;
+    env.debug = 0;
     env.sender = getuid();
     env.timeout = 300;
     env.qreturn = 86400*3;
@@ -75,24 +77,24 @@ main(int argc, char **argv)
 
     /* handle magic program names */
     if ( SAME(pgm, "mailq") ) {
-	options = "v";
+	options = "vV";
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
-	options = "A:b:F:f:io:r:vt";
+	options = "A:b:F:f:io:r:Vvt";
 	modes = "sm";
 	env.bmode = 'm';
     }
     else if ( SAME(pgm, "runq") ) {
-	options = "vo:";
+	options = "o:Vv";
 	env.bmode = 'q';
     }
     else if ( SAME(pgm, "newaliases") ) {
-	options = "v";
+	options = "vV";
 	env.bmode = 'i';
     }
     else if ( SAME(pgm, "smtpd") ) {
-	options = "aA:B:C:o:h:R:GUmnv";
+	options = "aA:B:C:do:h:R:GUmnvV";
 	env.bmode = 'd';
     }
 
@@ -137,6 +139,9 @@ main(int argc, char **argv)
 		env.forged = (env.sender != 0);
 		from = optarg;
 		break;
+	case 'd':
+		debug = 1;
+		break;
 	case 'b':
 		env.bmode = optarg[0];
 		break;
@@ -146,6 +151,9 @@ main(int argc, char **argv)
 	case 'v':
 		env.verbose = 1;
 		break;
+	case 'V':
+		printf("%s %s\n", pgm, VERSION);
+		exit(EX_OK);
 	}
     }
 
@@ -163,7 +171,7 @@ main(int argc, char **argv)
 			auditon();
 		    else
 			auditoff();
-		    server(&env);
+		    server(&env,debug);
 		    break;
 		}
 		fprintf(stderr, "%s: Permission denied.\n", pgm);
@@ -184,7 +192,7 @@ main(int argc, char **argv)
 		break;
 	case 'i':	/* initialize alias database */
 		superpowers();
-		newaliases();
+		newaliases(argc-optind, argv+optind);
 		break;
 	}
 	exit(EX_OK);

@@ -128,7 +128,16 @@ getemail(struct address *u)
     char *forward;
     char *p;
 
-    if ( (pwd = getpwemail(u->user)) == 0 )
+#ifdef VPATH
+    if (u->vhost)
+	pwd = getvpwemail(u->user, u->domain);
+    else
+	pwd = getpwemail(u->user);
+#else
+    pwd = getpwemail(u->user);
+#endif
+
+    if (pwd == 0)
 	return 0;
 
     ret.user = pwd->pw_name;
@@ -136,6 +145,11 @@ getemail(struct address *u)
     ret.forward = 0;
     ret.uid = pwd->pw_uid;
     ret.gid = pwd->pw_gid;
+
+#ifdef VPATH
+    if (u->vhost)
+	return &ret;
+#endif
 
     if (forward = alloca(strlen(pwd->pw_dir) + sizeof "/.forward" + 1)) {
 	sprintf(forward, "%s/.forward", pwd->pw_dir);

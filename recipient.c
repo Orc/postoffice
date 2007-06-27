@@ -145,7 +145,8 @@ localprocess(struct letter *let, struct address *u, struct back *b)
 
     if (em->forward)
 	return expand(let, b, u, em->forward, token, em->uid, em->gid, 0);
-    return newrecipient(&let->local, u, emUSER, em->uid, em->gid);
+    return newrecipient(&let->local, u, u->vhost ? emVHOST : emUSER,
+					em->uid, em->gid);
 }
 
 
@@ -208,7 +209,7 @@ expand(struct letter *let,
 	    struct back *q;
 
 
-	    if ( (p = verify(let,word,1,(void*)0)) == 0)
+	    if ( (p = verify(let,word,VF_USER,(void*)0)) == 0)
 		rc = 0;
 	    else {
 		link.next = prev;

@@ -111,6 +111,9 @@ set_option(char *option, ENV *env)
 		else if (isopt(option, "localmx", &val, 0))
 		    env->localmx = val;
 		return;
+    case 'v':   if (isopt(option, "verify-from", &val, 0))
+		    env->verify_from = val;
+		return;
     }
     /* complain if I want to */
 }

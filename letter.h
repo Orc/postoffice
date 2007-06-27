@@ -13,6 +13,7 @@ struct address {
     char *user;			/* user at that domain */
     char *alias;		/* (or alias in /etc/aliases) */
     int   local;		/* is this a local address? */
+    int   vhost;		/* and, if so, is it a vhost? */
 } ;
 
 struct email {
@@ -24,7 +25,7 @@ struct email {
 } ;
 
 struct recipient {
-    enum r_type { emALIAS, emFILE, emEXE, emUSER } typ;
+    enum r_type { emALIAS, emFILE, emEXE, emUSER, emVHOST } typ;
     enum r_status { FAILED=0, PENDING, MAILED } status;
     char *fullname;
     char *user;
@@ -85,6 +86,10 @@ struct email *getemail(struct address *);
 #define V_WRONG 2
 #define V_BOGUS	3
 #define V_ERROR	4
+
+/* verify options */
+#define VF_USER	0x01
+#define VF_FROM	0x02
 
 extern struct address* verify(struct letter*, char*, int, int*);
 extern void freeaddress(struct address*);

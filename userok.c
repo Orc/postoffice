@@ -17,6 +17,33 @@
 #include "aliases.h"
 
 
+static void*
+alias_open(char* file)
+{
+    return (void*)dbm_open(file, O_RDONLY, 0);
+}
+
+
+static char *
+alias_lookup(void* db, char* key)
+{
+    datum id, value;
+
+    id.dptr = key;
+    id.dsize = strlen(key)+1;
+    value = dbm_fetch((DBM*)db,id);
+
+    return value.dptr ? value.dptr : 0;
+}
+
+static void
+alias_close(void *db)
+{
+    dbm_close((DBM*)db);
+}
+
+
+
 /*
  * check /etc/aliases, then passwd, to see if the user exists.  I check
  * /etc/aliases first because aliases override password entries.
@@ -25,34 +52,54 @@ int
 userok(struct letter *let, struct address *try)
 {
     struct email *em;
-    static DBM *alias = 0;
-    datum key, value;
+    static void* alias = 0;
+    char *value;
 
     if (try->user == 0 || try->user[0] == 0)
 	return 1;	/* <> is alway valid; may be invalidated by
 			 * higher-level code.
 			 */
 
-    if ( alias || (alias = dbm_open(PATH_ALIAS, O_RDONLY, 0)) != 0) {
-	key.dptr = try->user;
-	key.dsize= strlen(try->user)+1;
-	value = dbm_fetch(alias, key);
+#ifdef VPATH
+    if (try->vhost && (value = isvhost(try->domain)) ) {
+	static void *valias;
+	char *vap = alloca(strlen(value) + sizeof "/aliases" + 1);
 
-	if (value.dptr == 0) {
-	    key.dptr = lowercase(try->user);
-	    key.dsize = strlen(key.dptr)+1;
-	    value = dbm_fetch(alias, key);
+	if (vap) {
+	    sprintf(vap, "%s/aliases", value);
+
+	    if (valias = alias_open(vap)) {
+		if ( (value = alias_lookup(valias, try->user)) == 0 )
+		    value = alias_lookup(valias, lowercase(try->user));
+		if (value == 0)
+		    value = alias_lookup(valias, "*");
+		alias_close(valias);
+
+		if (value)
+		    if (try->alias = strdup(value))
+			return 1;
+		    else {
+			syslog(LOG_ERR, "(%s) %m", try->user);
+			return 0;
+		    }
+	    }
 	}
+    }
+    else
+#endif
 
-	if (value.dsize > 0) {
-	    if (try->alias = strdup(value.dptr))
+    if ( alias || (alias = alias_open(PATH_ALIAS)) != 0) {
+	if ( (value = alias_lookup(alias, try->user)) == 0)
+	    value = alias_lookup(alias, lowercase(try->user));
+	if (value) {
+	    if (try->alias = strdup(value))
 		return 1;
 	    else {
 		syslog(LOG_ERR, "(%s) %m", try->user);
 		return 0;
 	    }
 	}
-	/*dbm_close(alias); (try to keep the alias db open all the time) */
+	/* alias_close(alias); */
     }
 
     if ( (em = getemail(try)) != 0 )

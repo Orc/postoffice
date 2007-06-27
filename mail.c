@@ -59,7 +59,7 @@ addto(struct letter *let, char *who)
     struct address *addr;
     int ret;
 
-    if ( (*who == 0) || ((addr = verify(let, who, 1, 0)) == 0) )
+    if ( (*who == 0) || ((addr = verify(let, who, VF_USER, 0)) == 0) )
 	return 0;
 
     ret = recipients(let, addr);
@@ -200,7 +200,7 @@ mail(char *from, int argc, char **argv, ENV *env)
     let.deliveredto = let.deliveredby = env->localhost;
     let.deliveredIP = "127.0.0.1";	/* woe is us if IPv6 wins */
 
-    if ( (let.from = verify(&let, from, 1, &reason)) == 0) {
+    if ( (let.from = verify(&let, from, VF_USER|VF_FROM, &reason)) == 0) {
 	say("Unknown sender <%s>", from);
 	byebye(&let, EX_NOUSER);
     }

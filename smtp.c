@@ -171,7 +171,7 @@ parse_address(struct letter *let, char *p, int to)
     int reason;
     struct address *ret;
 
-    if ( (ret = verify(let,p,1,&reason)) != 0)
+    if ( (ret = verify(let,p,(to ? VF_USER : VF_USER|VF_FROM), &reason)) != 0)
 	return ret;
 
     switch (reason) {
@@ -486,6 +486,7 @@ debug(struct letter *let)
 		      "Max clients: %d\n"
 		      "Qreturn: %ld\n"
 		      "Relay-ok: %s\n"
+		      "Verify-from: %s\n"
 		      "CheckHELO: %s\n"
 		      "NoDaemon: %s\n"
 		      "LocalMX: %s\n"
@@ -495,6 +496,7 @@ debug(struct letter *let)
 			  env->max_clients,
 			  env->qreturn,
 			  env->relay_ok ? "T" : "NIL",
+			  env->verify_from ? "T" : "NIL",
 			  env->checkhelo ? "T" : "NIL",
 			  env->nodaemon ? "T" : "NIL",
 			  env->localmx ? "T" : "NIL",
