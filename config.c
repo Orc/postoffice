@@ -13,27 +13,38 @@
 #include "env.h"
 
 
+int
+value(char *p, int *val, char *m)
+{
+    char *ep;
+    int   units;
+
+    *val = strtol(p, &ep, 10);
+
+    if (ep == p)
+	return 0;
+
+    if (*ep && m) {
+	while (m = strchr(m+1,'='))
+	    if (m[-1] == tolower(*ep)) {
+		if ( (units = atoi(m+1)) > 0 )
+		    (*val) *= units;
+		return 1;
+	    }
+    }
+    return 1;
+}
+
+
 static int
 isopt(char *arg, char *opt, int *val, char *m)
 {
     int   olen = strlen(opt);
     char *p    = arg + olen;
-    char *ep;
-    int   units;
 
     if (strncmp(arg, opt, olen) == 0) {
-	if (*p == '=') {
-	    *val = strtol(p+1, &ep, 10);
-	    if (*ep && m) {
-		while (m = strchr(m+1,'='))
-		    if (m[-1] == tolower(*ep)) {
-			if ( (units = atoi(m+1)) > 0 )
-			    (*val) *= units;
-			return 1;
-		    }
-	    }
-	    return 1;
-	}
+	if (*p == '=')
+	    return value(p+1, val, m);
 	else if (*p == 0) {
 	   *val = 1;
 	   return 1;

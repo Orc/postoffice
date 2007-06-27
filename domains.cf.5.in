@@ -6,9 +6,9 @@
 .Os MASTODON
 .Sh NAME
 .Nm domains.cf
-.Nd configuration file for virtual domains
+.Nd configuration file for postoffice/vm-pop3d virtual domains
 .Sh SYNOPSIS
-.Nm @VPATH@/domains.cf
+.Sy @VPATH@/domains.cf
 .Sh DESCRIPTION
 This file describes the virtual domains that are active on this system.
 The file resides in

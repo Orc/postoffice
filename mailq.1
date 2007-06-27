@@ -39,10 +39,10 @@
 .Nm mailq
 .Nd print the mail queue
 .Sh SYNOPSIS
-.Nm mailq
+.Nm
 .\" .Op Fl v
 .Sh DESCRIPTION
-.Nm Mailq
+.Nm
 prints a summary of the mail messages queued for future delivery.
 .Pp
 The first line printed for each message
@@ -58,7 +58,7 @@ and the envelope sender of the message.
 The following lines show message recipients,
 one per line.
 .Pp
-.Nm Mailq
+.Nm
 is identical to
 .Dq Li "postoffice -bp" .
 .\" .Pp
@@ -78,12 +78,12 @@ is identical to
 .\" .El
 .Pp
 The
-.Nm mailq
+.Nm
 utility exits 0 on success, and >0 if an error occurs.
 .Sh SEE ALSO
 .Xr postoffice 8
 .Sh HISTORY
 The
-.Nm mailq
+.Nm
 command appeared in
 .Bx 4.0 .

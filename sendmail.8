@@ -36,30 +36,29 @@
 .Os MASTODON
 .Sh NAME
 .Nm sendmail
-.Nd Berkeley sendmail emulation for 
-.Nm postoffice
+.Nd Berkeley sendmail emulation for postoffice
 .Sh SYNOPSIS
-.Nm sendmail
+.Nm
 .Op Ar flags
 .Op Ar address ...
 .Sh DESCRIPTION
-.Nm Sendmail
+.Nm
 is a more-like-Berkeley-sendmail emulation for 
-.Nm postoffice .
+.Sy postoffice .
 It sends a message to one or more
 .Em recipients
 specified on the command line, or, with the
 .Ql t
 option, in the headers of the mail message.
-.Nm Sendmail
+.Nm
 is intended as a user interface routine for programs
 that expect that a program named
-.Nm sendmail
+.Nm
 will be the program that you can get from
 .Em sendmail.org .
 .Pp
 With no flags,
-.Nm sendmail
+.Nm
 reads its standard input
 up to an end-of-file
 and sends a copy of the message found there
@@ -91,6 +90,11 @@ Set option
 to the specified
 .Em value .
 (ignored)
+.It Fl q Ns Ar X
+Start a daemon to process the mail queue
+every
+.Ar X
+minutes.
 .It Fl r Ns Ar name
 An alternate form of the
 .Fl f
@@ -105,7 +109,7 @@ Any addresses in the argument list will be
 Go into verbose mode.
 .El
 .Pp
-.Nm Sendmail
+.Nm
 returns an exit status
 describing what it did.
 The codes are defined in

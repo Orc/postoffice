@@ -12,7 +12,7 @@ ac_help='
 --with-tcpwrappers	use tcp wrappers
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
---with-auth		enable smtp authentication (AUTH LOGIN)
+--with-auth		enable smtp authentication (for AUTH LOGIN)
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
 --with-vspool=PATH	virtual host mailspool (/var/spool/virtual)
 --with-vuser=USER	user (or uid:gid) that should own vspool (mail)'
@@ -278,6 +278,9 @@ if [ "$WITH_AUTH" ]; then
 	AC_FAIL "Cannot build AUTH support without a crypt() function"
 	unset WITH_AUTH
     fi
+    case "$WITH_AUTH" in
+    [Pp][Aa][Ss][Ss][Ww][Dd])  AC_DEFINE AUTH_PASSWD 1 ;;
+    esac
 fi
 
 if [ "$WITH_AUTH" ]; then
@@ -347,5 +350,6 @@ for x in $checkdirs; do
     test -d $D || LOG "WARNING! ${x} directory $D does not exist"
 done
 
-AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 greylist.7 smtpauth.5 postoffice.cf.5
-
+AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 \
+                   greylist.7 smtpauth.5 postoffice.cf.5 aliases.5 \
+		   authexpire.8

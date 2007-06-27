@@ -26,9 +26,7 @@ extern char *to64(char*);
 
 
 /*
- * authmeharder() verifies a user/passwd.   Currently it only works for
- *          virtual domains, and only against a virtual domains
- *          password file.
+ * authmeharder() verifies a user/passwd.
  */
 static int
 authmeharder(struct letter *let, char *user, char *pass)
@@ -38,8 +36,14 @@ authmeharder(struct letter *let, char *user, char *pass)
     struct passwd *pw;
     int ret = 0;
 
-    if ( addr = mkaddress(user) ) {
-	if ( pw = getvpwemail(getdomain(addr->domain), addr->user) )
+    if ( addr = mkaddress(user) ) { 
+#if AUTH_PASSWD
+	dom = getdomain(addr->domain);
+	pw = dom ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
+#else
+	pw = getvpwemail(getdomain(addr->domain), addr->user);
+#endif
+	if (pw)
 	    ret = (strcmp(pw->pw_passwd, crypt(pass, pw->pw_passwd)) == 0);
 	freeaddress(addr);
     }

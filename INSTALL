@@ -46,16 +46,13 @@ Configure.sh has a few options that can be set:
        mail messages.  If your previous MTA has left messages in this
        directory, POSTOFFICE should ignore them, but if it doesn't your
        first runq will have surprising results.
-    c) Unlike Sendmail, POSTOFFICE does not support automatic queue running;
-       it expects you to put an entry into your crontab to run the mail
-       queue at whatever intervals you prefer.
-    d) I have not done any exhaustive checks for vulnerabilities in this
+    c) I have not done any exhaustive checks for vulnerabilities in this
        code.   It tries not to write anything as root (except for mail
        into the root mailbox, which you can and probably should override
        with a mail alias) but the evil hackers are cleverer than I am
        by definition, and if there are vulnerabilities they will find
        them.
-    e) The AV script needs to accept the file to be scanned on its
+    d) The AV script needs to accept the file to be scanned on its
        standard input.  I use --with-av="|/usr/local/bin/clamscan --mbox -i --disable-summary -"
        as my standard av scanner;  the leading | bar is not necessary
        for the av command (it will be stripped off during execution),

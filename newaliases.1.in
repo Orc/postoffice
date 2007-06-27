@@ -38,10 +38,10 @@
 .Nm newaliases
 .Nd rebuild the data base for the mail aliases file
 .Sh SYNOPSIS
-.Nm newaliases
+.Nm
 @VHOST@.Op Ar host ...
 .Sh DESCRIPTION
-.Nm Newaliases
+.Nm
 rebuilds the random access data base for the mail aliases file
 .Pa /etc/aliases .
 @VHOST@When 
@@ -64,6 +64,6 @@ System aliases file.
 .Xr postoffice 8
 .Sh HISTORY
 The
-.Nm newaliases
+.Nm
 command appeared in
 .Bx 4.0 .

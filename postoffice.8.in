@@ -38,31 +38,24 @@
 .Nm postoffice
 .Nd internet mail server
 .Sh SYNOPSIS
-.Nm postoffice
+.Nm
 .Op Ar flags
 .Op Ar address ...
-.Nm mailq
-.Nm newaliases
-@VHOST@.Op Ar host ...
-.Nm runq
-.Op Fl v
-.Nm smtpd
-.Op Ar flags
 .Sh DESCRIPTION
-.Nm Postoffice
+.Nm
 accepts and delivers mail on
 .Em TCP/IP
 networks. It includes a mail
 .Em greylist ,
 uses 
-.Nm "TCP wrappers"
+.Sy "TCP wrappers"
 to restrict client access,
 and can be configured to run antivirus
 .\" and antispam
 software before accepting mail for delivery.
 .Pp
 With no flags,
-.Nm postoffice
+.Nm
 reads its standard input
 up to an end-of-file
 and sends a copy of the message found there
@@ -76,14 +69,14 @@ Flags are:
 .It Fl a
 Start SMTP servers with session auditing enabled.
 If session logging is enabled, 
-.Nm postoffice
+.Nm
 will log all sorts of information about each
 SMTP session to the syslog.  See
 .Xr mailaudit 5
 for details about the format of the audit records.
 .It Fl bd
 Run as a daemon.
-.Nm Postoffice
+.Nm
 will fork and run in background
 listening on socket 25 for incoming SMTP
 connections.
@@ -140,6 +133,11 @@ manpage.
 An alternate form of the
 .Fl bq
 flag.
+.It Fl q Ns Ar X
+Start a daemon to process the mail queue
+every
+.Ar X
+minutes.
 .\" .It Fl M Ns Ar ident
 .\" Process the queued message with the queue id
 .\" .Ar ident .
@@ -181,7 +179,7 @@ the rest of the name as a command
 to pipe the mail to.
 It may be necessary to quote the name
 to keep
-.Nm postoffice
+.Nm
 from suppressing the blanks from between arguments.
 For example, a common alias is:
 .Pp
@@ -189,7 +187,7 @@ For example, a common alias is:
 msgs: "|/usr/bin/msgs -s"
 .Ed
 .Pp
-.Nm postoffice
+.Nm
 returns an exit status
 describing what it did.
 The codes are defined in
@@ -214,30 +212,30 @@ such as
 .It Dv EX_NOPERM
 You do not have sufficient permissions.
 .It Dv EX_IOERR
-.Nm postoffice
+.Nm
 was unable to create or write a file.
 .El
 .Pp
 If invoked as
-.Nm newaliases ,
-.Nm postoffice
+.Sy newaliases ,
+.Nm
 will rebuild the alias database.
 If invoked as
-.Nm mailq ,
-.Nm postoffice
+.Sy mailq ,
+.Nm
 will print the contents of the mail queue.
 If invoked as
-.Nm runq ,
-.Nm postoffice
+.Sy runq ,
+.Nm
 will run through the mail queue and make what deliveries are possible.
 If invoked as
-.Nm smtpd ,
-.Nm postoffice
+.Sy smtpd ,
+.Nm
 runs as a SMTP daemon.
 .Sh FILES
 .Pp
 .Bl -tag -width /var/db/smtpauth.db -compact
-.It Pa /etc/postoffice.cf
+.It Pa @confdir@/postoffice.cf
 Default
 .Nm
 options.
@@ -252,7 +250,7 @@ collected statistics.
 .It Pa /var/spool/mqueue/*
 temp files.
 .It Pa /var/db/smtpauth.db
-.Nm greylist
+.Sy greylist
 database.
 .El
 .Sh SEE ALSO

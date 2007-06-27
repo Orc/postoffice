@@ -38,14 +38,14 @@
 .Nm postoffice.cf
 .Nd configuration file for postoffice
 .Sh SYNOPSIS
-.Nm postoffice.cf
+.Nm
 .Sh DESCRIPTION
 This file resides in @confdir@, and contains various configuration
 options for the 
-.Nm postoffice
+.Sy postoffice
 mail server.   All of the options listed here can also be passed
 directly to the
-.Nm postoffice
+.Sy postoffice
 server via the 
 .Fl o
 command line option.
@@ -90,7 +90,7 @@ and
 being hours.
 .It Li forward-all
 When set, forward all unknown mail to the configured
-.Nm relay-host .
+.Sy relay-host .
 .It Li hops Ns = Ns Ar N
 Set the hop count to
 .Ar N .
@@ -101,7 +101,7 @@ the mail is returned with an error message (the default is 100 hops).
 .It Li load Ns = Ns Ar N
 When the load average is above
 .Ar N ,
-.Nm postoffice
+.Sy postoffice
 will not accept SMTP connections (the default is 4).
 .It Li localmx
 Treat connections from sites that use this machine as an MX
@@ -168,13 +168,13 @@ command line or in a configuration file other than
 .It Li self Ns = Ns Ar host
 Set our hostname to
 .Ar host .
-.Nm Postoffice
+.Sy Postoffice
 normally uses the uname() system call to determine the machine name,
 but you can set it to just about anything here.
 .It Li size Ns = Ns Ar size
 Sets the 
 largest message size that 
-.Nm postoffice
+.Sy postoffice
 will accept.
 .Xr size
 is given as a tagged number,
@@ -216,7 +216,7 @@ nonzero (the default), the address will be rejected if it's
 from an unresolvable domain or if a remote client attempts to
 give a local address, and if zero, anything the client gives is
 okay with 
-.Nm postoffice .
+.Sy postoffice .
 .El
 .Sh SEE ALSO
 .Xr postoffice 8

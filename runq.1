@@ -8,13 +8,14 @@
 .Nm runq
 .Nd run the mail queue
 .Sh SYNOPSIS
-.Nm runq
+.Nm
 .Op Fl v
+.Op Fl o Ns Ar relay-host= Ns Nm host
 .Sh DESCRIPTION
-.Nm Runq
+.Nm
 processes saved messages in the mail queue.
 .Pp
-.Nm Runq
+.Nm
 is identical to
 .Dq Li "postoffice -bq" .
 .Pp
@@ -23,25 +24,25 @@ The options are as follows:
 .It Fl v
 Print verbose information.
 This makes
-.Nm runq
+.Nm
 display the
 conversation with each remote 
 server it sends mail to.
 .It Fl o Ns Ar relay-host= Ns Nm host
 Relay all mail through
-.Nm host
+.Sy host
 instead of trying to send directly to remote machines.  
-.It root
+.Sy root
 is the only account that may use this option.
 .El
 .Pp
 The
-.Nm runq
+.Nm
 utility exits 0 on success, and >0 if an error occurs.
 .Sh SEE ALSO
 .Xr postoffice 8
 .Sh HISTORY
 The
-.Nm runq
+.Nm
 command is from
 .Bx .

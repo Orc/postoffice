@@ -7,12 +7,12 @@
 .Sh NAME
 .Nm smtpauth
 .Nd greylist file for
-.Nm postoffice
+.Sy postoffice
 .Sh SYNOPSIS
-.Nm /var/db/smtpauth.db
+.Sy /var/db/smtpauth.db
 .Sh DESCRIPTION
 This file records client access to the
-.Nm postoffice
+.Sy postoffice
 SMTP server.
 It contains records that have the
 .Bl -tag -width ClientAddress -compact
@@ -25,7 +25,7 @@ That the client is connecting from, the
 .It date
 when this client & username can send mail
 to the
-.Nm postoffice
+.Sy postoffice
 server, and the
 .It date
 when this client & username last connected

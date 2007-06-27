@@ -31,6 +31,23 @@
 
 
 /*
+ * drop an informative message into argv
+ */
+void
+setproctitle(ENV *env, char *fmt, ...)
+{
+    va_list ptr;
+
+    if (env->argv0) {
+	va_start(ptr,fmt);
+	memset(env->argv0, 0, env->szargv0);
+	vsnprintf(env->argv0, env->szargv0-1, fmt, ptr);
+	va_end(ptr);
+    }
+}
+
+
+/*
  * is this IP address one of our local ones?
  */
 int
@@ -186,10 +203,9 @@ do_smtp_connection(int client, ENV *env)
 	signal(SIGUSR1, SIG_IGN);
 	setsid();
 
-	memset(env->argv0, 0, 80);
-	strcpy(env->argv0, "SMTP startup");
+	setproctitle(env, "SMTP startup");
 	peername = nameof(&window[i].customer);
-	sprintf(env->argv0, "SMTP %s       ", peername);
+	setproctitle(env, "SMTP %s", peername);
 	alarm(300);	/* give the client 5 minutes to set up a connection */
 
 	env->relay_ok = islocalhost(env, &window[i].customer.sin_addr);
@@ -233,38 +249,26 @@ crash(int sig)
 
 
 void
-server(ENV *env, int debug)
+daemonize(ENV *env, int debug, char *what)
 {
-    struct servent *proto = getservbyname("smtp", "tcp");
-    int port = proto ? proto->s_port : htons(25);
-    unsigned int errcount;
-    int sock, client;
-    int status, nul, i;
     pid_t daemon;
-
-    nwindow = env->max_clients;
-    if ( (window = calloc(sizeof window[0], nwindow)) == 0 ) {
-	syslog(LOG_ERR, "alloc %d windows: %m", nwindow);
-	exit(EX_OSERR);
-    }
-    for (i=nwindow; i-- > 0; )
-	window[i].clerk = -1;
+    int i, nul;
 
     if (debug) {
 	printf("debug server: startup\n");
     }
     else {
+	for (i=0; i < 2; i++) {
+	    if ( (daemon = fork()) == -1) {
+		syslog(LOG_ERR, "backgrounding server: %m");
+		exit(EX_OSERR);
+	    }
+	    else if (daemon > 0)
+		exit(EX_OK);
+	}
 	close(0);
 	close(1);
 	close(2);
-	setsid();
-
-	if ( (daemon = fork()) == -1) {
-	    syslog(LOG_ERR, "starting mail server: %m");
-	    exit(EX_OSERR);
-	}
-	else if (daemon > 0)
-	    exit(EX_OSERR);
 
 	if ( (nul = open("/dev/null", O_RDWR)) != -1
 				&& dup2(nul,0) != -1
@@ -275,11 +279,20 @@ server(ENV *env, int debug)
 	    syslog(LOG_ERR, "Cannot attach to /dev/null: %m");
 	    exit(EX_OSERR);
 	}
-    }
 
+	setsid();
+	env->verbose = 0;/* can't be usefully verbose in the background */
+    }
+}
+
+
+void
+catchsigs(void (*newsig)(int))
+{
+    int i;
+    void (*sig)(int);
 
     for (i=1; i < NSIG; i++) {
-	void (*sig)(int);
 
 	if (i == SIGABRT)
 	    continue;
@@ -288,6 +301,27 @@ server(ENV *env, int debug)
 	    syslog(LOG_INFO, "signal %d was set by postoffice", i);
 	}
     }
+}
+
+void
+server(ENV *env, int debug)
+{
+    struct servent *proto = getservbyname("smtp", "tcp");
+    int port = proto ? proto->s_port : htons(25);
+    unsigned int errcount;
+    int sock, client;
+    int status, i;
+
+    setproctitle(env, "postoffice: accepting connections");
+    nwindow = env->max_clients;
+    if ( (window = calloc(sizeof window[0], nwindow)) == 0 ) {
+	syslog(LOG_ERR, "alloc %d windows: %m", nwindow);
+	exit(EX_OSERR);
+    }
+    for (i=nwindow; i-- > 0; )
+	window[i].clerk = -1;
+
+    catchsigs(crash);
 
     signal(SIGHUP,  sigexit);
     signal(SIGINT,  sigexit);
@@ -336,4 +370,55 @@ reattach:
 	}
     }
     syslog(LOG_ERR, "daemon aborting: %m");
+}
+
+
+static void
+no_op(int sig)
+{
+    signal(sig, no_op);
+}
+
+
+void
+runqd(ENV *env, int qrunwhen)
+{
+    pid_t runchild;
+    int   status;
+
+    if (qrunwhen == 0) {	/* should never be called with qrunwhen == 0 */
+	syslog(LOG_ERR, "qrunner called with qrun = 0; set to 15 minutes");
+	qrunwhen = 15;		/* so whine, then set the interval to 15     */
+				/* minutes */
+    }
+
+    catchsigs(SIG_IGN);
+    signal(SIGHUP,  no_op);
+    signal(SIGINT,  sigexit);
+    signal(SIGQUIT, sigexit);
+    signal(SIGKILL, sigexit);
+    signal(SIGTERM, sigexit);
+    signal(SIGUSR1, no_op);
+    signal(SIGUSR2, sigexit);
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+
+    setproctitle(env, "postoffice: runq every %d minutes", qrunwhen);
+
+    while (1) {
+	if ( (runchild=fork()) == 0) {
+	    ENV child_env = *env;
+
+	    setproctitle(env, "mail queue runner");
+	    configfile("/etc/postoffice.cf", &child_env);
+	    runq(&child_env);
+	    exit(0);
+	}
+	else if (runchild < 0)
+	    syslog(LOG_ERR, "qrunner: %m");
+	else
+	    waitpid(runchild, &status, 0);
+
+	sleep(qrunwhen*60);
+    }
 }

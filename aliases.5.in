@@ -37,16 +37,16 @@
 .Sh NAME
 .Nm aliases
 .Nd aliases file for
-.Nm postoffice
+.Sy postoffice
 .Sh SYNOPSIS
-.Nm aliases
+.Nm
 .Sh DESCRIPTION
 This file describes user
 .Tn ID
 aliases used by
-.Pa /usr/sbin/postoffice .
+.Pa @sbindir@/postoffice .
 The file resides in
-.Pa /etc
+.Pa @confdir@
 and
 is formatted as a series of lines of the form
 .Bd -filled -offset indent
@@ -79,7 +79,7 @@ using the program
 A
 .Xr newaliases
 command
-.Nm MUST
+.Em MUST
 be executed each time the aliases file is changed for the
 change to take effect.
 .Sh SEE ALSO

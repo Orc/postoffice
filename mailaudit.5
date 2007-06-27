@@ -20,13 +20,13 @@
 .Os MASTODON 4
 .Sh NAME
 .Nm mailaudit
-.Nd description of 
-.Nm postoffice
+.Nd description of
+.Sy postoffice
 session audit records
 .Sh DESCRIPTION
 .Pp
 This file describes the auditing format used by the
-.Nm postoffice
+.Sy postoffice
 mail server.  Mail audit records are written to the
 .Xr syslog
 with facility
@@ -34,7 +34,7 @@ with facility
 and priority
 .Em LOG_DEBUG .
 An audit record is a colon-separated line prefixed with the word
-.Nm AUDIT ,
+.Sy AUDIT ,
 and it contains the fields
 .Bl -tag -width XXXXXX
 .It TIME
@@ -47,7 +47,7 @@ the (4 character) SMTP command the client sent (or
 which is when the session connects),
 .It CODE
 the SMTP response code
-.Nm postoffice
+.Sy postoffice
 sent in reply to this command (if the code is
 .Em 499
 or

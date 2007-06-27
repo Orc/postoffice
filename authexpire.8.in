@@ -6,13 +6,15 @@
 .Os MASTODON
 .Sh NAME
 .Nm authexpire
-.Nd do housekeeping on the greylist
+.Nd do housekeeping on the
+.Sy postoffice
+greylist
 .Sh SYNOPSIS
-.Nm /usr/libexec/authexpire
+.Sy @libexec@/authexpire
 .Op Fl nzuvl
 .Ar age
 .Sh DESCRIPTION
-.Nm Authexpire
+.Nm
 examines the 
 .Em greylist
 database, removing entries that have not been active for

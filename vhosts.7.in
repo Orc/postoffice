@@ -6,7 +6,7 @@
 .Os MASTODON 4
 .Sh NAME
 .Nm vhosts
-.Nd virtual hosts description
+.Nd postoffice/vm-pop3d virtual hosts description
 .Sh DESCRIPTION
 Virtual hosts are based on the virtual host method used by the vm-pop3d
 pop3 mail server.   They are primarily used for setting up virtual email
@@ -32,7 +32,7 @@ format (username:encrypted passwd).
 .It @VPATH@/host/aliases
 Mail aliases.  Virtual mail aliases work the same way as normal
 mail aliases do, with the addition of the alias
-.Nm * ,
+.Sy * ,
 which aliases every username.
 .El
 .Pp

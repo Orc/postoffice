@@ -36,14 +36,12 @@
 .Os MASTODON 4
 .Sh NAME
 .Nm smptd
-.Nd the
-.Nm postoffice 
-SMTP mail server
+.Nd the postoffice SMTP mail server
 .Sh SYNOPSIS
-.Nm smtpd
+.Nm
 .Op Ar flags
 .Sh DESCRIPTION
-.Nm Smtpd
+.Nm
 accepts and delivers mail on
 .Em TCP/IP
 networks.
@@ -69,8 +67,13 @@ to the specified
 See
 .Xr postoffice 8
 for the options that
-.Nm smtpd
+.Nm
 knows about.
+.It Fl q Ns Ar X
+Start a daemon to process the mail queue
+every
+.Ar X
+minutes.
 .It Fl v
 Go into verbose mode. This makes 
 .Nm

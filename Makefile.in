@@ -3,6 +3,7 @@ CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 
 PGMS = postoffice dbm expire
+TOOLS = mx b64 getopt
 MAN8PAGES=postoffice.8 authexpire.8 sendmail.8 smtpd.8
 MAN7PAGES=mailaddr.7 greylist.7
 VMAN7PAGES=vhosts.7
@@ -27,7 +28,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
-     dbif.o $(AUTH_OBJS)
+     dbif.o getopt.o $(AUTH_OBJS)
 
 
 all: $(PGMS)
@@ -44,13 +45,16 @@ expire:	expire.c dbif.o
 dbm:	dbm.c dbif.o
 	$(CC) $(CFLAGS) -o dbm dbm.c dbif.o @LIBS@
 
-tools:  mx b64
+tools:  $(TOOLS)
 
 mx:     mx.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c
 
 b64:    b64.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
+
+getopt: getopt.c
+	$(CC) $(CFLAGS) -DDEBUG=1 -o getopt getopt.c
 
 install: install.@WHICH@ install.man
 
@@ -103,7 +107,7 @@ install.mailfilter: $(PGMS) install.common.binaries
 	mv @MAILERCONF@.new @MAILERCONF@
 
 clean:
-	rm -f *.o $(PGMS)
+	rm -f *.o $(PGMS) $(TOOLS)
 
 distclean spotless: clean
 	rm -f @GENERATED_FILES@ @CONFIGURE_FILES@

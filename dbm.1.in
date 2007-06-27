@@ -23,14 +23,14 @@
 .Os MASTODON
 .Sh NAME
 .Nm @NDBM@
-.Nd command-line database utilitiy
+.Nd command-line database utility
 .Sh SYNOPSIS
-.Nm @NDBM@
+.Nm
 .Op Fl d Ar database
 .Ar command
 .Sh DESCRIPTION
 The 
-.Nm @NDBM@
+.Nm
 command provides a way to create, examine, and modify @NDBM@ databases
 from the command line.  It supports the following commands:
 .Bl -tag -width delete database

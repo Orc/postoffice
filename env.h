@@ -12,6 +12,7 @@ struct env {
     unsigned long largest;	/* longest message we accept */
     float max_loadavg;		/* if la > this, don't accept mail */
     char *argv0;		/* argv0, for status scribbling */
+    int   szargv0;		/* number of bytes to scribble on */
     int   max_clients;		/* max# of connections allowed */
     int   max_hops;		/* max# of received-by: headers */
     int   timeout;		/* how long to wait for input */

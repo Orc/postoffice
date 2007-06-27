@@ -19,11 +19,16 @@
 #include "letter.h"
 #include "smtp.h"
 
+
+extern int   z_getopt();
+extern char* z_optarg;
+extern int   z_optind;
+
 void
 superpowers()
 {
     if (getuid() != geteuid()) {
-	/* pick up our superpowers powers (if any) */
+	/* pick up our superpowers (if any) */
 	setuid(geteuid());
 	setgid(getegid());
     }
@@ -34,16 +39,17 @@ char *pgm;
 float
 main(int argc, char **argv)
 {
-    int opt;
+    int i, opt;
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
     static ENV env;
     char *from = 0;
-    char *options = "aA:B:C:dF:f:r:b:o:h:R:GUVimnqv";
+    char *options = "aA:B:C:dF:f:r:b:o:h:R:q;GUVimnv";
     char *modes = "sqpmid";
     struct utsname sys;
     struct hostent *p;
     int debug = 0;
+    int qruntime = 0;
 
     env.bmode = 'm';
     env.local_if = local_if_list();
@@ -67,6 +73,9 @@ main(int argc, char **argv)
     env.max_hops = 100;		/* (ditto) */
 
     env.argv0 = argv[0];
+    env.szargv0 = 80;
+    /*for (env.szargv0=i=0; i<argc; i++)
+	env.szargv0 += strlen(argv[i]) + 1;*/
 
     if ( p = gethostbyname((uname(&sys) == 0) ? sys.nodename : "localhost") )
 	env.localhost = strdup(p->h_name);
@@ -97,7 +106,7 @@ main(int argc, char **argv)
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
-	options = "A:b:F:f:imo:r:Vvt";
+	options = "A:b:F:f:imo:r:q;Vvt";
 	env.bmode = 'm';
     }
     else if ( SAME(pgm, "runq") ) {
@@ -109,18 +118,18 @@ main(int argc, char **argv)
 	env.bmode = 'i';
     }
     else if ( SAME(pgm, "smtpd") ) {
-	options = "aA:B:C:do:h:R:GUmnvV";
+	options = "aA:B:C:do:h:q:R:GUmnvV";
 	env.bmode = 'd';
     }
 
-    while ( (opt = getopt(argc, argv, options)) != EOF) {
+    while ( (opt = z_getopt(argc, argv, options)) != EOF) {
 	switch (opt) {
 	case 'a':
 		env.auditing = 1;
 		break;
 	case 'C':
-		if (configfile( optarg, &env ) == 0) {
-		    perror(optarg);
+		if (configfile( z_optarg, &env ) == 0) {
+		    perror(z_optarg);
 		    exit(EX_NOINPUT);
 		}
 		break;
@@ -129,7 +138,7 @@ main(int argc, char **argv)
 		{   struct sockaddr_in fake;
 		    long ip;
 
-		    if ( (ip = inet_addr(optarg)) != -1) {
+		    if ( (ip = inet_addr(z_optarg)) != -1) {
 			fake.sin_addr = inet_makeaddr(ntohl(ip), 0L);
 			fake.sin_family = AF_INET;
 			peer = &fake;
@@ -139,7 +148,11 @@ main(int argc, char **argv)
 #endif
 		break;
 	case 'q':
-		env.bmode = 'q';
+		if (z_optarg && *z_optarg) {
+		    value(z_optarg, &qruntime, "m=1,h=60,d=1440");
+		}
+		else
+		    env.bmode = 'q';
 		break;
 	case 't':
 		env.trawl = 1;	/* scrounge the message header looking for
@@ -149,16 +162,16 @@ main(int argc, char **argv)
 	case 'r':
 	case 'f':
 		env.forged = (env.sender != 0);
-		from = optarg;
+		from = z_optarg;
 		break;
 	case 'd':
 		debug = 1;
 		break;
 	case 'b':
-		env.bmode = optarg[0];
+		env.bmode = z_optarg[0];
 		break;
 	case 'o':
-		set_option( optarg, &env );
+		set_option( z_optarg, &env );
 		break;
 	case 'v':
 		env.verbose = 1;
@@ -181,13 +194,27 @@ main(int argc, char **argv)
 		exit(EX_TEMPFAIL);
 	case 'd':
 		if (getuid() == 0) {
+		    daemonize(&env, debug);
+		    if (qruntime) {
+			pid_t qd;
+
+			if ( (qd=fork()) == -1) {
+			    syslog(LOG_ERR, "starting runqd: %m");
+			    exit(EX_TEMPFAIL);
+			}
+			else if (qd == 0) {
+			    runqd(&env,qruntime);
+			    exit(EX_TEMPFAIL);
+			}
+		    }
+
 		    configfile("/etc/postoffice.cf", &env);
 		    if (env.auditing)
 			auditon();
 		    else
 			auditoff();
-		    server(&env,debug);
-		    break;
+		    server(&env, debug);
+		    exit(EX_OK);
 		}
 		fprintf(stderr, "%s: Permission denied.\n", pgm);
 		exit(EX_NOPERM);
@@ -196,9 +223,20 @@ main(int argc, char **argv)
 		listq();
 		break;
 	case 'm':
-		superpowers();
-		configfile("/etc/postoffice.cf", &env);
-		mail(from, argc-optind, argv+optind, &env);
+		if (qruntime) {
+		    if (getuid() == 0) {
+			daemonize(&env, debug);
+			runqd(&env, qruntime);
+			exit(EX_OK);
+		    }
+		    fprintf(stderr, "%s: Permission denied.\n", pgm);
+		    exit(EX_NOPERM);
+		}
+		else {
+		    superpowers();
+		    configfile("/etc/postoffice.cf", &env);
+		    mail(from, argc-z_optind, argv+z_optind, &env);
+		}
 		break;
 	case 'q':
 		superpowers();
@@ -207,7 +245,7 @@ main(int argc, char **argv)
 		break;
 	case 'i':	/* initialize alias database */
 		superpowers();
-		newaliases(argc-optind, argv+optind);
+		newaliases(argc-z_optind, argv+z_optind);
 		break;
 	}
 	exit(EX_OK);
