@@ -171,6 +171,7 @@ send_to_remote(struct letter *let, char *host, int i, int j)
 	    if (rc < 0)
 		dump_session(f);
 	}
+	writecontrolfile(let);
     }
 }
 

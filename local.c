@@ -78,8 +78,8 @@ _exe(struct letter *let, struct recipient *to)
 
     close(io[0]);
 
-    receivedby(f, let, to);
-    addheaders(f, let);
+    mboxfrom(f, let);
+    addheaders(f, let, to);
     copybody(f, let);
     rc = ferror(f);
     fclose(f);
@@ -140,8 +140,8 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
     else {
 	flock(fileno(f), LOCK_EX);
 
-	receivedby(f, let, to);
-	addheaders(f, let);
+	mboxfrom(f, let);
+	addheaders(f, let, to);
 	copybody(f, let);
 	putc('\n', f);
 

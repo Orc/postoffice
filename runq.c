@@ -94,7 +94,7 @@ runjob(struct letter *let, char *qid)
 	    unlink(dfile);
 	}
     }
-    else if (let->env->verbose)
+    else if (let->env->verbose && errno != EEXIST)
 	fprintf(stderr, "could not read control file %s: %s\n",
 			qid, strerror(errno));
 }
@@ -106,20 +106,22 @@ runq(struct env *env)
     DIR *d;
     struct dirent *de;
     FILE *f;
-    pid_t qpid;
-    int runit;
     int fd;
-    char pidline[40];
     struct letter let;
 
+#ifdef NO_FLOCK
     sprintf(pidf, QUEUEDIR "qXXXXXX");
     if ( (fd = mkstemp(pidf)) == -1) {
 	syslog(LOG_ERR, "%s: %m", pidf);
 	return 0;
     }
-    sprintf(pidline, "%d\n", getpid());
-    write(fd, pidline, strlen(pidline));
-    close(fd);
+    else {
+	char pidline[40];
+	sprintf(pidline, "%d\n", getpid());
+	write(fd, pidline, strlen(pidline));
+	close(fd);
+    }
+#endif
 
     if ( (d = opendir(QUEUEDIR)) == 0 ) {
 	syslog(LOG_ERR, "%s: %m", QUEUEDIR);
@@ -130,6 +132,10 @@ runq(struct env *env)
 
     while (de = readdir(d)) {
 	if (Qpicker(de)) {
+#ifdef NO_FLOCK
+	    pid_t qpid;
+	    int runit;
+
 	    strcpy(xtemp, QRUNPFX);
 	    strcat(xtemp, de->d_name + 2);
 
@@ -143,12 +149,13 @@ runq(struct env *env)
 		    fscanf(f, "%d", &qpid);
 		    fclose(f);
 		}
-		if (qpid != -1 && kill(qpid, 0) == 0)
+		if ( (qpid != -1) && (kill(qpid, 0) == 0) )
 		    break;
 
 		syslog(LOG_INFO, (qpid == -1) ? "Zombie QID %s"
 					      : "Zombie QID %s (pid %d)",
 				  de->d_name+2, qpid);
+		break;
 		unlink(xtemp);
 	    }
 
@@ -158,12 +165,31 @@ runq(struct env *env)
 	    }
 	    else if ( env->verbose && (errno != EEXIST) )
 		perror(de->d_name + 2);
+#else
+	    sprintf(xtemp, QUEUEDIR "/%s", de->d_name);
+	    if ( (fd = open(xtemp, O_RDWR)) == -1) {
+		if (errno != ENOENT)
+		    perror(de->d_name + 2);
+	    }
+	    else {
+		if ( flock(fd, LOCK_EX|LOCK_NB) == 0 ) {
+		    runjob(&let, de->d_name + 2);
+		    flock(fd, LOCK_UN);
+		}
+		else if (errno != EWOULDBLOCK)
+		    perror(de->d_name + 2);
+		close(fd);
+	    }
+#endif
 	}
     }
     
     closedir(d);
-    unlink(pidf);
     close_sessions();
+
+#ifdef NO_FLOCK
+    unlink(pidf);
+#endif
 
     return 1;
 }

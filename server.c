@@ -274,22 +274,34 @@ server(ENV *env, int debug)
     signal(SIGUSR2, sigexit);
     signal(SIGCHLD, reaper);
 
-    for ( ; (sock = attach(port)) != -1; close(sock), sleep(30)) {
+    if ( (sock = attach(port)) == -1) {
+	syslog(LOG_ERR, "daemon cannot attach: %m");
+	exit(EX_OSERR);
+    }
 
+    while (1) {
 	errcount = 0;
+
 	while (1) {
 	    struct sockaddr j;
 	    int js = sizeof j;
 
-	    if ( (client = accept(sock, &j, &js)) < 0) {
+	    if ( (client = accept(sock, &j, &js)) >= 0) {
 		if (debug) printf("debug server:session\n");
-		if (errno == EINTR)
-		    continue;
-		if (errno == EBADF) {
+		status = do_smtp_connection(client, env);
+		close(client);
+		if (status < 0) {
 		    syslog(LOG_ERR, "%m -- restarting daemon");
 		    break;
 		}
+	    }
+	    else {
+		if (errno == EINTR)
+		    continue;
 		syslog(LOG_ERR, "accept: %m");
+		if (debug) printf("debug server:%s\n", strerror(errno));
+		if (errno == EBADF)
+		    break;
 		if (++errcount > 100) {
 		    syslog(LOG_ERR, "Too many errors on socket -- restarting");
 		    break;
@@ -298,14 +310,10 @@ server(ENV *env, int debug)
 	    }
 	    if (errcount)
 		--errcount;
-
-	    status = do_smtp_connection(client, env);
-	    close(client);
-	    if (status < 0) {
-		syslog(LOG_ERR, "%m -- restarting daemon");
-		break;
-	    }
 	}
-    }
+
+	close(sock);
+	sleep(120);
+    } while ( (sock = attach(port)) != -1 );
     syslog(LOG_ERR, "daemon aborting: %m");
 }

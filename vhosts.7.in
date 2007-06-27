@@ -19,8 +19,8 @@ it
 .Bl -tag -width @VPATH@/host/passwd
 .It @VSPOOL@/host
 The mail spool directory.   This directory, and all of the
-spoolfiles in it, should be owned by userid @VHOST_UID@, and
-in the group @VHOST_GID@.
+spoolfiles in it, should be owned by userid @VUSER_UID@, and
+in group @VUSER_GID@.
 .It @VPATH@/host
 The password and alias files go here.  This directory, and
 all of the files that live in it, should be owned by the

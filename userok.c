@@ -32,7 +32,7 @@ userok(struct letter *let, struct address *try)
 			 * higher-level code.
 			 */
 
-    if ( (alias = dbif_open(aliasfile(try->dom), DBIF_RDONLY, 0)) != 0) {
+    if ( (alias = dbif_open(aliasfile(try->dom), DBIF_READER, 0)) != 0) {
 	if ( (value = dbif_get(alias, try->user)) == 0)
 	    value = dbif_get(alias, lowercase(try->user));
 	if ( (value==0) && isvhost(try->dom) )

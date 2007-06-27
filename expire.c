@@ -164,7 +164,7 @@ main(int argc, char **argv)
     else
 	badinterval(pgm,argv[0]);
 
-    db = dbif_open("/var/db/smtpauth", listing?DBIF_RDONLY:DBIF_RDWR, 0600);
+    db = dbif_open("/var/db/smtpauth", listing?DBIF_READER:DBIF_WRITER, 0600);
     if (db == 0) {
 	perror("cannot open the greylist");
 	exit(1);

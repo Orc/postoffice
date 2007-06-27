@@ -21,7 +21,7 @@ goodness(struct letter *let, int score)
     time_t now = time(0);
     time_t then;
 
-    if (db = dbif_open(SANTA, DBIF_RDWR|DBIF_CREAT, 0644) ) {
+    if (db = dbif_open(SANTA, DBIF_WRITER|DBIF_CREAT, 0644) ) {
 
 	if ( (data = dbif_get(db,let->deliveredIP)) == 0 ||
 		      sscanf(data, "%d %lu", &goodness, &then) == 0)

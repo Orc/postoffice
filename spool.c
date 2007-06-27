@@ -95,31 +95,40 @@ mkspool(struct letter *let)
 }
 
 
-
 void
+mboxfrom(FILE *f, struct letter *let)
+{
+    char date[80];
+
+    if (let->mboxfrom) return;
+
+    strftime(date, 80, "%a %b %d %H:%M:%S %Y", localtime(&let->posted));
+    fprintf(f, "From %s %s\n",
+		(let->from->full && let->from->full[0]) ? let->from->full
+                                                        : "<>", date);
+}
+
+
+static void
 receivedby(FILE *f, struct letter *let, struct recipient *to)
 {
     char date[80];
     int nullfrom = !(let->from->full && (strlen(let->from->full) > 0));
 
-    if (!let->mboxfrom) {
-	strftime(date, 80, "%a %b %d %H:%M:%S %Y", localtime(&let->posted));
-	fprintf(f, "From %s %s\n", nullfrom ? "<>" : let->from->full, date);
-    }
+    if (let->deliveredIP == 0) return;
 
     strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
     if (strcmp(let->deliveredby, let->deliveredIP) != 0)
-	fprintf(f, "Received: from %s (%s)\n", let->deliveredby,
-					       let->deliveredIP);
+	fprintf(f, "Received: from %s (%s)", let->deliveredby,
+					     let->deliveredIP);
     else
-	fprintf(f, "Received: from %s\n", let->deliveredIP);
+	fprintf(f, "Received: from %s", let->deliveredIP);
     if ( !nullfrom )
-	fprintf(f, "          (MAIL FROM:<%s>)\n", let->from->full);
-    fprintf(f, "          by %s (TFMTKAYTFO)\n"
-	       "          for %s (qid %s); %s\n",
-		let->env->localhost,
-		to->user ? to->user : to->fullname,
-		let->qid, date);
+	fprintf(f, "\n          (MAIL FROM:<%s>)", let->from->full);
+    fprintf(f, "\n          by %s (TFMTKAYTFO)", let->env->localhost);
+    if (to && to->fullname)
+	fprintf(f,"\n          for %s", to->fullname);
+    fprintf(f, " (qid %s); %s\n", let->qid, date);
 }
 
 
@@ -137,15 +146,17 @@ copybody(FILE *f, struct letter *let)
 
 
 void
-addheaders(FILE *f, struct letter *let)
+addheaders(FILE *f, struct letter *let, struct recipient *to)
 {
     char msgtime[20];
     char date[80];
     struct passwd *pwd;
 
+
     strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
     strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
 
+    receivedby(f, let, to);
     if (let->env->forged) {
 	struct passwd *pw = getpwuid(let->env->sender);
 	fprintf(f, "X-Authentication-Warning: <%s@%s> set sender to <%s>\n",
@@ -346,7 +357,7 @@ writecontrolfile(struct letter *let)
 	 * off the disk.
 	 */
 	fprintf(f, "%c%c ;additional headers\n", C_HEADER, C_HEADER);
-	addheaders(f, let);
+	addheaders(f, let, (let->remote.count==1) ? let->remote.to : 0);
 
 	if ( ferror(f) == 0 && fclose(f) == 0)
 	    return 1;

@@ -79,18 +79,18 @@ rebuild_db(char *domain)
     }
 
     alias = aliasfile(dom);
-    if ( (atemp = alloca(strlen(alias) + 7)) == 0 ) {
+    if ( (atemp = alloca(strlen(alias) + 10)) == 0 ) {
 	perror(alias);
 	exit(EX_TEMPFAIL);
     }
     sprintf(atemp, "%sXXXXXX", alias);
 
-    if ( !mktemp(atemp) ) {
+    if ( ! mktemp(atemp) ) {
 	perror(atemp);
 	exit(EX_TEMPFAIL);
     }
 
-    aliasdb = dbif_open(atemp, DBIF_WRONLY|DBIF_TRUNC, 0644);
+    aliasdb = dbif_open(atemp, DBIF_WRITER|DBIF_CREAT, 0644);
     if (aliasdb == 0) {
 	perror(atemp);
 	exit(EX_NOPERM);

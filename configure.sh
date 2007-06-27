@@ -172,7 +172,9 @@ if test "$WITH_VHOST"; then
     eval `./uid $VUSER`
     if [ "$av_UID" -a "$av_GID" ]; then
 	AC_DEFINE VUSER_UID $av_UID
+	AC_SUB    VUSER_UID $av_UID
 	AC_DEFINE VUSER_GID $av_GID
+	AC_SUB    VUSER_GID $av_GID
     else
 	AC_FAIL "Virtual host spool owner $VUSER does not exist"
     fi

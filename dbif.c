@@ -23,7 +23,7 @@ dbif_open(char *file, int flags, int mode)
 	gflags = GDBM_NEWDB;
     else if (flags & DBIF_CREAT)
 	gflags = GDBM_WRCREAT;
-    else if (flags & DBIF_WRONLY)
+    else if (flags & DBIF_WRITER)
 	gflags = GDBM_WRITER;
 
     return (DBhandle)gdbm_open(dbfile, 0, gflags, mode, 0);
@@ -50,8 +50,13 @@ dbif_get(DBhandle db, char *key)
 {
     datum id, value;
 
-    id.dptr = key;
-    id.dsize = strlen(key)+1;
+    if (key) {
+	id.dptr = key;
+	id.dsize = strlen(key)+1;
+    }
+    else
+	return 0;
+
 #if HAVE_NDBM_H
     value = dbm_fetch((DBM*)db,id);
 #elif HAVE_GDBM_H
@@ -68,10 +73,14 @@ dbif_put(DBhandle db, char *key, char *data, int mode)
 {
     datum id, value;
 
-    id.dptr = key;
-    id.dsize = strlen(key)+1;
-    value.dptr = data;
-    value.dsize = strlen(data)+1;
+    if (key && data) {
+	id.dptr = key;
+	id.dsize = strlen(key)+1;
+	value.dptr = data;
+	value.dsize = strlen(data)+1;
+    }
+    else
+	return -1;
 
 #if HAVE_NDBM_H
     return dbm_store(db,id,value,mode);

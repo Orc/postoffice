@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <string.h>
@@ -94,7 +95,8 @@ listq()
 	    continue;
 	}
 
-	if ( (f = fopen(qf[i]->d_name, "r")) == 0 ) {
+	/* need to open the file r/w for flock() to work on Linux */
+	if ( (f = fopen(qf[i]->d_name, "r+")) == 0 ) {
 	    printf("%6s (no control file)\n", df+2);
 	    continue;
 	}
@@ -111,7 +113,14 @@ listq()
 
 	strftime(date, 40, "%H:%M %d-%b-%Y", localtime(&st.st_ctime));
 
+#ifdef NO_FLOCK
 	sprintf(qid, (access(xf,R_OK) == 0) ? "*%6s*" :" %6s ", df+2);
+#else
+	sprintf(qid, (flock(fileno(f),LOCK_EX|LOCK_NB) == 0) ?
+						     " %6s " :
+						     "*%6s*", df + 2);
+	flock(fileno(f), LOCK_UN);
+#endif
 
 	printf(TFMT, qid, unit(st.st_size), date, line+1);
 	if (comment[0])

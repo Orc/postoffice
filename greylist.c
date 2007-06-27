@@ -27,7 +27,7 @@ greylist(struct letter *let, int delete)
 
     time(&now);
 
-    if ( (db = dbif_open(GREYLIST, DBIF_RDWR|DBIF_CREAT, 0600)) == 0) {
+    if ( (db = dbif_open(GREYLIST, DBIF_WRITER|DBIF_CREAT, 0600)) == 0) {
 	syslog(LOG_ERR, "Cannot open greylist database %s: %m", GREYLIST);
 	return 0;	/* fail open */
     }

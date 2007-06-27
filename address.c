@@ -119,7 +119,7 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	    ret->dom = dom;
 	}
 
-	if (ret->local && (flags & VF_USER) && !userok(let, ret)) {
+	if (ret->local && (!userok(let,ret)) && (flags & VF_USER) ) {
 	    if (reason) *reason = V_WRONG;
 	    freeaddress(ret);
 	    return 0;

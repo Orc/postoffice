@@ -200,14 +200,14 @@ struct cmd {
     int openmode;
     char *usage;
 } cmds[] = {
-    { "clear",  clear,  DBIF_RDWR|DBIF_CREAT, "[database]" },
-    { "create", create, DBIF_RDWR|DBIF_CREAT|DBIF_EXCL, "[database]" },
-    { "delete", delete, DBIF_RDWR,            "key" },
-    { "dump",   dump,   DBIF_RDONLY,          "[database]" },
-    { "fetch",  fetch,  DBIF_RDONLY,          "key" },
-    { "insert", store,  DBIF_RDWR,            "key value" },
-    { "load",   load,   DBIF_RDWR|DBIF_CREAT, "[database]" },
-    { "update", store,  DBIF_RDWR,            "key value" },
+    { "clear",  clear,  DBIF_WRITER|DBIF_CREAT, "[database]" },
+    { "create", create, DBIF_WRITER|DBIF_CREAT, "[database]" },
+    { "delete", delete, DBIF_WRITER,            "key" },
+    { "dump",   dump,   DBIF_READER,            "[database]" },
+    { "fetch",  fetch,  DBIF_READER,            "key" },
+    { "insert", store,  DBIF_WRITER,            "key value" },
+    { "load",   load,   DBIF_WRITER|DBIF_CREAT, "[database]" },
+    { "update", store,  DBIF_WRITER,            "key value" },
 };
 
 #define NRCMDS (sizeof cmds / sizeof cmds[0])
@@ -262,7 +262,7 @@ main(int argc, char **argv)
 
     while ((opt = getopt(argc, argv, "?vd:")) != EOF)
 	switch (opt) {
-	case 'd':   db = dbif_open(dbname=optarg, DBIF_RDONLY, 0600);
+	case 'd':   db = dbif_open(dbname=optarg, DBIF_READER, 0600);
 		    if (db == 0) {
 			dbif_perror(optarg);
 			exit(1);

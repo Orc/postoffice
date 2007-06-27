@@ -12,12 +12,10 @@
 
 typedef DB * DBhandle;
 
-#define DBIF_RDONLY	O_RDONLY
-#define DBIF_WRONLY	O_WRONLY
-#define DBIF_RDWR	O_RDWR
+#define DBIF_READER	O_RDONLY
+#define DBIF_WRITER	O_RDWR
 #define DBIF_CREAT	O_CREAT
-#define DBIF_TRUNC	O_TRUNC
-#define DBIF_EXCL	O_EXCL
+#define DBIF_TRUNC	O_TRUNC|O_CREAT
 
 #define DBIF_REPLACE	DBM_REPLACE
 #define DBIF_INSERT	DBM_INSERT
@@ -29,12 +27,10 @@ typedef DB * DBhandle;
 
 typedef GDBM_FILE DBhandle;
 
-#define DBIF_RDONLY	0x00
-#define DBIF_WRONLY	0x01
-#define DBIF_RDWR	0x01
+#define DBIF_READER	0x00
+#define DBIF_WRITER	0x01
 #define DBIF_CREAT	0x10	/* "gdbm_wrcreat" */
 #define DBIF_TRUNC	0x20	/* "gdbm_newdb" */
-#define DBIF_EXCL	0x00
 
 #define	DBIF_REPLACE	GDBM_REPLACE
 #define DBIF_INSERT	GDBM_INSERT
