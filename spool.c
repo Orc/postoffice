@@ -17,6 +17,10 @@
 #   include <malloc.h>
 #endif
 
+#if HAVE_STATFS
+#   include <sys/vfs.h>
+#endif
+
 #include "spool.h"
 
 #include "letter.h"
@@ -81,6 +85,22 @@ mkspool(struct letter *let)
 {
     static char tempfile[sizeof(TEMPPFX)+20+1];
     int f;
+
+#if HAVE_STATFS
+    struct statfs df;
+
+    if ( let->env && (let->env->minfree > 0) ) {
+	if (statfs(QUEUEDIR, &df) != 0) {
+	    syslog(LOG_ERR, "statfs(%s): %m", QUEUEDIR);
+	    return 0;
+	}
+	else if (let->env->minfree < df.f_bsize * df.f_bavail) {
+	    syslog(LOG_ERR, "Disk too full (need %ld, have %ld free)",
+			    let->env->minfree, df.f_bsize * df.f_bavail);
+	    return 0;
+	}
+    }
+#endif
 
     strcpy(tempfile, TEMPPFX "XXXXXX");
 

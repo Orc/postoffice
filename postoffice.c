@@ -52,10 +52,16 @@ main(int argc, char **argv)
     env.debug = 0;
     env.sender = getuid();
     env.timeout = 300;
-    env.qreturn = 86400*3;
+    env.qreturn = 86400*3;	/* 3 days */
     env.max_loadavg = 4.0;
+#if HAVE_STATFS
+    env.minfree = 10*1000*1024;	/* 10m free for messages */
+#else
+    env.minfree = 0;
+#endif
     env.max_clients = 100;	/* should be fairly ridiculous */
     env.max_hops = 100;		/* (ditto) */
+
     env.argv0 = argv[0];
 
     if ( p = gethostbyname((uname(&sys) == 0) ? sys.nodename : "localhost") )
@@ -81,7 +87,7 @@ main(int argc, char **argv)
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
-	options = "A:b:F:f:io:r:Vvt";
+	options = "A:b:F:f:imo:r:Vvt";
 	modes = "sm";
 	env.bmode = 'm';
     }

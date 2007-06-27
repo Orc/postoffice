@@ -62,6 +62,11 @@ set_option(char *option, ENV *env)
     int val;
 
     switch (option[0]) {
+#if HAVE_STATFS
+    case 'm':   if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
+		    env->minfree = val * 1024;
+		return;
+#endif
     case 'a':	if (isopt(option, "audit", &val, 0))
 		    env->auditing = val;
 		return;

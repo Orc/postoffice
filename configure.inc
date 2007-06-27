@@ -327,10 +327,10 @@ main()
 }
 EOF
 
-    LOGN "checking for the $1 function"
+    LOGN "checking for the $F function"
 
     if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $LIBS; then
-	AC_DEFINE `echo ${2:-HAVE_$1} | tr 'a-z' 'A-Z'` 1
+	AC_DEFINE `echo ${2:-HAVE_$F} | tr 'a-z' 'A-Z'` 1
 	TLOG " (found)"
 	rc=0
     else
@@ -924,6 +924,55 @@ EOF
     else
 	echo 
     fi
+}
+
+#
+# AC_CHECK_FLOCK checks to see if flock() exists and if the LOCK_NB argument
+# works properly.
+#
+AC_CHECK_FLOCK() {
+
+    AC_CHECK_HEADERS sys/types.h sys/file.h fcntl.h
+
+    cat << EOF > $$.c
+#include <stdio.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+main()
+{
+    int x = open("$$.c", O_RDWR, 0666);
+    int y = open("$$.c", O_RDWR, 0666);
+
+    if (flock(x, LOCK_EX) != 0)
+	exit(1);
+    if (flock(y, LOCK_EX|LOCK_NB) == 0)
+	exit(1);
+    exit(0);
+}
+EOF
+
+    LOGN "checking for flock()"
+    HAS_FLOCK=0
+    if $AC_CC -o flock $$.c ; then
+	if ./flock ; then
+	    LOG " (found)"
+	    HAS_FLOCK=1
+	    AC_DEFINE HAS_FLOCK
+	else
+	    LOG " (bad)"
+	fi
+    else
+	LOG " (no)"
+    fi
+
+    rm -f flock $$.c
+
+    case "$HAS_FLOCK" in
+    0) return 1 ;;
+    *) return 0 ;;
+    esac
 }
 
 

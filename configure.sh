@@ -27,23 +27,31 @@ AC_PROG_CC
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
-if AC_CHECK_HEADERS ndbm.h; then
-    if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
-	LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
-	AC_SUB NDBM ndbm
-    else
-	AC_FAIL "$TARGET requires ndbm"
+
+AC_CHECK_FUNCS statfs
+
+DB=
+if [ -z "$USE_GDBM" ]; then
+    if AC_CHECK_HEADERS ndbm.h; then
+	if QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
+	    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
+	    AC_SUB NDBM ndbm
+	    DB=ndbm
+	fi
     fi
-elif AC_CHECK_HEADERS gdbm.h; then
-    if QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm; then
-	LOG "Found gdbm_open()" ${AC_LIBS:+in ${AC_LIBS}}
-	AC_SUB NDBM gdbm
-    else
-	AC_FAIL "found gdbm.h, but didn't find gdbm_open()"
-    fi
-else
-    AC_FAIL "$TARGET requires ndbm"
 fi
+
+if [ -z "$DB" ]; then
+    if AC_CHECK_HEADERS gdbm.h; then
+	if QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm; then
+	    LOG "Found gdbm_open()" ${AC_LIBS:+in ${AC_LIBS}}
+	    AC_SUB NDBM gdbm
+	    DB=gdbm
+	fi
+    fi
+fi
+
+test -z "$DB" && AC_FAIL "$TARGET requires ndbm"
 
 AC_LIBRARY res_query -lresolv || AC_FAIL "$TARGET requires res_query"
 
@@ -85,7 +93,9 @@ test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 test "$WITH_AV"       && AC_DEFINE AV_PROGRAM \""$WITH_AV"\"
 
 
-AC_CHECK_HEADERS pwd.h grp.h sys/types.h ctype.h
+AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
+
+AC_CHECK_HEADERS pwd.h grp.h ctype.h
 
 # compile a little test program that can handle the many permutations
 # of a user/group combo, since there doesn't seem to be a clean way of
@@ -96,7 +106,7 @@ AC_CHECK_HEADERS pwd.h grp.h sys/types.h ctype.h
 #             number.group (specified uid, gid of group)
 #             number.number (specified uid, gid)
 #
-cat << \EOF >> $$.c
+cat << \EOF > $$.c
 #include <stdio.h>
 #include <pwd.h>
 #include <grp.h>

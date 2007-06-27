@@ -20,6 +20,8 @@ struct env {
     int   delay;		/* greylist delay */
     int   qreturn;		/* how long to leave mail in the queue? */
     char *relay_host;		/* mail relay */
+    long  minfree;		/* don't run if the spool directory has less
+				 * than this many bytes free */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */
     unsigned int   paranoid:1;	/* don't accept email from clients we can't

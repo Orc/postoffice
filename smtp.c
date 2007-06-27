@@ -506,6 +506,8 @@ debug(struct letter *let)
 #endif
     if (env->largest)
 	message(let->out,-250, "size: %ld", env->largest);
+    if (env->minfree)
+	message(let->out,-250, "minfree: %ld", env->minfree);
     message(let->out, 250, "Timeout: %d\n"
 		      "Delay: %d\n"
 		      "Max clients: %d\n"

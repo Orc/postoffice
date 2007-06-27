@@ -220,6 +220,14 @@ do_smtp_connection(int client, ENV *env)
 }
 
 
+static void
+crash(int sig)
+{
+    syslog(LOG_ERR, "CRASH with signal %d", sig);
+    abort();
+}
+
+
 void
 server(ENV *env, int debug)
 {
@@ -266,6 +274,17 @@ server(ENV *env, int debug)
     }
 
 
+    for (i=1; i < NSIG; i++) {
+	void (*sig)(int);
+
+	if (i == SIGABRT)
+	    continue;
+	else if ( (sig = signal(i, crash)) != SIG_DFL) {
+	    signal(i, sig);
+	    syslog(LOG_INFO, "signal %d was set by postoffice", i);
+	}
+    }
+
     signal(SIGHUP,  sigexit);
     signal(SIGINT,  sigexit);
     signal(SIGQUIT, sigexit);
@@ -273,47 +292,44 @@ server(ENV *env, int debug)
     signal(SIGTERM, sigexit);
     signal(SIGUSR2, sigexit);
     signal(SIGCHLD, reaper);
+    signal(SIGPIPE, SIG_IGN);
 
+reattach:
     if ( (sock = attach(port)) == -1) {
 	syslog(LOG_ERR, "daemon cannot attach: %m");
 	exit(EX_OSERR);
     }
 
     while (1) {
-	errcount = 0;
+	struct sockaddr j;
+	int js = sizeof j;
 
-	while (1) {
-	    struct sockaddr j;
-	    int js = sizeof j;
-
-	    if ( (client = accept(sock, &j, &js)) >= 0) {
-		if (debug) printf("debug server:session\n");
-		status = do_smtp_connection(client, env);
-		close(client);
-		if (status < 0) {
-		    syslog(LOG_ERR, "%m -- restarting daemon");
-		    break;
-		}
+	if ( (client = accept(sock, &j, &js)) == -1 ) {
+	    if (errno == EINTR)
+		continue;
+	    else if (errno == EBADF) {
+		syslog(LOG_ERR, "accept: %m -- restarting daemon");
+		close(sock);
+		sleep(60);
+		goto reattach;
 	    }
 	    else {
-		if (errno == EINTR)
-		    continue;
 		syslog(LOG_ERR, "accept: %m");
 		if (debug) printf("debug server:%s\n", strerror(errno));
-		if (errno == EBADF)
-		    break;
-		if (++errcount > 100) {
-		    syslog(LOG_ERR, "Too many errors on socket -- restarting");
-		    break;
-		}
-		continue;
+		errcount++;
 	    }
-	    if (errcount)
-		--errcount;
 	}
-
-	close(sock);
-	sleep(120);
-    } while ( (sock = attach(port)) != -1 );
+	else {
+	    if (debug) printf("debug server:session\n");
+	    status = do_smtp_connection(client, env);
+	    close(client);
+	    if (status < 0) {
+		syslog(LOG_ERR, "%m -- restarting daemon");
+		close(sock);
+		sleep(60);
+		goto reattach;
+	    }
+	}
+    }
     syslog(LOG_ERR, "daemon aborting: %m");
 }

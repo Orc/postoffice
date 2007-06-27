@@ -94,7 +94,7 @@ runjob(struct letter *let, char *qid)
 	    unlink(dfile);
 	}
     }
-    else if (let->env->verbose && errno != EEXIST)
+    else if (let->env->verbose && (errno != ENOENT))
 	fprintf(stderr, "could not read control file %s: %s\n",
 			qid, strerror(errno));
 }
