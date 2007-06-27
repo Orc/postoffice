@@ -301,6 +301,8 @@ if [ "$WITH_AUTH" ]; then
     case "$WITH_AUTH" in
     [Pp][Aa][Ss][Ss][Ww][Dd])  AC_DEFINE AUTH_PASSWD 1 ;;
     esac
+else
+    AC_SUB LIBCRYPT ""
 fi
 
 if [ "$WITH_AUTH" ]; then

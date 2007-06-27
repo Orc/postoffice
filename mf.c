@@ -64,6 +64,19 @@ mfregister(char *filter, char **opts)
 }
 
 
+#if !DEBUG
+void
+mflist(FILE *out, int rc)
+{
+    int i;
+
+    for (i=0; i < nrfilters; i++)
+	message(out, rc, "filter:[<%s>] flags: %02xh\n", filters[i].socket,
+						         filters[i].flags);
+}
+#endif
+
+
 static int
 xread(int fd, void *ptr, int size)
 {
@@ -351,8 +364,11 @@ handshake(struct letter *let, char *channel)
 	char *p;
 	struct iplist list;
 	int i, port;
+	char *ipchan = alloca(strlen(channel));
 
-	if ( (p = strchr(channel, ':')) == 0 )
+	strcpy(ipchan, channel);
+
+	if ( (p = strchr(ipchan, ':')) == 0 )
 	    return -1;	/* format is host:port */
 
 	*p++ = 0;
@@ -360,11 +376,11 @@ handshake(struct letter *let, char *channel)
 	if ( (port = atoi(p)) <= 0)
 	    return -1;	/* bogus port */
 
-	if (getIPa(channel, &list) <= 0)
+	if (getIPa(ipchan, &list) <= 0)
 	    return -1;
 
 	for (i=list.count; i > 0; )
-	    if ( (f = attach_in(list.a[--i].addr, port)) != -1 )
+	    if ( (f = attach_in(&(list.a[--i].addr), port)) != -1 )
 		break;
 
 	freeiplist(&list);
@@ -378,7 +394,6 @@ handshake(struct letter *let, char *channel)
     if ( (ret = mread(f)) && (ret->data[0] == 'O') 
 			  && (mdscanf(ret, "%l%l%l", &rversion, &rflags,
 						     &rhandshake) == 3) ) {
-
 	mfprintf(f, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
 				     let->deliveredIP);
 	if (mreply(f) == MF_OK)

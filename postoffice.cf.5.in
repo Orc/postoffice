@@ -72,7 +72,9 @@ clients at a time to connect to the server.
 Enable the ESMTP
 .Ql DEBUG
 command, which displays various compile and runtime settings,
-as well as the current state of the mail envelope.
+as well as the current state of the mail envelope.  This is useful
+for some types of debugging, but it may expose internal information
+to the public.
 .It Li delay Ns = Ns Ar N
 Set the
 .Em greylist Ns ing
@@ -91,11 +93,21 @@ being hours.
 @MILTERMAN@.It Li filter Ns = Ns Ar socket
 @MILTERMAN@Defines a sendmail filter that will scan incoming mail
 @MILTERMAN@before
-@MILTERMAN@.Nm
+@MILTERMAN@.Em postoffice
 @MILTERMAN@accepts it.    The 
 @MILTERMAN@.Ar socket
 @MILTERMAN@can be either a Unix-domain socket on the local machine
-@MILTERMAN@or a tcp socket on a different machine.
+@MILTERMAN@or a tcp socket on any machine.
+@MILTERMAN@Note that postoffice uses the dns 
+@MILTERMAN@.Em exclusively Ns ,
+@MILTERMAN@so you need to give the fully qualified domain name of
+@MILTERMAN@the machine that the filter is running on.  If you don't,
+@MILTERMAN@the filter just won't be called.
+@MILTERMAN@If enabled, the
+@MILTERMAN@.Em DEBUG
+@MILTERMAN@smtp command lists all of the currently configured filters
+@MILTERMAN@and their status.  A status of 00h or 0h1 means that the
+@MILTERMAN@filter is active; anything else indicates an error.
 .It Li forward-all
 When set, forward all unknown mail to the configured
 .Sy relay-host .

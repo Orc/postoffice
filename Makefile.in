@@ -1,6 +1,7 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
+MAILERCONF=@MAILERCONF@
 
 PGMS = postoffice dbm expire
 TOOLS = mx b64 getopt mf
@@ -102,12 +103,16 @@ install.mailfilter: $(PGMS) install.common.binaries
 	@INSTALL_DIR@ $(DESTDIR)$(bindir)
 	@INSTALL@ -m 4711 -c postoffice $(DESTDIR)$(libexec)
 	ln -fs @MAILWRAPPER@ $(DESTDIR)$(bindir)/runq
-	echo "# emulate sendmail with postoffice" > $(DESTDIR)@MAILERCONF@.new
+	echo "# emulate sendmail with postoffice" > $(DESTDIR)$(MAILERCONF).new
 	for x in sendmail send-mail mailq newaliases runq; do \
 	    echo "$$x	$(libexec)/postoffice"; \
-	done >> $(DESTDIR)@MAILERCONF@.new
-	cp -f $(DESTDIR)@MAILERCONF@ $(DESTDIR)@MAILERCONF@.old
-	mv $(DESTDIR)@MAILERCONF@.new $(DESTDIR)@MAILERCONF@
+	done >> $(DESTDIR)$(MAILERCONF).new
+	if test -r $(DESTDIR)$(MAILERCONF); then \
+	    mv -f $(DESTDIR)$(MAILERCONF) $(DESTDIR)$(MAILERCONF).old; \
+	else \
+	    true; \
+	fi
+	mv $(DESTDIR)$(MAILERCONF).new $(DESTDIR)$(MAILERCONF)
 
 clean:
 	rm -f *.o $(PGMS) $(TOOLS)

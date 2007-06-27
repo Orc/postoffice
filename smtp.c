@@ -542,6 +542,9 @@ debug(struct letter *let)
 #ifdef AV_PROGRAM
     message(let->out,-250, "AV program: <%s>\n", AV_PROGRAM);
 #endif
+#ifdef WITH_MILTER
+    mflist(let->out,-250);
+#endif
 #if USE_PEER_FLAG
     message(let->out,-250, "Peer flag: T\n");
 #endif
