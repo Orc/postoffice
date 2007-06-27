@@ -20,6 +20,12 @@
 #include "smtp.h"
 
 
+#ifndef HAVE_SETPROCTITLE
+char *argv0;
+int   szargv0;
+#endif
+
+
 extern int   z_getopt();
 extern char* z_optarg;
 extern int   z_optind;
@@ -72,10 +78,12 @@ main(int argc, char **argv)
     env.max_clients = 100;	/* should be fairly ridiculous */
     env.max_hops = 100;		/* (ditto) */
 
-    env.argv0 = argv[0];
-    env.szargv0 = 80;
+#ifndef HAVE_SETPROCTITLE
+    argv0 = argv[0];
+    szargv0 = 80;
     /*for (env.szargv0=i=0; i<argc; i++)
 	env.szargv0 += strlen(argv[i]) + 1;*/
+#endif
 
     if ( p = gethostbyname((uname(&sys) == 0) ? sys.nodename : "localhost") )
 	env.localhost = strdup(p->h_name);

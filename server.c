@@ -30,21 +30,23 @@
 
 
 
+#ifndef HAVE_SETPROCTITLE
 /*
  * drop an informative message into argv
  */
 void
-setproctitle(ENV *env, char *fmt, ...)
+setproctitle(char *fmt, ...)
 {
     va_list ptr;
 
-    if (env->argv0) {
+    if (argv0) {
 	va_start(ptr,fmt);
-	memset(env->argv0, 0, env->szargv0);
-	vsnprintf(env->argv0, env->szargv0-1, fmt, ptr);
+	memset(argv0, 0, szargv0);
+	vsnprintf(argv0, szargv0-1, fmt, ptr);
 	va_end(ptr);
     }
 }
+#endif
 
 
 /*
@@ -203,9 +205,9 @@ do_smtp_connection(int client, ENV *env)
 	signal(SIGUSR1, SIG_IGN);
 	setsid();
 
-	setproctitle(env, "SMTP startup");
+	setproctitle("SMTP startup");
 	peername = nameof(&window[i].customer);
-	setproctitle(env, "SMTP %s", peername);
+	setproctitle("SMTP %s", peername);
 	alarm(300);	/* give the client 5 minutes to set up a connection */
 
 	env->relay_ok = islocalhost(env, &window[i].customer.sin_addr);
@@ -312,7 +314,7 @@ server(ENV *env, int debug)
     int sock, client;
     int status, i;
 
-    setproctitle(env, "postoffice: accepting connections");
+    setproctitle("postoffice: accepting connections");
     nwindow = env->max_clients;
     if ( (window = calloc(sizeof window[0], nwindow)) == 0 ) {
 	syslog(LOG_ERR, "alloc %d windows: %m", nwindow);
@@ -403,13 +405,13 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGCHLD, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
 
-    setproctitle(env, "postoffice: runq every %d minutes", qrunwhen);
+    setproctitle("postoffice: runq every %d minutes", qrunwhen);
 
     while (1) {
 	if ( (runchild=fork()) == 0) {
 	    ENV child_env = *env;
 
-	    setproctitle(env, "mail queue runner");
+	    setproctitle("mail queue runner");
 	    configfile("/etc/postoffice.cf", &child_env);
 	    runq(&child_env);
 	    exit(0);

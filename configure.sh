@@ -55,6 +55,8 @@ elif AC_CHECK_FUNCS statfs; then
     fi
 fi
 
+AC_CHECK_FUNCS setproctitle
+
 if [ "$has_statfs" ]; then
     AC_SUB STATFS  ''
 else

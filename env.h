@@ -11,8 +11,6 @@ struct env {
     char *localhost;		/* name of localhost */
     unsigned long largest;	/* longest message we accept */
     float max_loadavg;		/* if la > this, don't accept mail */
-    char *argv0;		/* argv0, for status scribbling */
-    int   szargv0;		/* number of bytes to scribble on */
     int   max_clients;		/* max# of connections allowed */
     int   max_hops;		/* max# of received-by: headers */
     int   timeout;		/* how long to wait for input */
@@ -43,6 +41,10 @@ struct env {
 
 typedef struct env ENV;
 
+#ifndef HAVE_SETPROCTITLE
+extern char *argv0;		/* argv0, for status scribbling */
+extern int   szargv0;		/* number of bytes to scribble on */
+#endif
 
 char *mapfd(int, size_t*);
 

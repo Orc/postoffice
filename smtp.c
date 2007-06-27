@@ -73,7 +73,7 @@ cmd(char *line)
 static void
 psstat(struct letter *let, char *action)
 {
-    setproctitle(let->env, "SMTP %.4s %s", action, let->deliveredby);
+    setproctitle("SMTP %.4s %s", action, let->deliveredby);
 }
 
 
