@@ -79,12 +79,12 @@ main(int argc, char **argv)
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
-	options = "b:F:f:io:r:vt";
+	options = "A:b:F:f:io:r:vt";
 	modes = "sm";
 	env.bmode = 'm';
     }
     else if ( SAME(pgm, "runq") ) {
-	options = "v";
+	options = "vo:";
 	env.bmode = 'q';
     }
     else if ( SAME(pgm, "newaliases") ) {

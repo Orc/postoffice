@@ -144,12 +144,10 @@ SMTPpost(MBOX *session, struct letter *let, int first, int last, int *denied)
     return 0;
 }
 
-#define Samehost(i,j)	(!strcmp(let->remote.to[i].host,let->remote.to[j].host))
 
-
-forward(struct letter *let)
+static void
+send_to_remote(struct letter *let, char *host, int i, int j)
 {
-    unsigned int i, j;
     MBOX *f;
     unsigned int denied;
     char *logtext;
@@ -157,25 +155,41 @@ forward(struct letter *let)
     size_t mapsize;
     int rc;
 
-    for (i=0; i < let->remote.count; i = j) {
-
-	for (j=i+1; j < let->remote.count && (j-i) < 100 && Samehost(i,j); ++j)
-	    let->remote.to[i].status = PENDING;
-
-	if (f = session(let->env, let->remote.to[i].host, 25)) {
-	    if ( (rc = SMTPpost(f, let, i, j, &denied)) < 0 || denied > 0 ) {
-		logsize = ftell(f->log);
-		fflush(f->log);
-		if (logtext = mapfd(fileno(f->log), &mapsize)) {
-		    bounce(let, logtext, logsize, FAILED);
-		    munmap(logtext, mapsize);
-		}
-		else
-		    bounce(let, "\tCatastrophic system error", -1, FAILED);
-
-		if (rc < 0)
-		    dump_session(f);
+    if (f = session(let->env, host, 25)) {
+	if ( (rc = SMTPpost(f, let, i, j, &denied)) < 0 || denied > 0 ) {
+	    logsize = ftell(f->log);
+	    fflush(f->log);
+	    if (logtext = mapfd(fileno(f->log), &mapsize)) {
+		bounce(let, logtext, logsize, FAILED);
+		munmap(logtext, mapsize);
 	    }
+	    else
+		bounce(let, "\tCatastrophic system error", -1, FAILED);
+
+	    if (rc < 0)
+		dump_session(f);
+	}
+    }
+}
+
+
+#define Samehost(i,j)	(!strcasecmp(let->remote.to[i].host,let->remote.to[j].host))
+
+
+forward(struct letter *let)
+{
+    unsigned int i, j;
+
+    for (i=0; i < let->remote.count; i++)
+	let->remote.to[i].status = PENDING;
+
+    if (let->env->relay_host)
+	send_to_remote(let, let->env->relay_host, 0, let->remote.count);
+    else {
+	for (i=0; i < let->remote.count; i = j) {
+	    for (j=i+1; (j < let->remote.count) && Samehost(i,j); ++j)
+		;
+	    send_to_remote(let, let->remote.to[i].host, i, j);
 	}
     }
 }

@@ -19,6 +19,7 @@ struct env {
     uid_t sender;		/* user who called postoffice */
     int   delay;		/* greylist delay */
     int   qreturn;		/* how long to leave mail in the queue? */
+    char *relay_host;		/* mail relay */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */
     unsigned int   paranoid:1;	/* don't accept email from clients we can't

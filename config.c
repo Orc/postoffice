@@ -55,6 +55,8 @@ set_option(char *option, ENV *env)
 		return;
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
+		else if (strncasecmp(option, "relay-host=", 11) == 0)
+		    env->relay_host = strdup(option+11);
 		return;
     case 'h':	isopt(option,"hops", &env->max_hops, 0);
 		return;

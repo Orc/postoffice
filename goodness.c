@@ -12,7 +12,7 @@
 
 #define SANTA "/var/db/goodness"
 
-#define VERYBAD -20
+#define VERYBAD -40
 
 int
 goodness(struct letter *let, int score)

@@ -516,8 +516,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     int ok = 1;
     int issock = 1;
     char bfr[1];
-    int rc;
-    int score;
+    int rc, score, traf = 0;
     int timeout = env->timeout;
 
     openlog("smtpd", LOG_PID, LOG_MAIL);
@@ -598,7 +597,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     signal(SIGALRM, zzz);
 
     if (setjmp(bye) != 0) {
-	goodness(&letter, -1);
+	goodness(&letter, traf ? -1 : -2);
 	audit(&letter, "QUIT", "timeout", 421);
 	byebye(&letter, 1);
     }
@@ -649,6 +648,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		break;
 	    
 	    case MAIL:
+		traf++;
 		if (letter.from)	/* rfc821 */
 		    reset(&letter);
 
@@ -672,6 +672,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		break;
 
 	    case RCPT:
+		traf++;
 		if (to(&letter, line)) {
 		    score = 1;
 		    message(out, 250, "Sure, I love spam!");
@@ -685,6 +686,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
 	    case DATA:
 		if (letter.from && (letter.local.count || letter.remote.count) ) {
+		    traf++;
+
 		    if ( data(&letter) ) {
 			if (env->largest && (letter.bodysize > env->largest)) {
 			    audit(&letter, "DATA", "size", 550);
@@ -731,6 +734,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
 	    case QUIT:
 		audit(&letter, "QUIT", "", 221);
+		if (!traf)
+		    goodness(&letter, -1);
 		message(out, 221, "Be seeing you.");
 		byebye(&letter, 0);
 
@@ -768,7 +773,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	fflush(out);
 	fflush(in);
     } while ( !(feof(out) || feof(in)) );
-    goodness(&letter, -1);
+    goodness(&letter, traf ? -1 : -2);
     audit(&letter, "QUIT", "EOF", 421);
     byebye(&letter,1);
 }
