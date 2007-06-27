@@ -29,6 +29,7 @@ Configure.sh has a few options that can be set:
     --with-tcpwrappers	use tcp wrappers
     --with-greylist	use the greylist code
     --with-queuedir	where to put queued mail (/var/spool/mqueue)
+    --with-auth		enable smtp authentication (AUTH LOGIN)
     --use-peer-flag	enable -opeer (for debugging)
     --with-vhosts[=DIR]	enable vhosts (passwd files in DIR (/etc/virtual))
     --with-vspool=DIR	(vhost mail spool in DIR) (/var/spool/virtual)

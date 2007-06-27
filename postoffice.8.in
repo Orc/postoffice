@@ -133,7 +133,9 @@ Set option
 .Ar x
 to the specified
 .Em value .
-Options are described below.
+Options are described in the
+.Xr postoffice.cf 5
+manpage.
 .It Fl q
 An alternate form of the
 .Fl bq
@@ -171,184 +173,6 @@ in the configuration file /etc/postoffice.cf, or in a configuration
 file specified by the
 .Fl C
 flag.
-The options are:
-.Bl -tag -width Fl
-.It Li audit
-Enable session auditing.
-.\" .It Li A Ns Ar file
-.\" Use alternate alias file.
-.\" .It Li D Ns Ar x
-.\" Set the delivery mode to
-.\" .Ar x .
-.\" Delivery modes are
-.\" .Ql i
-.\" for interactive (synchronous) delivery,
-.\" and
-.\" .Ql q
-.\" for queue only \- i.e.,
-.\" actual delivery is done the next time the queue is run.
-.\" .It Li e Ns Ar x
-.\" Set error processing to mode
-.\" .Ar x .
-.\" Valid modes are
-.\" .Ql m
-.\" to mail back the error message,
-.\" and
-.\" .Ql q
-.\" to throw away error messages
-.\" (only exit status is returned).
-.\" .It Li cq Ns Ar =N
-.\" Checkpoint the queue file after every
-.\" .Ar N
-.\" successful deliveries (default 10).
-.\" This avoids excessive duplicate deliveries
-.\" when sending to long mailing lists
-.\" interrupted by system crashes.
-.\" .It Li queue Ns = Ns Ar queuedir
-.\" Select the directory in which to queue messages.
-.It Li checkhelo
-Check the arguments passed with the 
-.Em HELO
-and
-.Em EHLO
-SMTP command and refuse to do an SMTP conversation with the
-client if they claim to be the mail server.
-.It Li clients Ns = Ns Ar N
-Allow only 
-.Ar N
-clients at a time to connect to the server.
-.It Li debug
-Enable the ESMTP
-.Ql DEBUG
-command, which displays various compile and runtime settings,
-as well as the current state of the mail envelope.
-.It Li delay Ns = Ns Ar N
-Set the
-.Em greylist Ns ing
-delay to
-.Ar N
-seconds.
-The 
-.Xr delay
-may be specified as a tagged number,
-with
-.Ql m
-being minutes.
-and
-.Ql h
-being hours.
-.It Li load Ns = Ns Ar N
-When the load average is above
-.Ar N ,
-.Nm postoffice
-will not accept SMTP connections (the default is 4).
-.It Li nodaemon
-Do not accept mail from
-.Em <> .
-This can be useful for blocking spammers and viruses, but
-it also violates
-.%T RFC821 ,
-and means that nobody at your site (including mailing lists)
-will ever get bounce messages when mail cannot be delivered.
-If your machine is connected to a public network,
-.Em DON'T
-.Em SET
-.Em THIS
-.Em OPTION
-unless you're under attack from a malicious spammer.
-.It Li paranoid
-Do not accept connections from clients that are not registered in
-the 
-.Dv DNS .
-.It Li hops Ns = Ns Ar N
-Set the hop count to
-.Ar N .
-The hop count is incremented every time the mail is
-processed.
-When it reaches this limit,
-the mail is returned with an error message,
-.It Li localmx
-Treat connections from sites that use this machine as an MX
-as if they were local, and give them the permissions that
-local clients have.
-.It Li relay
-Allow all clients to relay mail through this
-server.   If your machine is connected to a public network,
-.Em DON'T
-.Em SET
-.Em THIS
-.Em OPTION ,
-unless you really want to end up on every antispam blacklist on
-the planet.
-.It Li relay-host Ns = Ns Ar host
-Send all mail destined for remote hosts via this
-.Ar host .
-The superuser is the only user that can use this option on the
-command line or in a configuration file other than
-.Pa /etc/postoffice.cf
-.It Li size Ns = Ns Ar size
-Sets the 
-largest message size that 
-.Nm postoffice
-will accept.
-.Xr size
-is given as a tagged number,
-with
-.Ql k
-being kilobytes,
-and
-.Ql m
-being megabytes.
-.It Li timeout Ns = Ns Ar timeout
-Drop the connection to a client if they are idle
-longer than
-.Ar timeout .
-This option violates the word (if not the intent) of the SMTP
-specification,
-so the timeout should probably be fairly large.
-The 
-.Xr timeout
-may be specified as a tagged number,
-with
-.Ql m
-being minutes,
-.Ql h
-being hours,
-and
-.Ql d
-being days.
-For example,
-.Ql timeout=60m
-or 
-.Ql timeout=1h
-both set the timeout to one hour.
-.It Li verify-from Ns = Ns Ar flag
-Check the validity of MAIL FROM addresses.  If
-nonzero (the default), the address will be rejected if it's
-from an unresolvable domain or if a remote client attempts to
-give a local address, and if zero, anything the client gives is
-okay with 
-.Nm postoffice .
-.\" .It Li stats Ns Ar file
-.\" Save statistics in the named file.
-.\" .It Li return Ns Ar time
-.\" Set the timeout on undelivered messages in the queue to the specified time.
-.\" After delivery has failed
-.\" (e.g., because of a host being down)
-.\" for this amount of time,
-.\" failed messages will be returned to the sender.
-.\" The default is three days.
-.\" .It Li U Ns Ar userdatabase
-.\" If set, a user database is consulted to get forwarding information.
-.\" You can consider this an adjunct to the aliasing mechanism,
-.\" except that the database is intended to be distributed;
-.\" aliases are local to a particular host.
-.\" This may not be available if your postoffice does not have the
-.\" .Dv USERDB
-.\" option compiled in.
-.\" .It Li u Ns Ar N
-.\" Set the default user id for mailers.
-.El
 .Pp
 In aliases,
 the first character of a name may be
@@ -438,6 +262,7 @@ database.
 .Xr aliases 5 ,
 @VHOST@.Xr domains.cf 5 ,
 .Xr mailaudit 5 ,
+.Xr postoffice.cf 5 ,
 .Xr smtpauth 5 ,
 @VHOST@.Xr vhosts 7 ,
 .Xr mailaddr 7 ,

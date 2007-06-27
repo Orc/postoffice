@@ -26,4 +26,6 @@ char*          username(struct domain*, char*);
 
 int initdomain();
 
+struct passwd *getvpwemail(struct domain *dom, char* user);
+
 #endif/*_DOMAIN_D*/

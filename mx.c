@@ -5,7 +5,9 @@
 #include "config.h"
 
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
 
@@ -35,7 +37,7 @@
  */
 
 struct dns_rec {
-    char *eod;
+    unsigned char *eod;
     int   alloc;
     HEADER h;
 #define DDATASZ	8196-sizeof(HEADER)
@@ -179,7 +181,7 @@ query(char *host, short qtype, DNS_REC *dp)
 
     dp->eod = (char*)dp;
 
-    size = res_query(host, C_IN, qtype, &dp->h, dp->alloc);
+   size = res_query(host, C_IN, qtype, (char*)&dp->h, dp->alloc);
     if (size < sizeof(HEADER))
 	return 0;
 
@@ -234,26 +236,30 @@ cname(char *host)
 }
 
 char *
-ptr(unsigned long *ip_addr)
+ptr(struct in_addr *ip)
 {
     char *name;
     short dclass, dtype;
     long dttl;
     short reclen;
-    char *p;
+    char *p, *q;
     char candidate[100];
     int i;
-    unsigned long ipa = *ip_addr;
 
-    if (ipa == (unsigned long)-1)
+    if (ip == 0)
 	return 0;
 
+    q = inet_ntoa(*ip);
+
     candidate[0] = 0;
-    for (i=0; i < 4; i++) {
-	sprintf(candidate+strlen(candidate), "%d.", ipa>>24);
-	ipa <<= 8;
+
+    while (p = strrchr(q, '.')) {
+	*p++ = 0;
+	strcat(candidate, p);
+	strcat(candidate, ".");
     }
-    strcat(candidate, "in-addr.arpa.");
+    strcat(candidate, q);
+    strcat(candidate, ".in-addr.arpa.");
 
     if ( (name = cname(candidate)) == 0) name = candidate;
 
@@ -328,7 +334,7 @@ address(struct iplist *list, int key, char* host)
 		    list->a[i].key = key;
 	    }
 	    else
-		NewIP(list, key, p);
+		NewIP(list, key, (struct in_addr*)p);
 	    p += reclen;
 	}
     }
@@ -496,7 +502,9 @@ main(int argc, char **argv)
     char *host;
     char *wildcard;
     struct iplist hosts = { 0 };
+    unsigned long ip_addr;
     int i;
+    struct in_addr ip;
 
     if (argc < 1) {
 	fprintf(stderr, "usage: mx host-name\n");
@@ -504,8 +512,14 @@ main(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "ptr") == 0) {
-	host = ptr(inet_addr(argv[2]));
-	printf("%s -> %s\n", argv[2], host ? host : "NIL");
+	ip_addr = inet_addr(argv[2]);
+	if (ip_addr == -1)
+	    printf("%s is unresolvable.\n", argv[2]);
+	else {
+	    ip = inet_makeaddr(htonl(ip_addr), 0L);
+	    host = ptr(&ip);
+	    printf("%s -> %s\n", argv[2], host ? host : "NIL");
+	}
     }
     else {
 	getMXes(argv[1], &hosts);

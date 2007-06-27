@@ -12,6 +12,10 @@
 #include <netdb.h>
 #include <sysexits.h>
 
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
+
 #include "letter.h"
 #include "smtp.h"
 
@@ -54,7 +58,7 @@ main(int argc, char **argv)
     env.timeout = 300;
     env.qreturn = 86400*3;	/* 3 days */
     env.max_loadavg = 4.0;
-#if HAVE_STATFS
+#if HAVE_STATFS || HAVE_STATVFS
     env.minfree = 10*1000*1024;	/* 10m free for messages */
 #else
     env.minfree = 0;
@@ -69,7 +73,13 @@ main(int argc, char **argv)
     else
 	env.localhost = "localhost";
 
+#if HAVE_BASENAME
     pgm = strdup(basename(argv[0]));
+#else
+    {   char *avp = strrchr(argv[0], '/');
+	pgm = strdup(avp ? avp+1 : argv[0]);
+    }
+#endif
     openlog(pgm, LOG_PID, LOG_MAIL);
 
 #if 0
@@ -88,7 +98,6 @@ main(int argc, char **argv)
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
 	options = "A:b:F:f:imo:r:Vvt";
-	modes = "sm";
 	env.bmode = 'm';
     }
     else if ( SAME(pgm, "runq") ) {
@@ -115,23 +124,20 @@ main(int argc, char **argv)
 		    exit(EX_NOINPUT);
 		}
 		break;
-#ifdef USE_PEER_FLAG
 	case 'R':
+#ifdef USE_PEER_FLAG
 		{   struct sockaddr_in fake;
-		    union {
-			long num;
-			struct in_addr a;
-		    } ip;
+		    long ip;
 
-		    if ( (ip.num = inet_addr(optarg)) != -1) {
-			fake.sin_addr = ip.a;
+		    if ( (ip = inet_addr(optarg)) != -1) {
+			fake.sin_addr = inet_makeaddr(ntohl(ip), 0L);
 			fake.sin_family = AF_INET;
 			peer = &fake;
 			env.relay_ok = islocalhost(&env, &fake.sin_addr);
 		    }
 		}
-		break;
 #endif
+		break;
 	case 'q':
 		env.bmode = 'q';
 		break;
@@ -158,7 +164,10 @@ main(int argc, char **argv)
 		env.verbose = 1;
 		break;
 	case 'V':
-		printf("%s %s\n", pgm, VERSION);
+		if (strcasecmp(pgm, "postoffice") == 0)
+		    printf("%s %s\n", pgm, VERSION);
+		else
+		    printf("%s: postoffice %s\n", pgm, VERSION);
 		exit(EX_OK);
 	}
     }

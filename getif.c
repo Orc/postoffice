@@ -22,44 +22,8 @@
 struct in_addr *
 local_if_list()
 {
-    /* need to worry about endian issues! */
-    static struct in_addr localhost[2] = { 0x0100007f, 0 };
-
-#if OS_FREEBSD
-
-    struct in_addr *res = 0;
-    char bfr[1024];
-    char *p;
-    in_addr_t ipa;
-    struct in_addr ip;
-    FILE *f;
-    int szres = 0;
-    int maxres = 0;
-
-
-    if ( (f = popen("/sbin/ifconfig -a inet 2>/dev/null", "r")) ) {
-	while (fgets(bfr, sizeof bfr, f))
-	    if ( (p = strstr(bfr, "inet "))
-	      && ((ipa = inet_addr(bfr+5)) != INADDR_NONE)) {
-		if ( (szres + 2) >= maxres ) {
-		    maxres += 10;
-		    res = res ? realloc(res, maxres*sizeof(ip))
-			      : malloc(maxres*sizeof(ip));
-		}
-		if (res == 0)
-		    break;
-
-		res[szres++].s_addr = ipa;
-	    }
-	pclose(f);
-	if (res) {
-	    res[szres].s_addr = 0;
-	    return res;
-	}
-    }
-
-#elif __linux__
-
+    static struct in_addr localhost[2];
+#if __linux__
     struct in_addr *res = 0;
     int szres = 0,
 	maxres= 0;
@@ -116,7 +80,43 @@ local_if_list()
 	return res;
     }
 
+#elif USE_IFCONFIG
+    struct in_addr *res = 0;
+    char bfr[1024];
+    char *p;
+    in_addr_t ipa;
+    struct in_addr ip;
+    FILE *f;
+    int szres = 0;
+    int maxres = 0;
+
+
+    if ( (f = popen("/sbin/ifconfig -a inet 2>/dev/null", "r")) ) {
+	while (fgets(bfr, sizeof bfr, f))
+	    if ( (p = strstr(bfr, "inet "))
+	      && ((ipa = inet_addr(p+5)) != INADDR_NONE)) {
+		if ( (szres + 2) >= maxres ) {
+		    maxres += 10;
+		    res = res ? realloc(res, maxres*sizeof(ip))
+			      : malloc(maxres*sizeof(ip));
+		}
+		if (res == 0)
+		    break;
+
+		res[szres++] = inet_makeaddr(ntohl(ipa), 0L);
+	    }
+	pclose(f);
+	if (res) {
+	    res[szres].s_addr = 0;
+	    return res;
+	}
+    }
+
 #endif
+    /* hand-build an interfaces list that only contains localhost
+     */
+    localhost[1].s_addr = 0;
+    localhost[0] = inet_makeaddr(inet_addr("127.0.0.1"), 0L);
 
     return localhost;
 }

@@ -88,7 +88,7 @@ set_option(char *option, ENV *env)
 		else if (isopt(option, "localmx", &val, 0))
 		    env->localmx = val;
 		return;
-#if HAVE_STATFS
+#if HAVE_STATFS || HAVE_STATVFS
     case 'm':   if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
 		    env->minfree = val * 1024;
 		return;
@@ -113,7 +113,6 @@ set_option(char *option, ENV *env)
     case 's':   if (isopt(option, "size", &val, "k=1000,m=1000000"))
 		    env->largest = val;
 		else if (strncasecmp(option, "self=", 5) == 0) {
-		    insecure("self");
 		    if (env->localhost)
 			free(env->localhost);
 		    env->localhost = strdup(option+5);

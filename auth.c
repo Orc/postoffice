@@ -1,61 +1,168 @@
 #include "config.h"
-#include "letter.h"
 
 #include <stdio.h>
+#include <unistd.h>
+
+#include "letter.h"
 #include "dbif.h"
 
 
-#if WITH_AUTH
+/*
+ * C:AUTH LOGIN
+ * 334 b64'Username:
+ * C:b64'<username>
+ * 334 b64'Password:
+ * C:b64'<password>
+ * 235 Pass, friend.
+ * 
+ * C:AUTH LOGIN b64'<username>
+ * 334 b64'Password:
+ * C:b64'<password>
+ * 235 Pass, friend.
+ */
 
+extern char *from64(char*);
+extern char *to64(char*);
+
+
+/*
+ * authmeharder() verifies a user/passwd.   Currently it only works for
+ *          virtual domains, and only against a virtual domains
+ *          password file.
+ */
 static int
-authchat(struct letter *let, char *prompt, char *bfr, int len)
+authmeharder(struct letter *let, char *user, char *pass)
 {
-    int len;
+    struct address *addr;
+    struct domain *dom;
+    struct passwd *pw;
+    int ret = 0;
 
-    message(let, 334, prompt);
-    if (fgets(bfr, len, let->in) == 0) {
-	audit(letter, "AUTH","EOF",499);
-	byebye(let, 1);
+    if ( addr = mkaddress(user) ) {
+	if ( pw = getvpwemail(getdomain(addr->domain), addr->user) )
+	    ret = (strcmp(pw->pw_passwd, crypt(pass, pw->pw_passwd)) == 0);
+	freeaddress(addr);
     }
-    len = strlen(bfr);
 
-    if (len > 1 && bfr[len-1] == '\n' && bfr[len-2] == '\r')
-	bfr[len-2] = 0;
-    else if (len > 0 && bfr[len-1] == '\n')
-	bfr[len-1] = 0;
-
-    else if ( (bfr[0] == '*') && (bfr[1] == 0) ) {
-	message(let, 501, "Abort! Abort! OK!");
-	return 501;
-    }
-    return 235;
+    return ret;
 }
 
+/*
+ * get a line from letter.in, handling the MaGiCaL * abort sequence.
+ *
+ * returns the decoded line or null; if null, *err contains:
+ *          1 : !fgets
+ *          2 : decode error
+ *          3 : MaGiCaL *
+ */
+static char *
+authgets(struct letter *let, int *errp)
+{
+    char line[520];
+    char *ret;
+
+    *errp = 1;
+    if ( ret = fgets(line, sizeof line, let->in) ) {
+	strtok(line, "\r\n");
+	if (strcmp(line, "*") == 0) {
+	    *errp = 3;
+	    return 0;
+	}
+	if ( (ret = from64(line)) == 0)
+	    *errp = 2;
+    }
+    return ret;
+}
+
+
+/*
+ * authlogin() processes an AUTH LOGIN request
+ */
+static int
+authlogin(struct letter *let, char *restofline)
+{
+    char *user, *pass;
+    char *res;
+    char line[512];
+    char auser[40];
+    int err, ok = 0, code;
+
+    auser[0] = 0;
+    while (isspace(*restofline)) ++restofline;
+
+    if (*restofline) 
+	user = from64(restofline);
+    else {
+	message(let->out, 334, res=to64("Username:"));
+	free(res);
+	if ( (user = authgets(let, &err)) == 0 )
+	    goto done;
+    }
+    strncpy(auser,user, sizeof auser - 1);
+
+    message(let->out, 334, res=to64("Password:"));
+    free(res);
+    if ( (pass = authgets(let, &err)) == 0 ) {
+	free(user);
+	goto done;
+    }
+    ok = authmeharder(let, user, pass);
+    err = ok ? 0 : 4;
+
+    free(user);
+    free(pass);
+
+done:
+    switch (err) {
+    case 0:
+	message(let->out, code=235, "Pass, friend!");
+	break;
+    case 1:
+	message(let->out, code=421, "Hello?");
+	break;
+    case 2:
+	message(let->out, code=501, "That's not a code I recognise!");
+	break;
+    case 3:
+	message(let->out, code=501, "Okay.");
+	break;
+    case 4:
+	message(let->out, code=535, "I do not recognise you.");
+	break;
+    }
+    audit(let, "AUTH", auser, code);
+    return ok;
+}
+
+
+/*
+ * auth() handles AUTH <something>;  returns 1 if authentication
+ * succeeded, 0 otherwise
+ */
 int
-authlogin(struct letter *let)
+auth(struct letter *let, char *line)
 {
-    char user[200];
-    char pass[80];
-    int code;
-    char * key, * value;
-    DBhandle authdb;
-    int good = 0;
+    static didauth=0;
+    int ret = 0;
 
-    if ( (code = authchat(let, "VXNlcm5hbWU6", user, sizeof user)) != 235 )
-	audit(let, "AUTH", "Username: *", code);
-    else if ( (code = authchat(let, "UGFzc3dvcmQ6", pass, sizeof pass)) != 235 )
-	audit(let, "AUTH", "Password: *", code);
-    else if (authdb = dbif_open(AUTHDB, DBIF_RDONLY)) {
-	value = database_fetch(authdb,user);
-
-	good = value && (strcmp(value,pass) == 0);
-
-	dbif_close(AUTHDB);
-	audit(let, "AUTH", user, code = (good ? 235 : 501));
-
-	message(let, code, "Barney %s you!", good ? "loves" : "hates");
+    if (didauth) {
+	audit(let, "AUTH", "", 503);
+	message(let->out, 503, "Only one per customer, please!");
+	return 0;
     }
-    return good;
-}
 
-#endif
+    line += 4;	/* skip over "AUTH" */
+
+    while (isspace(*line))
+	++line;
+    if (strncasecmp(line, "LOGIN", 5) == 0)
+	ret = authlogin(let, line+5);
+    else {
+	audit(let, "AUTH", line, 504);
+	message(let->out, 504, "Eh?");
+    }
+
+    if (ret)
+	didauth=1;
+    return ret;
+}

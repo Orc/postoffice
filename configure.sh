@@ -11,6 +11,7 @@ ac_help='
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --use-peer-flag		enable -opeer (for debugging)
+--with-auth		enable smtp authentication (AUTH LOGIN)
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
 --with-vspool=PATH	virtual host mailspool (/var/spool/virtual)
 --with-vuser=USER	user (or uid:gid) that should own vspool (mail)'
@@ -28,8 +29,17 @@ AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 
+# for basename
+if AC_CHECK_FUNCS basename; then
+    AC_CHECK_HEADERS libgen.h
+fi
+
 if AC_CHECK_FUNCS statvfs; then
-    AC_CHECK_HEADERS sys/statvfs.h && AC_CHECK_STRUCT statvfs sys/statvfs.h
+    if AC_CHECK_HEADERS sys/statvfs.h; then
+	if AC_CHECK_STRUCT statvfs sys/statvfs.h; then
+	    has_statfs=T
+	fi
+    fi
 elif AC_CHECK_FUNCS statfs; then
     _h=
     if AC_CHECK_HEADERS sys/vfs.h; then
@@ -38,7 +48,45 @@ elif AC_CHECK_FUNCS statfs; then
     if AC_CHECK_HEADERS sys/param.h sys/mount.h; then
 	_h="$_h sys/param.h sys/mount.h"
     fi
-    AC_CHECK_STRUCT statfs $_h
+    if AC_CHECK_STRUCT statfs $_h; then
+	has_statfs=T
+    fi
+fi
+
+if [ "$has_statfs" ]; then
+    AC_SUB STATFS  ''
+else
+    AC_SUB STATFS  '.\\"'
+fi
+
+
+if [ -z "$OS_LINUX" ]; then
+    # can we use ifconfig -a inet to pick up local ip addresses?
+
+    TLOGN "Can we get local IP addresses with /sbin/ifconfig "
+
+    if /sbin/ifconfig -a inet 2>/dev/null > /tmp/if$$.out; then
+	# the format we're looking for is inet x.x.x.x [other stuff]
+
+	fail=
+	res=`grep inet /tmp/if$$.out | awk '{print $2}'`
+	for x in $res; do
+	    res=`expr $x : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'`
+	    if [ "$res" -eq 0 ]; then
+		fail=1
+	    fi
+	done
+
+	if [ -n "$fail" -o -z "$res" ]; then
+	    TLOG "(no)"
+	else
+	    TLOG "(yes)"
+	    AC_DEFINE USE_IFCONFIG
+	fi
+    else
+	TLOG "(no)"
+    fi
+    rm -f /tmp/if$$.out
 fi
 
 
@@ -212,6 +260,13 @@ else
     AC_SUB VHOST  '.\\"'
 fi
 
+if [ "$WITH_AUTH" ]; then
+    AC_SUB	AUTHMK ''
+    AC_DEFINE	SMTP_AUTH 1
+else
+    AC_SUB	AUTHMK '#'
+fi
+
 AC_DEFINE MAX_USERLEN	16
 
 eval `./uid nobody`
@@ -224,5 +279,12 @@ fi
 
 rm -f uid
 
-AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 greylist.7 smtpauth.5
+
+for x in confdir libexec execdir sbindir mandir; do
+    R=`echo ac_$x | tr 'a-z' 'A-Z'`
+    eval D=\$$R
+    test -d $D || LOG "WARNING! ${x} directory $D does not exist"
+done
+
+AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 greylist.7 smtpauth.5 postoffice.cf.5
 

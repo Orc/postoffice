@@ -111,12 +111,11 @@ sigexit(int sig)
 static int
 attach(int port)
 {
-    struct sockaddr_in service = { AF_INET };
+    struct sockaddr service;
+    struct sockaddr_in *af_inet = (struct sockaddr_in*)&service;
     int size;
     int ret;
     int on = 1;
-
-    service.sin_port = port;
 
     if ( (ret = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	return -1;
@@ -124,7 +123,12 @@ attach(int port)
     setsockopt(ret, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(ret, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
 
-    if (bind(ret, (struct sockaddr *)&service, sizeof service) < 0)
+    memset(&service, 0, sizeof service);
+
+    af_inet->sin_family = AF_INET;
+    af_inet->sin_port  = port;
+
+    if (bind(ret, &service, sizeof service) < 0)
 	return -1;
 
     if (listen(ret, 5) == -1) {
@@ -162,7 +166,7 @@ do_smtp_connection(int client, ENV *env)
 		   || loadavg[0] > env->max_loadavg) {
 	message(out, 451, "I'm too busy. Please try again later.");
     }
-    else if (getpeername(client, &window[i].customer, &cs) == -1) {
+    else if (getpeername(client, (struct sockaddr*)&window[i].customer, &cs) == -1) {
 	message(out, 451, "System error.  Please try again later.");
 	ret = -1;
     }

@@ -96,9 +96,12 @@ struct email *getemail(struct address *);
 #define VF_FROM	0x02
 
 extern struct address* verify(struct letter*, struct domain*, char*, int, int*);
+extern struct address *mkaddress(char *);
 extern void freeaddress(struct address*);
 
 extern int newrecipient(struct list*, struct address*, enum r_type,uid_t,gid_t);
 extern int recipients(struct letter*, struct address*);
+
+extern struct passwd *getpwemail(struct domain *, char *);
 
 #endif/*__LETTER_D*/

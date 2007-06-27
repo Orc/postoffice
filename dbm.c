@@ -1,6 +1,12 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
 
 #include "dbif.h"
 
@@ -258,7 +264,13 @@ main(int argc, char **argv)
 
     opterr = 1;
 
+#if HAVE_BASENAME
     pgm = basename(argv[0]);
+#else
+    {   char *avp = strrchr(argv[0], '/');
+	pgm = avp ? (1+avp) : argv[0];
+    }
+#endif
 
     while ((opt = getopt(argc, argv, "?vd:")) != EOF)
 	switch (opt) {

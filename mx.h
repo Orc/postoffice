@@ -19,6 +19,6 @@ int getMXes(char*, struct iplist*);
 int getIPa(char*, struct iplist*);
 void freeiplist(struct iplist*);
 
-char *ptr(unsigned long*);
+char *ptr(struct in_addr *addr);
 
 #endif/*__MX_D*/

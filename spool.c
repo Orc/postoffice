@@ -211,7 +211,7 @@ addheaders(FILE *f, struct letter *let, struct recipient *to)
     }
     if (!let->messageid)
 	fprintf(f, "Message-ID: <%s.%s@%s>\n",
-		    msgtime, let->qid, let->deliveredto);
+		    msgtime, let->qid, let->env->localhost);
     if (!let->mesgfrom)
 	if (let->from->domain)
 	    fprintf(f, "From: <%s>\n", let->from->full);

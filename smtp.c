@@ -35,7 +35,8 @@ int allow_severity = 0;
 #include "mx.h"
 
 enum cmds { HELO, EHLO, MAIL, RCPT, DATA, RSET,
-            VRFY, EXPN, QUIT, NOOP, DEBU, MISC };
+            VRFY, EXPN, QUIT, NOOP, DEBU, MISC,
+	    AUTH };
 
 #define CMD(t)	{ t, #t }
 struct cmdt {
@@ -51,6 +52,9 @@ struct cmdt {
     CMD(VRFY),
     CMD(EXPN),
     CMD(QUIT),
+#if SMTP_AUTH
+    CMD(AUTH),
+#endif
     CMD(DEBU),
     CMD(NOOP),
 };
@@ -665,6 +669,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    message(out,-250, "Hello, Sailor!");
 		    if (env->largest)
 			message(out,-250, "size %ld", env->largest);
+#if SMTP_AUTH
+		    message(out,-250, "auth login\n"
+				      "auth=login");
+#endif
 		    message(out, 250, "8bitmime");
 		    audit(&letter, "EHLO", line, 250);
 		}
@@ -803,6 +811,20 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		message(out, 250, "Yes, yes, I know you're busy.");
 		break;
 	    
+#if SMTP_AUTH
+	    case AUTH:
+		if ( auth(&letter, line) ) {
+		    /* all authentication does, for now, is allow an user
+		     * to relay through this server no matter where they're
+		     * coming from.
+		     */
+		    env->relay_ok = 1;
+		}
+		else
+		    goodness(&letter, -1);
+		break;
+#endif
+
 	    case DEBU:
 		if (env->debug) {
 		    debug(&letter);

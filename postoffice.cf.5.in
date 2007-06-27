@@ -1,0 +1,226 @@
+.\" Copyright (c) 1988, 1991 The Regents of the University of California.
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. All advertising materials mentioning features or use of this software
+.\"    must display the following acknowledgement:
+.\"	This product includes software developed by the University of
+.\"	California, Berkeley and its contributors.
+.\" 4. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"     %A%
+.\"
+.Dd February 4, 2006
+.Dt POSTOFFICE.CF 5
+.Os MASTODON 4
+.Sh NAME
+.Nm postoffice.cf
+.Nd configuration file for postoffice
+.Sh SYNOPSIS
+.Nm postoffice.cf
+.Sh DESCRIPTION
+This file resides in @confdir@, and contains various configuration
+options for the 
+.Nm postoffice
+mail server.   All of the options listed here can also be passed
+directly to the
+.Nm postoffice
+server via the 
+.Fl o
+command line option.
+.Pp
+The format of the configuration file is one option per line, with
+blank lines and lines beginning with # ignored as comment lines.
+The options are:
+
+.Bl -tag -width Fl
+.It Li audit
+Enable session auditing.
+.It Li checkhelo
+Check the arguments passed with the 
+.Em HELO
+and
+.Em EHLO
+SMTP command and refuse to do an SMTP conversation with the
+client if they claim to be the mail server.
+.It Li clients Ns = Ns Ar N
+Allow only 
+.Ar N
+clients at a time to connect to the server.
+.It Li debug
+Enable the ESMTP
+.Ql DEBUG
+command, which displays various compile and runtime settings,
+as well as the current state of the mail envelope.
+.It Li delay Ns = Ns Ar N
+Set the
+.Em greylist Ns ing
+delay to
+.Ar N
+seconds.
+The 
+.Xr delay
+may be specified as a tagged number,
+with
+.Ql m
+being minutes.
+and
+.Ql h
+being hours.
+.It Li forward-all
+When set, forward all unknown mail to the configured
+.Nm relay-host .
+.It Li hops Ns = Ns Ar N
+Set the hop count to
+.Ar N .
+The hop count is incremented every time the mail is
+processed.
+When it reaches this limit,
+the mail is returned with an error message,
+.It Li load Ns = Ns Ar N
+When the load average is above
+.Ar N ,
+.Nm postoffice
+will not accept SMTP connections (the default is 4).
+.It Li localmx
+Treat connections from sites that use this machine as an MX
+as if they were local, and give them the permissions that
+local clients have.
+@STATFS@.It Li minfree Ns = Ns Ar N
+@STATFS@Stop accepting mail when there are less than
+@STATFS@.Ar N 
+@STATFS@kilobytes available on the mail spool volume.
+@STATFS@.Xr minfree
+@STATFS@is given as a tagged number,
+@STATFS@with
+@STATFS@.Ql m
+@STATFS@being megabytes,
+@STATFS@and
+@STATFS@.Ql g
+@STATFS@being gigabytes
+.It Li nodaemon
+Do not accept mail from
+.Em <> .
+This can be useful for blocking spammers and viruses, but
+it also violates
+.%T RFC821 ,
+and means that nobody at your site (including mailing lists)
+will ever get bounce messages when mail cannot be delivered.
+If your machine is connected to a public network,
+.Em DON'T
+.Em SET
+.Em THIS
+.Em OPTION
+unless you're under attack from a malicious spammer.
+.It Li paranoid
+Do not accept connections from clients that are not registered in
+the 
+.Dv DNS .
+.It Li paranoid
+Do not accept mail from sites unless we can resolve their dns address.
+.It Li qreturn Ns = Ns Ar N
+Bounce undeliverable mail after 
+.Ar N 
+seconds.
+The 
+.Xr qreturn
+may be specified as a tagged number,
+with
+.Ql m
+being minutes,
+.Ql h
+being hours,
+and
+.Ql d
+being days.
+.It Li relay
+Allow all clients to relay mail through this
+server.   If your machine is connected to a public network,
+.Em DON'T
+.Em SET
+.Em THIS
+.Em OPTION ,
+unless you really want to end up on every antispam blacklist on
+the planet.
+.It Li relay-host Ns = Ns Ar host
+Send all mail destined for remote hosts via this
+.Ar host .
+The superuser is the only user that can use this option on the
+command line or in a configuration file other than
+.Pa /etc/postoffice.cf
+.It Li self Ns = Ns Ar host
+Set our hostname to
+.Ar host .
+.Nm Postoffice
+normally uses the uname() system call to determine the machine name,
+but you can set it to just about anything here.
+.It Li size Ns = Ns Ar size
+Sets the 
+largest message size that 
+.Nm postoffice
+will accept.
+.Xr size
+is given as a tagged number,
+with
+.Ql k
+being kilobytes,
+and
+.Ql m
+being megabytes.
+.It Li soft-deny
+If set, refuse blacklisted and paranoid connections with a 4xx (temporary)
+error status instead of the normal 5xx (permanent) errors.
+.It Li timeout Ns = Ns Ar timeout
+Drop the connection to a client if they are idle
+longer than
+.Ar timeout .
+This option violates the word (if not the intent) of the SMTP
+specification,
+so the timeout should probably be fairly large.
+The 
+.Xr timeout
+may be specified as a tagged number,
+with
+.Ql m
+being minutes,
+.Ql h
+being hours,
+and
+.Ql d
+being days.
+For example,
+.Ql timeout=60m
+or 
+.Ql timeout=1h
+both set the timeout to one hour.
+.It Li verify-from Ns = Ns Ar flag
+Check the validity of MAIL FROM addresses.  If
+nonzero (the default), the address will be rejected if it's
+from an unresolvable domain or if a remote client attempts to
+give a local address, and if zero, anything the client gives is
+okay with 
+.Nm postoffice .
+.El
+.Sh SEE ALSO
+.Xr postoffice 8

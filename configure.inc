@@ -56,7 +56,12 @@ __ac_dirname() {
 fi
 
 ac_progname=$0
-ac_configure_command="$*"
+ac_configure_command=
+Q=\'
+for x in "$@"; do
+    ac_configure_command="$ac_configure_command $Q$x$Q"
+done
+# ac_configure_command="$*"
 
 __d=`__ac_dirname "$ac_progname"`
 if [ "$__d" = "$ac_progname" ]; then
