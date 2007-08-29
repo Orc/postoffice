@@ -232,6 +232,27 @@ post(struct letter *let, struct recipient *to)
 
 
 static int
+spam(struct letter *let, struct recipient *to)
+{
+    struct passwd *pwd = getpwemail(to->dom, to->user);
+    char *file, *junkfolder;
+
+    if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
+	fprintf(let->log, SuspiciousName, to->user);
+	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
+	return 0;
+    }
+    
+    if (junkfolder = alloca(strlen(file) + strlen(let->env->junkfolder) + 2)) {
+	sprintf(junkfolder, "%s:%s", file, let->env->junkfolder);
+	return mbox(let, to, junkfolder);
+    }
+    syslog(LOG_ERR, "out of memory in spam()");
+    return 0;
+}
+
+
+static int
 file(struct letter *let, struct recipient *to)
 {
     if (to->gid == 0 || to->uid == 0) {
@@ -271,6 +292,8 @@ runlocal(struct letter *let)
 	switch (let->local.to[count].typ) {
 	case emEXE: rc = exe(let, &(let->local.to[count]) );
 		    break;
+	case emSPAM:rc = spam(let, &(let->local.to[count]) );
+		    break;
 	case emUSER:rc = post(let, &(let->local.to[count]) );
 		    break;
 	case emFILE:rc = file(let, &(let->local.to[count]) );
@@ -280,10 +303,11 @@ runlocal(struct letter *let)
 	}
 
 	if (rc > 0) {
-	    syslog(LOG_INFO, "deliver mail from %s (%s) to %s (%s)",
+	    syslog(LOG_INFO, "deliver mail from %s (%s) to %s (%s)%s",
 		fromwho(let->from), let->deliveredby,
 		username(let->local.to[count].dom, let->local.to[count].user),
-		let->local.to[count].fullname );
+		let->local.to[count].fullname,
+		let->local.to[count].typ == emSPAM ? " [SPAM]" : "");
 	    completed += rc;
 	}
 	else 

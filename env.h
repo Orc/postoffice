@@ -27,6 +27,7 @@ struct env {
     char *relay_host;		/* mail relay */
     long  minfree;		/* don't run if the spool directory has less
 				 * than this many bytes free */
+    char *junkfolder;		/* mailbox to put junk into */
     struct usermap *usermap;	/* map usernames (personal aliases) */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */
