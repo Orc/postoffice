@@ -157,15 +157,15 @@ smtpbugcheck(struct letter *let)
 	/* we only deliver to junk folders if the all of the mail recipients
 	 * are local.
 	 */
-	if ( (let->env->junkfolder == 0) || (let->remote->count > 0) ) {
+	if ( (let->env->junkfolder == 0) || (let->remote.count > 0) ) {
 	    message(let->out, -code, "The committee has rejected this letter:");
 	    mfcomplain(let, "It is suspicious");
 	    
 	    return 0;
 	}
 
-	for (i=0; i < let->local->count; let++)
-	    let->local->to[i].typ = emSPAM;
+	for (i=0; i < let->local.count; i++)
+	    let->local.to[i].typ = emSPAM;
     }
 #else
     int code = virus_scan(let);
