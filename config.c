@@ -106,6 +106,13 @@ set_option(char *option, ENV *env)
     case 'i':	if (isopt(option, "immediate", &val, 0))
 		    env->immediate = val;
 		return;
+    case 'j':   if (strncasecmp(option, "junkfolder=", 11) == 0) {
+		    insecure("junkfolder");
+		    if (env->junkfolder)
+			free(env->junkfolder);
+		    env->junkfolder = strdup(option+11);
+		}
+		break;
     case 'l':   if (isopt(option, "load", &val, 0))
 		    env->max_loadavg = (float)val;
 		else if (isopt(option, "localmx", &val, 0))
