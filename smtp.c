@@ -144,8 +144,10 @@ smtpbugcheck(struct letter *let)
 #if WITH_MILTER
     if (mfdata(let) != MF_OK) {
 	int code = mfcode();
-	int i;
 	char *what = mfresult();
+
+	message(let->out, -code, "The committee has rejected this letter:");
+	mfcomplain(let, "It is suspicious");
 
 	if (what)
 	    syslog(LOG_ERR, "VIRUS from (%s,%s): %s",
@@ -153,19 +155,7 @@ smtpbugcheck(struct letter *let)
 	else
 	    syslog(LOG_ERR, "VIRUS from (%s,%s)",
 			    let->deliveredby, let->deliveredIP);
-	
-	/* we only deliver to junk folders if the all of the mail recipients
-	 * are local.
-	 */
-	if ( (let->env->junkfolder == 0) || (let->remote->count > 0) ) {
-	    message(let->out, -code, "The committee has rejected this letter:");
-	    mfcomplain(let, "It is suspicious");
-	    
-	    return 0;
-	}
-
-	for (i=0; i < let->local->count; let++)
-	    let->local->to[i].typ = emSPAM;
+	return 0;
     }
 #else
     int code = virus_scan(let);
@@ -579,8 +569,6 @@ debug(struct letter *let)
 	message(let->out,-250, "size: %ld", env->largest);
     if (env->minfree)
 	message(let->out,-250, "minfree: %ld", env->minfree);
-    if (env->junkfolder)
-	message(let->out,-250, "junkfolder: %s", env->junkfolder);
     message(let->out, 250, "Timeout: %d\n"
 		      "Delay: %d\n"
 		      "Max clients: %d\n"
