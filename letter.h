@@ -79,6 +79,7 @@ struct letter {
 int prepare(struct letter *, FILE *, FILE *, ENV *);
 void reset(struct letter *);
 void byebye(struct letter *, int);
+int anotherheader(struct letter *, char*, char*);
 
 char *lowercase(char *);
 char *skipspace(char *);

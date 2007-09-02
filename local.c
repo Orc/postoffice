@@ -234,20 +234,43 @@ post(struct letter *let, struct recipient *to)
 static int
 spam(struct letter *let, struct recipient *to)
 {
+#if defined(SPAMCATCHER)
     struct passwd *pwd = getpwemail(to->dom, to->user);
-    char *file, *junkfolder;
+    char *sf, *file, *junkfolder;
 
     if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
 	fprintf(let->log, SuspiciousName, to->user);
 	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
 	return 0;
     }
-    
+
+    if (let->env->spam.action != spFILE)
+	return 0;
+
+    if ( !(sf = let->env->spam.i.folder) ) {
+	syslog(LOG_ERR, "empty spam.i.folder.  This is a CANTHAPPEN error?");
+	return 0;
+    }
+
+    if ( strncmp(sf, "~/", 2) == 0 )
+	/* spamfolder is relative to user's homedir */
+
+	if (pwd->pw_dir == 0)
+	    return 0; /* no home directory == can't put spam in spamfolder */
+
+	size = strlen(pwd->pw_dir) + 1 + strlen(sf+2) + 1;
+	junkfolder = malloc(size);
+	sprintf(junkfolder, "%s/%s", pwd->pw_dir, sf+2);
+	return junkfolder;
+    }
+    /* otherwise it's a different mailbox in the maildir */
+
     if (junkfolder = alloca(strlen(file) + strlen(let->env->junkfolder) + 2)) {
 	sprintf(junkfolder, "%s:%s", file, let->env->junkfolder);
 	return mbox(let, to, junkfolder);
     }
     syslog(LOG_ERR, "out of memory in spam()");
+#endif
     return 0;
 }
 

@@ -81,6 +81,8 @@ main(int argc, char **argv)
     env.max_clients = 100;	/* should be fairly ridiculous */
     env.max_hops = 100;		/* (ditto) */
 
+    env.spam.action = spBOUNCE;
+
 #ifndef HAVE_SETPROCTITLE
     argv0 = argv[0];
     szargv0 = 80;

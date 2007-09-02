@@ -139,68 +139,63 @@ zzz(int signo)
 
 
 static int
+bouncespam(struct letter *let)
+{
+#if WITH_MILTER || defined(AV_PROGRAM)
+    switch (let->env->spam.action) {
+    case spFILE:   return (let->remote.count > 0);
+    case spACCEPT: return 0;
+    }
+#endif
+    return 1;
+}
+
+
+static int
 smtpbugcheck(struct letter *let)
 {
+    int code, i;
+    char *what = 0;
+    
 #if WITH_MILTER
-    if (mfdata(let) != MF_OK) {
-	int code = mfcode();
-	int i;
-	char *what = mfresult();
+    if (mfdata(let) == MF_OK)
+	return 1;
 
-	if (what)
-	    syslog(LOG_ERR, "VIRUS from (%s,%s): %s",
-			    let->deliveredby, let->deliveredIP, what);
-	else
-	    syslog(LOG_ERR, "VIRUS from (%s,%s)",
-			    let->deliveredby, let->deliveredIP);
+    code = mfcode();
+    what = mfresult();
+#else
+    if ( (code=virus_scan(let)) == 0 )
+	return 1;
+#endif
+    if (what) {
+	anotherheader(let, "X-Spam", what);
+	syslog(LOG_ERR, "VIRUS from (%s,%s): %s",
+			let->deliveredby, let->deliveredIP, what);
+    }
+    else {
+	anotherheader(let, "X-Spam", "yes.  Lots of it.");
+	syslog(LOG_ERR, "VIRUS from (%s,%s)",
+			let->deliveredby, let->deliveredIP);
+    }
 	
-	/* we only deliver to junk folders if the all of the mail recipients
-	 * are local.
-	 */
-	if ( (let->env->junkfolder == 0) || (let->remote.count > 0) ) {
+    greylist(let, 1);
+    
+    if (bouncespam(let)) {
+	if (what) {
 	    message(let->out, -code, "The committee has rejected this letter:");
 	    mfcomplain(let, "It is suspicious");
-	    
-	    return 0;
-	}
-
-	for (i=0; i < let->local.count; i++)
-	    let->local.to[i].typ = emSPAM;
-    }
-#else
-    int code = virus_scan(let);
-    char *msg;
-    char *p, *q;
-    size_t size;
-    int count;
-
-    if (code) {
-	fseek(let->log, 0, SEEK_END);
-	fputc(0, let->log);
-	rewind(let->log);
-	greylist(let, 1);
-
-	if ( (let->log != stderr) && (msg = mapfd(fileno(let->log), &size)) ) {
-	    message(let->out,-code, "This mail message contains germs");
-	    message(let->out, code, "%.*s", size, msg);
-
-	    greylist(let, 1);
-	    for (p = msg; q = strchr(p, '\n'); p = 1+q) {
-		syslog(LOG_ERR, "VIRUS from (%s,%s): %.*s",
-				let->deliveredby, let->deliveredIP,
-				(int)(q-p), p);
-	    }
-	    munmap(msg, size);
 	}
 	else {
 	    message(let->out, code, "Do you, my poppet, feel infirm?\n"
 				    "I do believe you contain a germ.");
-	    syslog(LOG_ERR, "VIRUS from (%s,%s)",
-			    let->deliveredby, let->deliveredIP);
 	}
 	return 0;
     }
-#endif
+
+    if (let->env->spam.action == spFILE)
+	/* reroute spam to a special quarantine area */
+	for (i=0; i < let->local.count; i++)
+	    let->local.to[i].typ = emSPAM;
     return 1;
 }
 
@@ -579,8 +574,18 @@ debug(struct letter *let)
 	message(let->out,-250, "size: %ld", env->largest);
     if (env->minfree)
 	message(let->out,-250, "minfree: %ld", env->minfree);
-    if (env->junkfolder)
-	message(let->out,-250, "junkfolder: %s", env->junkfolder);
+    
+    switch (env->spam.action) {
+    case spFILE:
+	message(let->out, -250, "spam folder: <%s>", env->spam.i.folder);
+	break;
+    case spACCEPT:
+	 message(let->out, -250, "spam: accept");
+	 break;
+    default:
+	message(let->out, -250, "spam: bounce");
+	break;
+    }
     message(let->out, 250, "Timeout: %d\n"
 		      "Delay: %d\n"
 		      "Max clients: %d\n"

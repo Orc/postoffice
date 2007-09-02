@@ -106,13 +106,6 @@ set_option(char *option, ENV *env)
     case 'i':	if (isopt(option, "immediate", &val, 0))
 		    env->immediate = val;
 		return;
-    case 'j':   if (strncasecmp(option, "junkfolder=", 11) == 0) {
-		    insecure("junkfolder");
-		    if (env->junkfolder)
-			free(env->junkfolder);
-		    env->junkfolder = strdup(option+11);
-		}
-		break;
     case 'l':   if (isopt(option, "load", &val, 0))
 		    env->max_loadavg = (float)val;
 		else if (isopt(option, "localmx", &val, 0))
@@ -149,6 +142,40 @@ set_option(char *option, ENV *env)
 		}
 		else if (isopt(option, "soft-deny", &val, 0))
 		    env->soft_deny = val;
+		else if (strncasecmp(option, "spam=", 5) == 0) {
+		    char *p;
+
+		    option += 5;
+		    if (p = strchr(option, ':'))
+			*p++ = 0;
+
+		    if (strcasecmp(option, "bounce")  == 0) {
+			env->spam.action == spBOUNCE;
+			if (p && *p) {
+			    if (env->spam.i.reason)
+				free(env->spam.i.reason);
+			    env->spam.i.reason = strdup(p);
+			}
+		    }
+		    else if (strcasecmp(option, "accept") == 0)
+			env->spam.action = spACCEPT;
+		    else if (strcasecmp(option, "folder") == 0) {
+			if (p == 0 || *p == 0) {
+			    fprintf(stderr, "need a destination file for spam=folder config\n");
+			    syslog(LOG_INFO, "need a destination file for spam=folder config");
+			}
+			else {
+			    if (env->spam.i.folder)
+				free(env->spam.i.folder);
+			    env->spam.i.folder = strdup(p);
+			    env->spam.action = spFILE;
+			}
+		    }
+		    else {
+			fprintf(stderr, "unknown spam action %s\n", option);
+			syslog(LOG_INFO, "unknown spam action %s\n", option);
+		    }
+		}
 		return;
     case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
 		return;
