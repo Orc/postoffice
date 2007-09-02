@@ -151,6 +151,19 @@ bouncespam(struct letter *let)
 }
 
 
+static char*
+bouncereason(struct letter *let)
+{
+    char *r = "Do you, my poppet, feel infirm?\n"
+	      "I do believe you contain a germ";
+	      
+    if ( (let->env->spam.action == spBOUNCE) && let->env->spam.i.reason )
+	return let->env->spam.i.reason;
+
+    return r;
+}
+
+
 static int
 smtpbugcheck(struct letter *let)
 {
@@ -181,17 +194,10 @@ smtpbugcheck(struct letter *let)
     greylist(let, 1);
     
     if (bouncespam(let)) {
-	if (what) {
-	    message(let->out, -code, "The committee has rejected this letter:");
-	    mfcomplain(let, "It is suspicious");
-	}
-	else {
-	    message(let->out, code, "Do you, my poppet, feel infirm?\n"
-				    "I do believe you contain a germ.");
-	}
+	message(let->out, code, what ? "%s:\n%s" : "%s",
+				bouncereason(let), what);
 	return 0;
     }
-
     if (let->env->spam.action == spFILE)
 	/* reroute spam to a special quarantine area */
 	for (i=0; i < let->local.count; i++)

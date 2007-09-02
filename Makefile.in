@@ -70,13 +70,13 @@ install.man: $(MANPAGES)
 	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man7
 	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man5
 	@INSTALL_DIR@ $(DESTDIR)$(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c $(MAN8PAGES) $(DESTDIR)$(mandir)/man8
-	@INSTALL_DATA@ -m 444 -c $(MAN7PAGES) $(DESTDIR)$(mandir)/man7
+	@INSTALL_DATA@ -c $(MAN8PAGES) $(DESTDIR)$(mandir)/man8
+	@INSTALL_DATA@ -c $(MAN7PAGES) $(DESTDIR)$(mandir)/man7
 	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN7PAGES) $(DESTDIR)$(mandir)/man7; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN5PAGES) $(DESTDIR)$(mandir)/man5
+	@INSTALL_DATA@ -c $(MAN5PAGES) $(DESTDIR)$(mandir)/man5
 	if test "@VPATH@";then @INSTALL_DATA@ -m 444 -c $(VMAN5PAGES) $(DESTDIR)$(mandir)/man5; fi
-	@INSTALL_DATA@ -m 444 -c $(MAN1PAGES) $(DESTDIR)$(mandir)/man1
-	@INSTALL_DATA@ -m 444 -c dbm.1 $(DESTDIR)$(mandir)/man1/@NDBM@.1
+	@INSTALL_DATA@ -c $(MAN1PAGES) $(DESTDIR)$(mandir)/man1
+	@INSTALL_DATA@ -c dbm.1 $(DESTDIR)$(mandir)/man1/@NDBM@.1
 
 install.common.binaries:
 	@INSTALL_DIR@ $(DESTDIR)$(libexec)
