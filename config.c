@@ -145,10 +145,12 @@ set_option(char *option, ENV *env)
 		else if (strncasecmp(option, "spam=", 5) == 0) {
 		    char *p;
 
-		    option += 5;
 		    if (p = strchr(option, ':'))
 			*p++ = 0;
 
+		    insecure(option);
+		    
+		    option += 5;
 		    if (strcasecmp(option, "bounce")  == 0) {
 			env->spam.action == spBOUNCE;
 			if (p && *p) {
@@ -157,18 +159,24 @@ set_option(char *option, ENV *env)
 			    env->spam.i.reason = strdup(p);
 			}
 		    }
-		    else if (strcasecmp(option, "accept") == 0)
+		    else if (strcasecmp(option, "accept") == 0) {
+			insecure("spam=accept");
 			env->spam.action = spACCEPT;
+		    }
 		    else if (strcasecmp(option, "folder") == 0) {
 			if (p == 0 || *p == 0) {
 			    fprintf(stderr, "need a destination file for spam=folder config\n");
 			    syslog(LOG_INFO, "need a destination file for spam=folder config");
 			}
-			else {
+			else if (strncpy(p, "~/", 2) == 0 || strchr(p, '/') == 0) {
 			    if (env->spam.i.folder)
 				free(env->spam.i.folder);
 			    env->spam.i.folder = strdup(p);
 			    env->spam.action = spFILE;
+			}
+			else {
+			    fprintf(stderr, "malformed spam=folder path.\n");
+			    syslog(LOG_INFO, "malformed spam=folder path.");
 			}
 		    }
 		    else {

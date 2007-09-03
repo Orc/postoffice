@@ -216,6 +216,45 @@ being megabytes.
 .It Li soft-deny
 If set, refuse blacklisted and paranoid connections with a 4xx (temporary)
 error status instead of the normal 5xx (permanent) errors.
+.It Li spam Ns = Ns Ar option
+Configure how 
+.Nm postoffice
+deals with spam.
+.Bl -tag -width Fl
+.It Li spam=accept
+Accept the spam-infested message and deliver it like a normal message.
+.Nm postoffice
+will add an
+.Ql X-Spam
+header to the message to warn the user that this message might be
+spam.
+.It Li spam=bounce Ns , Ns Ar why
+Refuse to accept the spam-infested message with a 5xx error during 
+the
+.Ql DATA
+phase of the smtp session.
+.Ar why
+is the explanation for why it's being bounced.  It is optional and
+if not supplied the message will be bounced with a default message
+why.
+.It Li spam=folder Ns , Ns Ar path
+Accept the spam-infested message and deliver it to the users
+spam mail folder.   If
+.Ql path
+begins with
+.Ql ~/ Ns ,
+it will be expanded to that file in the user's home directory.
+If it does not begin with 
+.Ql ~/ Ns ,
+it will be expanded to a folder in the maildir named
+.Li username Ns : Ns Ar path Ns .
+In either case, this delivery will be done
+.Li only
+if all of the recipients of the message are local; if any
+recipients are remote, the message will be bounced with the default
+bounce reason.
+.El
+
 .It Li timeout Ns = Ns Ar timeout
 Drop the connection to a client if they are idle
 longer than
