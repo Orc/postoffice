@@ -14,7 +14,7 @@
 #include "spool.h"
 
 int
-Qpicker(const struct dirent *f)
+Qpicker(struct dirent *f)
 {
     return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (strlen(f->d_name) == 8);
 }
@@ -35,6 +35,8 @@ Qcompare(const struct dirent *a, const struct dirent *b)
 
     return sa.st_ctime - sb.st_ctime;
 }
+
+typedef int (*sdcf)(const void*,const void*);
 
 static char *
 unit(off_t size)
@@ -72,7 +74,7 @@ listq()
     struct stat st;
     int i;
 
-    if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, Qcompare)) < 0) {
+    if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, (sdcf)Qcompare)) < 0) {
 	perror(QUEUEDIR);
 	exit(EX_NOPERM);
     }
