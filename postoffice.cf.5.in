@@ -248,11 +248,9 @@ If it does not begin with
 .Ql ~/ Ns ,
 it will be expanded to a folder in the maildir named
 .Li username Ns : Ns Ar path Ns .
-In either case, this delivery will be done
-.Li only
-if all of the recipients of the message are local; if any
-recipients are remote, the message will be bounced with the default
-bounce reason.
+Non-local users (and users in a virtual domain) will have the
+spam-infested mail delivered as if you configured
+.Ql spam=accept Ns .
 .El
 
 .It Li timeout Ns = Ns Ar timeout
