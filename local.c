@@ -247,8 +247,8 @@ spam(struct letter *let, struct recipient *to)
     if (let->env->spam.action != spFILE)
 	return 0;
 
-    if ( !(sf = let->env->spam.i.folder) ) {
-	syslog(LOG_ERR, "empty spam.i.folder.  This is a CANTHAPPEN error?");
+    if ( !(sf = let->env->spam.folder) ) {
+	syslog(LOG_ERR, "empty spam.folder.  This is a CANTHAPPEN error?");
 	return 0;
     }
 

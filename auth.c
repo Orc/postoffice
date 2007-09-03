@@ -8,6 +8,7 @@
 
 #include "letter.h"
 #include "dbif.h"
+#include "audit.h"
 
 
 /*

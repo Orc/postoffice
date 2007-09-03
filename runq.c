@@ -102,6 +102,7 @@ runremote(struct letter *let, char *qid)
 }
 
 
+void
 runjob(struct letter *let, char *qid)
 {
 #ifdef NO_FLOCK
@@ -176,8 +177,8 @@ runlock()
 	write(fd, pidline, strlen(pidline));
 	close(fd);
     }
-    return 1;
 #endif
+    return 1;
 }
 
 

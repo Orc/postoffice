@@ -13,6 +13,7 @@
 #include <sysexits.h>
 
 #include "env.h"
+#include "audit.h"
 
 
 int
@@ -154,9 +155,9 @@ set_option(char *option, ENV *env)
 		    if (strcasecmp(option, "bounce")  == 0) {
 			env->spam.action == spBOUNCE;
 			if (p && *p) {
-			    if (env->spam.i.reason)
-				free(env->spam.i.reason);
-			    env->spam.i.reason = strdup(p);
+			    if (env->spam.reason)
+				free(env->spam.reason);
+			    env->spam.reason = strdup(p);
 			}
 		    }
 		    else if (strcasecmp(option, "accept") == 0) {
@@ -169,9 +170,9 @@ set_option(char *option, ENV *env)
 			    syslog(LOG_INFO, "need a destination file for spam=folder config");
 			}
 			else if (strncpy(p, "~/", 2) == 0 || strchr(p, '/') == 0) {
-			    if (env->spam.i.folder)
-				free(env->spam.i.folder);
-			    env->spam.i.folder = strdup(p);
+			    if (env->spam.folder)
+				free(env->spam.folder);
+			    env->spam.folder = strdup(p);
 			    env->spam.action = spFILE;
 			}
 			else {

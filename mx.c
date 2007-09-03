@@ -406,6 +406,7 @@ cmp(struct ipa *a, struct ipa *b)
     return b->key - a->key;
 }
 
+typedef int (*qcf)(const void*,const void*);
 
 static void
 freemxlist(struct mxlist *p)
@@ -508,7 +509,7 @@ getMXes(char *host, struct iplist *ipp)
 	addresslist(ipp, &list);
     }
     freemxlist(&list);
-    qsort(ipp->a, ipp->count, sizeof ipp->a[0], cmp);
+    qsort(ipp->a, ipp->count, sizeof ipp->a[0], (qcf)cmp);
     return ipp->count;
 } /* getMX */
 

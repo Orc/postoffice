@@ -43,6 +43,7 @@ extern int mfquit(struct letter *let);
 extern char *mfresult();
 extern int mfcode();
 extern void mfcomplain(struct letter *let, char *generic);
+extern void mflist(FILE*,int);
 #else
 #define mfregister(x,y)	MF_OK
 #define mfconnect(x) MF_OK
@@ -55,6 +56,7 @@ extern void mfcomplain(struct letter *let, char *generic);
 #define mfresult() 0
 #define mfcode() 0
 #define mfcomplain(l,g) 0
+#define mflist(f,i) 0
 #endif
 
 

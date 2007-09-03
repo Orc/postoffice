@@ -15,7 +15,8 @@
 
 #include "env.h"
 
-void
-smtp(FILE *, FILE *, struct sockaddr_in*, ENV*);
+void smtp(FILE *, FILE *, struct sockaddr_in*, ENV*);
+
+int auth(struct letter *,char*);
 
 #endif/*__SMTP_D*/

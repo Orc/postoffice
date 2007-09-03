@@ -176,6 +176,7 @@ getvpwemail(struct domain *dom, char* user)
 	while (fgets(bfr, sizeof bfr, f)) {
 	    thisuser = strtok(bfr, ":");
 	    if (thisuser && (strcasecmp(user, thisuser) == 0) ) {
+		bzero(&ent, sizeof ent);
 		ent.pw_name = thisuser;
 		ent.pw_passwd = strtok(0, ":\n\r");
 		ent.pw_uid  = dom->d_uid;

@@ -20,6 +20,7 @@ extern char myversion[];
 
 #include "letter.h"
 #include "smtp.h"
+#include "audit.h"
 
 
 #ifndef HAVE_SETPROCTITLE
@@ -230,9 +231,9 @@ main(int argc, char **argv)
 
 		    configfile("/etc/postoffice.cf", &env);
 		    if (env.auditing)
-			auditon();
+			auditon(0);
 		    else
-			auditoff();
+			auditoff(0);
 		    server(&env, debug);
 		    exit(EX_OK);
 		}

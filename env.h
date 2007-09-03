@@ -14,10 +14,8 @@ struct usermap {
 
 struct spam {
     enum {spACCEPT,spFILE,spBOUNCE} action;
-    union {
-	char *folder;	/* spFILE folder to write to */
-	char *reason;	/* reason to reject */
-    } i;
+    char *folder;	/* spFILE folder to write to */
+    char *reason;	/* reason to reject */
 };
 
 struct env {
@@ -71,6 +69,5 @@ char *mapfd(int, size_t*);
 void set_option(char *, ENV*);
 int  configfile(char *, ENV*);
 void message(FILE *f, int code, char *fmt, ...);
-
 
 #endif/*END_D*/

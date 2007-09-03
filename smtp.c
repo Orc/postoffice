@@ -34,6 +34,7 @@ int allow_severity = 0;
 #include "env.h"
 #include "mx.h"
 #include "mf.h"
+#include "audit.h"
 
 extern char myversion[];
 
@@ -142,12 +143,10 @@ static int
 bouncespam(struct letter *let)
 {
 #if WITH_MILTER || defined(AV_PROGRAM)
-    switch (let->env->spam.action) {
-    case spFILE:   return (let->remote.count > 0);
-    case spACCEPT: return 0;
-    }
+    return (let->env->spam.action == spBOUNCE);
+#else
+    return 0;
 #endif
-    return 1;
 }
 
 
@@ -157,8 +156,8 @@ bouncereason(struct letter *let)
     char *r = "Do you, my poppet, feel infirm?\n"
 	      "I do believe you contain a germ";
 	      
-    if ( (let->env->spam.action == spBOUNCE) && let->env->spam.i.reason )
-	return let->env->spam.i.reason;
+    if ( (let->env->spam.action == spBOUNCE) && let->env->spam.reason )
+	return let->env->spam.reason;
 
     return r;
 }
@@ -198,10 +197,12 @@ smtpbugcheck(struct letter *let)
 				bouncereason(let), what);
 	return 0;
     }
-    if (let->env->spam.action == spFILE)
+    if (let->env->spam.action == spFILE) {
 	/* reroute spam to a special quarantine area */
 	for (i=0; i < let->local.count; i++)
-	    let->local.to[i].typ = emSPAM;
+	    if (!isvhost(let->local.to[i].dom))
+		let->local.to[i].typ = emSPAM;
+    }
     return 1;
 }
 
@@ -513,6 +514,9 @@ describe(FILE *f, int code, struct recipient *to)
 	/* should never happen */
 	message(f,-code, "to: ?alias [%s %s]", to->fullname, to->host);
 	break;
+    case emSPAM:
+	message(f,-code, "to: SPAM [%d] %d %d", to->fullname, to->uid, to->gid);
+	break;
     case emFILE:
 	message(f,-code, "to: file [%s] %d %d", to->fullname, to->uid, to->gid);
 	break;
@@ -583,7 +587,7 @@ debug(struct letter *let)
     
     switch (env->spam.action) {
     case spFILE:
-	message(let->out, -250, "spam folder: <%s>", env->spam.i.folder);
+	message(let->out, -250, "spam folder: <%s>", env->spam.folder);
 	break;
     case spACCEPT:
 	 message(let->out, -250, "spam: accept");

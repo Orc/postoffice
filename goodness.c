@@ -1,6 +1,7 @@
 #include "config.h"
 #include "dbif.h"
 #include "letter.h"
+#include "audit.h"
 
 #include <time.h>
 #include <syslog.h>

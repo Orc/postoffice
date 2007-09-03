@@ -3,8 +3,7 @@
 #include <signal.h>
 #include <time.h>
 
-#include "env.h"
-#include "letter.h"
+#include "audit.h"
 
 /*
  * write audit records in the form
@@ -12,8 +11,6 @@
  * syslog should provide the pid for us.
  */
 
-void auditon();
-void auditoff();
 static int auditing = 0;
 
 
