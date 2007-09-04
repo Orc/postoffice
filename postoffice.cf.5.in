@@ -228,7 +228,7 @@ will add an
 .Ql X-Spam
 header to the message to warn the user that this message might be
 spam.
-.It Li spam=bounce Ns , Ns Ar why
+.It Li spam=bounce Ns : Ns Ar why
 Refuse to accept the spam-infested message with a 5xx error during 
 the
 .Ql DATA
@@ -237,7 +237,7 @@ phase of the smtp session.
 is the explanation for why it's being bounced.  It is optional and
 if not supplied the message will be bounced with a default message
 why.
-.It Li spam=folder Ns , Ns Ar path
+.It Li spam=folder Ns : Ns Ar path
 Accept the spam-infested message and deliver it to the users
 spam mail folder.   If
 .Ql path

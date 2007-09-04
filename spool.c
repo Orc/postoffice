@@ -210,6 +210,10 @@ addheaders(FILE *f, struct letter *let, struct recipient *to)
 
     if (!let->date)
 	fprintf(f, "Date: %s\n", date);
+
+    if (let->headtext && (let->headsize > 1) )
+	fwrite(let->headtext,let->headsize-1,1,f);
+
 #if 0
     fprintf(f, "X-Debug-Me: has_headers=%d,\n"
 	       "            date=%d,\n"

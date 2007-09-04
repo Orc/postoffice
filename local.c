@@ -234,9 +234,9 @@ post(struct letter *let, struct recipient *to)
 static int
 spam(struct letter *let, struct recipient *to)
 {
-#if defined(SPAMCATCHER)
     struct passwd *pwd = getpwemail(to->dom, to->user);
     char *sf, *file, *junkfolder;
+    int size;
 
     if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
 	fprintf(let->log, SuspiciousName, to->user);
@@ -252,7 +252,7 @@ spam(struct letter *let, struct recipient *to)
 	return 0;
     }
 
-    if ( strncmp(sf, "~/", 2) == 0 )
+    if ( strncmp(sf, "~/", 2) == 0 ) {
 	/* spamfolder is relative to user's homedir */
 
 	if (pwd->pw_dir == 0)
@@ -261,16 +261,15 @@ spam(struct letter *let, struct recipient *to)
 	size = strlen(pwd->pw_dir) + 1 + strlen(sf+2) + 1;
 	junkfolder = malloc(size);
 	sprintf(junkfolder, "%s/%s", pwd->pw_dir, sf+2);
-	return junkfolder;
+	return mbox(let, to, junkfolder);
     }
     /* otherwise it's a different mailbox in the maildir */
 
-    if (junkfolder = alloca(strlen(file) + strlen(let->env->junkfolder) + 2)) {
-	sprintf(junkfolder, "%s:%s", file, let->env->junkfolder);
+    if (junkfolder = alloca(strlen(file) + strlen(let->env->spam.folder) + 2)) {
+	sprintf(junkfolder, "%s:%s", file, let->env->spam.folder);
 	return mbox(let, to, junkfolder);
     }
     syslog(LOG_ERR, "out of memory in spam()");
-#endif
     return 0;
 }
 

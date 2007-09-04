@@ -169,15 +169,15 @@ set_option(char *option, ENV *env)
 			    fprintf(stderr, "need a destination file for spam=folder config\n");
 			    syslog(LOG_INFO, "need a destination file for spam=folder config");
 			}
-			else if (strncpy(p, "~/", 2) == 0 || strchr(p, '/') == 0) {
+			else if ( (strncmp(p, "~/", 2) == 0) || (strchr(p, '/') == 0) ) {
 			    if (env->spam.folder)
 				free(env->spam.folder);
 			    env->spam.folder = strdup(p);
 			    env->spam.action = spFILE;
 			}
 			else {
-			    fprintf(stderr, "malformed spam=folder path.\n");
-			    syslog(LOG_INFO, "malformed spam=folder path.");
+			    fprintf(stderr, "malformed spam=folder path (%s).\n", p);
+			    syslog(LOG_INFO, "malformed spam=folder path (%s).", p);
 			}
 		    }
 		    else {
