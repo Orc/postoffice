@@ -232,20 +232,35 @@ post(struct letter *let, struct recipient *to)
 
 
 static int
+oktowrite(struct recipient *to)
+{
+    if (to->gid == 0 || to->uid == 0) {
+	syslog(LOG_ERR, "file [%s] you are root (%d %d)",
+			to->fullname, to->uid, to->gid);
+	return 0;
+    }
+    return 1;
+}
+
+
+static int
 spam(struct letter *let, struct recipient *to)
 {
     struct passwd *pwd = getpwemail(to->dom, to->user);
     char *sf, *file, *junkfolder;
     int size;
 
+    if (!oktowrite(to))
+	return 0;
+
+    if (let->env->spam.action != spFILE)
+	return 0;
+
     if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
 	fprintf(let->log, SuspiciousName, to->user);
 	syslog(LOG_ERR, "<%s> is a bogus username", to->user);
 	return 0;
     }
-
-    if (let->env->spam.action != spFILE)
-	return 0;
 
     if ( !(sf = let->env->spam.folder) ) {
 	syslog(LOG_ERR, "empty spam.folder.  This is a CANTHAPPEN error?");
@@ -277,13 +292,10 @@ spam(struct letter *let, struct recipient *to)
 static int
 file(struct letter *let, struct recipient *to)
 {
-    if (to->gid == 0 || to->uid == 0) {
-	fprintf(let->log, blocked, to->user);
-	syslog(LOG_ERR, "file [%s] you are root (%d %d)",
-			to->fullname, to->uid, to->gid);
-	return 0;
-    }
-    return mbox(let, to, to->fullname);
+    if (oktowrite(to))
+	return mbox(let,to,to->fullname);
+    fprintf(let->log, blocked, to->user);
+    return 0;
 }
 
 
