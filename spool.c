@@ -34,23 +34,15 @@
 #include "mx.h"
 
 
-int
-examine(struct letter *let)
+static int
+check_for_headers(struct letter *let, char* text, size_t size)
 {
 #define ISHDR(p,f)	(strncasecmp(p,f,strlen(f)) == 0)
     char *p, *ep;
+    int has_headers = 0;
     int contin = 0;
-
-    fflush(let->body);
-
-    if ( (let->bodytext = mapfd(fileno(let->body), &let->bodysize)) == 0 ) {
-	syslog(LOG_ERR, "cannot mmap() the email body: %m");
-	return 0;
-    }
-    let->has_headers = 0;
-
-    /* check the message for headers */
-    for (p = let->bodytext, ep = p+let->bodysize ; p && (p < ep); ) {
+    
+    for (p = text, ep = p+size ; p && (p < ep); ) {
 	if (*p == ' ' || *p == '\t') {
 	    if (contin)
 		p = memchr(p, '\n', (ep-p));
@@ -74,7 +66,7 @@ examine(struct letter *let)
 	    if (*p != ':')
 		break;
 
-	    let->has_headers = 1;
+	    has_headers = 1;
 	    p = memchr(p, '\n', (ep-p));
 	}
 	else if (*p == '\n')
@@ -82,10 +74,28 @@ examine(struct letter *let)
 
 	if (p) ++p;
     }
-    return 1;
+    return has_headers;
 }
 
 
+int
+examine(struct letter *let)
+{
+    fflush(let->body);
+
+    if ( (let->bodytext = mapfd(fileno(let->body), &let->bodysize)) == 0 ) {
+	syslog(LOG_ERR, "cannot mmap() the email body: %m");
+	return 0;
+    }
+
+    /* check the message for headers */
+    let->has_headers = check_for_headers(let, let->bodytext,let->bodysize);
+    if (let->headsize > 0)
+	check_for_headers(let, let->headtext, let->headsize);
+    return 1;
+}
+
+    
 int
 mkspool(struct letter *let)
 {

@@ -58,7 +58,6 @@ reset(struct letter *let)
     let->hopcount = 0;
     let->has_headers = 0;
     let->date = 0;
-    let->date = 0;
     let->messageid = 0;
     let->mesgfrom = 0;
     let->mboxfrom = 0;
