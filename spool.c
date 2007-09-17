@@ -35,7 +35,7 @@
 
 
 static int
-check_for_headers(struct letter *let, char* text, size_t size)
+headervalidate(struct letter *let, char* text, size_t size)
 {
 #define ISHDR(p,f)	(strncasecmp(p,f,strlen(f)) == 0)
     char *p, *ep;
@@ -89,9 +89,9 @@ examine(struct letter *let)
     }
 
     /* check the message for headers */
-    let->has_headers = check_for_headers(let, let->bodytext,let->bodysize);
+    let->has_headers = headervalidate(let, let->bodytext,let->bodysize);
     if (let->headsize > 0)
-	check_for_headers(let, let->headtext, let->headsize);
+	headervalidate(let, let->headtext, let->headsize);
     return 1;
 }
 
@@ -348,6 +348,7 @@ readcontrolfile(struct letter *let, char *qid)
 		if (1+q < end) {
 		    let->headtext = restofline(1+q, end);
 		    let->headsize = end - (1+q);
+		    headervalidate(let, let->headtext, let->headsize);
 		}
 		else {
 		    let->headtext = malloc(1);
