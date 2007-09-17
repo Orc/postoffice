@@ -347,11 +347,11 @@ readcontrolfile(struct letter *let, char *qid)
 	case C_HEADER:		/* real headers live past here */
 		if (1+q < end) {
 		    let->headtext = restofline(1+q, end);
-		    let->headsize = end - (1+q);
+		    let->headsize = strlen(let->headtext);
 		    headervalidate(let, let->headtext, let->headsize);
 		}
 		else {
-		    let->headtext = malloc(1);
+		    let->headtext = calloc(1,1);
 		    let->headsize = 0;
 
 		}
