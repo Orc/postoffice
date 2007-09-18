@@ -96,17 +96,17 @@ anotherheader(struct letter *let, char *key, char *data)
     
     if (let == 0 || key == 0 || data == 0) return 0;
 
-    toadd = strlen(key) + 2 /* :0x20 */ + strlen(data) + 2 /* \n\0 */;
+    toadd = strlen(key) + 2 /* :0x20 */ + strlen(data) + 1 /* \n */;
 
     if (let->headtext)
-	let->headtext = realloc(let->headtext, let->headsize + toadd);
+	let->headtext = realloc(let->headtext, let->headsize + toadd + 1);
     else
-	let->headtext = malloc(toadd);
+	let->headtext = calloc(1,toadd+1);
 
     if (let->headtext == 0)
 	return 0;
 
-    sprintf(let->headtext + let->headsize, "%s: %s\n", key, data);
+    sprintf(let->headtext+let->headsize, "%s: %s\n", key, data);
     let->headsize += toadd;
     return 1;
 }
