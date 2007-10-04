@@ -71,7 +71,7 @@ insecure(char *what)
 
 
 void
-set_option(char *option, ENV *env)
+set_option(int super, char *option, ENV *env)
 {
     int val;
 
@@ -94,7 +94,7 @@ set_option(char *option, ENV *env)
 		    env->escape_from = val;
 		return;
     case 'f':   if (isopt(option, "forward-all", &val, 0)) {
-		    insecure("forward-all");
+		    if (!super) insecure("forward-all");
 		    env->forward_all = val;
 		}
 #ifdef WITH_MILTER
@@ -128,7 +128,7 @@ set_option(char *option, ENV *env)
     case 'r':   if (isopt(option, "relay", &val, 0))
 		    env->relay_ok = val;
 		else if (strncasecmp(option, "relay-host=", 11) == 0) {
-		    insecure("relay-host");
+		    if (!super) insecure("relay-host");
 		    if (env->relay_host)
 			free(env->relay_host);
 		    env->relay_host = strdup(option+11);
@@ -149,7 +149,7 @@ set_option(char *option, ENV *env)
 		    if (p = strchr(option, ':'))
 			*p++ = 0;
 
-		    insecure(option);
+		    if (!super) insecure(option);
 		    
 		    option += 5;
 		    if (strcasecmp(option, "bounce")  == 0) {
@@ -161,7 +161,7 @@ set_option(char *option, ENV *env)
 			}
 		    }
 		    else if (strcasecmp(option, "accept") == 0) {
-			insecure("spam=accept");
+			if (!super) insecure("spam=accept");
 			env->spam.action = spACCEPT;
 		    }
 		    else if (strcasecmp(option, "folder") == 0) {
@@ -222,7 +222,7 @@ set_option(char *option, ENV *env)
 
 
 int
-configfile(char *cf, ENV *env)
+configfile(int super, char *cf, ENV *env)
 {
     char line[200];
     FILE *f;
@@ -238,7 +238,7 @@ configfile(char *cf, ENV *env)
 		*p-- = 0;
 
 	    if (line[0])
-		set_option(line, env);
+		set_option(super, line, env);
 	}
 	fclose(f);
 	return 1;

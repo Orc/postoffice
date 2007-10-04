@@ -66,8 +66,8 @@ extern int   szargv0;		/* number of bytes to scribble on */
 
 char *mapfd(int, size_t*);
 
-void set_option(char *, ENV*);
-int  configfile(char *, ENV*);
+void set_option(int, char *, ENV*);
+int  configfile(int, char *, ENV*);
 void message(FILE *f, int code, char *fmt, ...);
 
 #endif/*END_D*/

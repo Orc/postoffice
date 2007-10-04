@@ -142,7 +142,7 @@ main(int argc, char **argv)
 		env.auditing = 1;
 		break;
 	case 'C':
-		if (configfile( z_optarg, &env ) == 0) {
+		if (configfile( 0, z_optarg, &env ) == 0) {
 		    perror(z_optarg);
 		    exit(EX_NOINPUT);
 		}
@@ -189,7 +189,7 @@ main(int argc, char **argv)
 		env.bmode = z_optarg[0];
 		break;
 	case 'o':
-		set_option( z_optarg, &env );
+		set_option( 0, z_optarg, &env );
 		break;
 	case 'v':
 		env.verbose = 1;
@@ -210,7 +210,7 @@ main(int argc, char **argv)
 	switch (env.bmode) {
 	case 's':
 		superpowers();
-		configfile("/etc/postoffice.cf", &env);
+		configfile(1, "/etc/postoffice.cf", &env);
 		smtp(stdin, stdout, peer, &env);
 		exit(EX_TEMPFAIL);
 	case 'd':
@@ -229,7 +229,7 @@ main(int argc, char **argv)
 			}
 		    }
 
-		    configfile("/etc/postoffice.cf", &env);
+		    configfile(1, "/etc/postoffice.cf", &env);
 		    if (env.auditing)
 			auditon(0);
 		    else
@@ -255,13 +255,13 @@ main(int argc, char **argv)
 		}
 		else {
 		    superpowers();
-		    configfile("/etc/postoffice.cf", &env);
+		    configfile(1, "/etc/postoffice.cf", &env);
 		    mail(from, argc-z_optind, argv+z_optind, &env);
 		}
 		break;
 	case 'q':
 		superpowers();
-		configfile("/etc/postoffice.cf", &env);
+		configfile(1, "/etc/postoffice.cf", &env);
 		runq(&env);
 		break;
 	case 'i':	/* initialize alias database */
