@@ -210,7 +210,7 @@ main(int argc, char **argv)
 	switch (env.bmode) {
 	case 's':
 		superpowers();
-		configfile(1, "/etc/postoffice.cf", &env);
+		configfile(1, CONFDIR "/postoffice.cf", &env);
 		smtp(stdin, stdout, peer, &env);
 		exit(EX_TEMPFAIL);
 	case 'd':
@@ -229,7 +229,7 @@ main(int argc, char **argv)
 			}
 		    }
 
-		    configfile(1, "/etc/postoffice.cf", &env);
+		    configfile(1, CONFDIR "/postoffice.cf", &env);
 		    if (env.auditing)
 			auditon(0);
 		    else
@@ -255,13 +255,13 @@ main(int argc, char **argv)
 		}
 		else {
 		    superpowers();
-		    configfile(1, "/etc/postoffice.cf", &env);
+		    configfile(1, CONFDIR "/postoffice.cf", &env);
 		    mail(from, argc-z_optind, argv+z_optind, &env);
 		}
 		break;
 	case 'q':
 		superpowers();
-		configfile(1, "/etc/postoffice.cf", &env);
+		configfile(1, CONFDIR "/postoffice.cf", &env);
 		runq(&env);
 		break;
 	case 'i':	/* initialize alias database */

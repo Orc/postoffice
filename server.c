@@ -425,7 +425,7 @@ runqd(ENV *env, int qrunwhen)
 		       * the actual queue runner
 		       */
 	    if (fork() == 0) {
-		configfile(1, "/etc/postoffice.cf", &child_env);
+		configfile(1, CONFDIR "/postoffice.cf", &child_env);
 		runq(&child_env);
 	    }
 	    exit(0);
