@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
 
@@ -221,12 +222,60 @@ set_option(int super, char *option, ENV *env)
 }
 
 
+static void
+not_a_secure_cf(char *what, char *cf)
+{
+    extern char *pgm;
+
+    if (what) {
+	int siz = strlen(what);
+
+	fprintf(stderr, "%s: [%.*s]%s is not a secure path.\n",
+				    pgm, siz, what, cf+siz);
+	syslog(LOG_CRIT, "config file [%.*s]%s is not a secure path",
+					 siz, what, cf+siz);
+    }
+    else {
+	fprintf(stderr, "%s: %s is not secure.\n", pgm, cf);
+	syslog(LOG_CRIT, "config file %s is not secure", cf);
+    }
+    exit(EX_OSFILE);
+}
+
+
 int
 configfile(int super, char *cf, ENV *env)
 {
     char line[200];
     FILE *f;
     char *p;
+    struct stat sb;
+
+    if (super) {
+	/* verify that the config file is a file, is owned by
+	 * root, is not world writable, and is in a path that
+	 * is owned by root and which is not world writable.
+	 */
+	 /* first check the file */
+	 if ( cf[0] != '/' || strlen(cf) >= sizeof line
+			   || stat(cf, &sb) != 0
+			   || sb.st_uid != 0 || sb.st_gid != 0
+			   || !S_ISREG(sb.st_mode)
+			   || (sb.st_mode&S_IWOTH) )
+	    not_a_secure_cf(0, cf);
+
+	 /* then check each part of the path */
+	 strcpy(line, cf);
+	 while ( (p = strrchr(line, '/')) ) {
+	    *p = 0;
+	    if ( stat(line[0] ? line : "/", &sb) != 0 || sb.st_uid != 0
+						      || sb.st_gid != 0
+						      || !S_ISDIR(sb.st_mode)
+						      || (sb.st_mode&S_IWOTH) )
+		not_a_secure_cf(line[0] ? line : "/", cf);
+	 }
+    }
+
 
     if (f = fopen(cf, "r")) {
 	while (fgets(line, sizeof line, f)) {

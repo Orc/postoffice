@@ -36,23 +36,24 @@
 .Os MASTODON 4
 .Sh NAME
 .Nm postoffice.cf
-.Nd configuration file for postoffice
+.Nd configuration file for
+.Nm postoffice
 .Sh SYNOPSIS
-.Nm
+.Nm @confdir@/postoffice.cf
 .Sh DESCRIPTION
-This file resides in @confdir@, and contains various configuration
-options for the 
+This file contains various configuration
+settings for the 
 .Sy postoffice
-mail server.   All of the options listed here can also be passed
+mail server.   All of the settings listed here can also be passed
 directly to the
 .Sy postoffice
 server via the 
 .Fl o
-command line option.
+command line argument.
 .Pp
-The format of the configuration file is one option per line, with
+The format of the configuration file is one setting per line, with
 blank lines and lines beginning with # ignored as comment lines.
-The options are:
+The settings are:
 
 .Bl -tag -width Fl
 .It Li audit
@@ -191,7 +192,7 @@ the planet.
 .It Li relay-host Ns = Ns Ar host
 Send all mail destined for remote hosts via this
 .Ar host .
-The superuser is the only user that can use this option on the
+The superuser is the only user that can use this setting on the
 command line or in a configuration file other than
 .Pa /etc/postoffice.cf
 .It Li self Ns = Ns Ar host
@@ -257,7 +258,7 @@ spam-infested mail delivered as if you configured
 Drop the connection to a client if they are idle
 longer than
 .Ar timeout .
-This option violates the word (if not the intent) of the SMTP
+This setting violates the word (if not the intent) of the SMTP
 specification,
 so the timeout should probably be fairly large.
 The 
@@ -289,6 +290,14 @@ give a local address, and if zero, anything the client gives is
 okay with 
 .Sy postoffice .
 .El
+.Sh SECURITY CONSIDERATIONS
+.Nm Postoffice
+will not run if
+.Pa postoffice.cf
+is not a file, is not owned by root, is world writable, or lives in a
+.Pa @confdir@
+that has any elements that are not owned by root, are world writable,
+or are not directories.
 .Sh SEE ALSO
 .Xr usermap 7 ,
 .Xr postoffice 8

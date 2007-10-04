@@ -209,6 +209,12 @@ including bad arguments.
 Temporary operating system error,
 such as
 .Dq cannot fork .
+.It Dv EX_OSFILE
+.Pa @confdir@/postoffice.cf
+or 
+.Pa @confdir@
+is world writable or is not owned by
+.Ar root .
 .It Dv EX_NOPERM
 You do not have sufficient permissions.
 .It Dv EX_IOERR
