@@ -299,8 +299,6 @@ set_option(int super, char *option, ENV *env)
 			free(env->localhost);
 		    env->localhost = strdup(option+5);
 		}
-		else if (isopt(option, "soft-deny", &val, 0))
-		    env->soft_deny = val;
 		else if (strncasecmp(option, "spam=", 5) == 0)
 		    dealwithspam(super, option, 5, &(env->spam));
 		return;
