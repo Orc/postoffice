@@ -27,7 +27,7 @@ struct email {
 } ;
 
 struct recipient {
-    enum r_type { emALIAS, emFILE, emEXE, emUSER, emSPAM } typ;
+    enum r_type { emALIAS, emFILE, emEXE, emUSER, emSPAM, emBLACKLIST } typ;
     enum r_status { REFUSED=0, PENDING, ACCEPTED, MAILED } status;
     char *fullname;
     char *user;

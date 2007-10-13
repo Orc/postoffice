@@ -83,6 +83,7 @@ main(int argc, char **argv)
     env.max_hops = 100;		/* (ditto) */
 
     env.spam.action = spBOUNCE;
+    env.rej.action = spBOUNCE;
 
 #ifndef HAVE_SETPROCTITLE
     argv0 = argv[0];

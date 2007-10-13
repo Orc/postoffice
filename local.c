@@ -244,7 +244,7 @@ oktowrite(struct recipient *to)
 
 
 static int
-spam(struct letter *let, struct recipient *to)
+spam(struct letter *let, struct recipient *to, struct spam *what)
 {
     struct passwd *pwd = getpwemail(to->dom, to->user);
     char *sf, *file, *junkfolder;
@@ -253,7 +253,7 @@ spam(struct letter *let, struct recipient *to)
     if (!oktowrite(to))
 	return 0;
 
-    if (let->env->spam.action != spFILE)
+    if (what->action != spFILE)
 	return 0;
 
     if ( pwd == 0 || (file = mailbox(to->dom,pwd->pw_name)) == 0 ) {
@@ -262,7 +262,7 @@ spam(struct letter *let, struct recipient *to)
 	return 0;
     }
 
-    if ( !(sf = let->env->spam.folder) ) {
+    if ( !(sf = what->folder) ) {
 	syslog(LOG_ERR, "empty spam.folder.  This is a CANTHAPPEN error?");
 	return 0;
     }
@@ -280,8 +280,8 @@ spam(struct letter *let, struct recipient *to)
     }
     /* otherwise it's a different mailbox in the maildir */
 
-    if (junkfolder = alloca(strlen(file) + strlen(let->env->spam.folder) + 2)) {
-	sprintf(junkfolder, "%s:%s", file, let->env->spam.folder);
+    if (junkfolder = alloca(strlen(file) + strlen(what->folder) + 2)) {
+	sprintf(junkfolder, "%s:%s", file, what->folder);
 	return mbox(let, to, junkfolder);
     }
     syslog(LOG_ERR, "out of memory in spam()");
@@ -326,7 +326,10 @@ runlocal(struct letter *let)
 	switch (let->local.to[count].typ) {
 	case emEXE: rc = exe(let, &(let->local.to[count]) );
 		    break;
-	case emSPAM:rc = spam(let, &(let->local.to[count]) );
+	case emBLACKLIST:
+		    rc = spam(let, &(let->local.to[count]), & let->env->rej );
+		    break;
+	case emSPAM:rc = spam(let, &(let->local.to[count]), & let->env->spam );
 		    break;
 	case emUSER:rc = post(let, &(let->local.to[count]) );
 		    break;
@@ -337,11 +340,20 @@ runlocal(struct letter *let)
 	}
 
 	if (rc > 0) {
+	    char *typ;
+
+	    switch (let->local.to[count].typ) {
+	    case emBLACKLIST:   typ = "[BLACKLIST]";
+				break;
+	    case emSPAM:	typ = "[SPAM]";
+				break;
+	    default:		typ = "";
+				break;
+	    }
 	    syslog(LOG_INFO, "deliver mail from %s (%s) to %s (%s)%s",
 		fromwho(let->from), let->deliveredby,
 		username(let->local.to[count].dom, let->local.to[count].user),
-		let->local.to[count].fullname,
-		let->local.to[count].typ == emSPAM ? " [SPAM]" : "");
+		let->local.to[count].fullname, typ);
 	    completed += rc;
 	}
 	else 

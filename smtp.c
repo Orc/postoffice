@@ -163,6 +163,18 @@ bouncereason(struct letter *let)
 }
 
 
+static void
+sentence(struct letter *let, enum r_type term)
+{
+    int i;
+/* reroute spam to a special quarantine area */
+
+    for (i=0; i < let->local.count; i++)
+	if (!isvhost(let->local.to[i].dom))
+	    let->local.to[i].typ = term;
+}
+
+
 static int
 smtpbugcheck(struct letter *let)
 {
@@ -197,12 +209,8 @@ smtpbugcheck(struct letter *let)
 				bouncereason(let), what);
 	return 0;
     }
-    if (let->env->spam.action == spFILE) {
-	/* reroute spam to a special quarantine area */
-	for (i=0; i < let->local.count; i++)
-	    if (!isvhost(let->local.to[i].dom))
-		let->local.to[i].typ = emSPAM;
-    }
+    if (let->env->spam.action == spFILE)
+	sentence(let, emSPAM);
     return 1;
 }
 
@@ -532,6 +540,24 @@ describe(FILE *f, int code, struct recipient *to)
     }
 }
 
+
+static void
+about(struct letter *let, char *who, struct spam *what)
+{
+    switch (what->action) {
+    case spFILE:
+	message(let->out, -250, "%s folder: <%s>", who,  what->folder);
+	break;
+    case spACCEPT:
+	 message(let->out, -250, "%s: accept", who);
+	 break;
+    default:
+	message(let->out, -250, "%s: bounce", who);
+	break;
+    }
+}
+
+
 static void
 debug(struct letter *let)
 {
@@ -585,17 +611,9 @@ debug(struct letter *let)
     if (env->minfree)
 	message(let->out,-250, "minfree: %ld", env->minfree);
     
-    switch (env->spam.action) {
-    case spFILE:
-	message(let->out, -250, "spam folder: <%s>", env->spam.folder);
-	break;
-    case spACCEPT:
-	 message(let->out, -250, "spam: accept");
-	 break;
-    default:
-	message(let->out, -250, "spam: bounce");
-	break;
-    }
+    about(let, "spam", &(env->spam));
+    about(let, "blacklist", &(env->rej));
+
     message(let->out, 250, "Timeout: %d\n"
 		      "Delay: %d\n"
 		      "Max clients: %d\n"
@@ -629,7 +647,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     time_t tick = time(NULL);
     extern char *nameof(struct sockaddr_in*);
     enum cmds c;
-    int ok = 1;
+    int ok = 1, donotaccept = 0;
     char *why = 0;
     int patience = 5;
     int delay = 0;
@@ -661,27 +679,40 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    if ( (why=getenv("WHY")) == 0)
 		why = "We get too much spam from your domain";
 
-	    message(out, 421, "%s does not accept mail"
-			      " from %s, because %s.", letter.deliveredto,
-			      letter.deliveredby, why);
-	    goodness(&letter, -10);
+	    if ( env->rej.action == spBOUNCE ) {
+		message(out, 421, "%s does not accept mail"
+				  " from %s, because %s.", letter.deliveredto,
+				  letter.deliveredby, why);
+		goodness(&letter, -10);
+		audit(&letter, "CONN", "blacklist", 421);
+		ok = 0;
+		/*byebye(&letter, 1);*/
+	    }
+	    else {
+		message(out, 220, "%s", why);
+		donotaccept = 1;
+	    }
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
-	    audit(&letter, "CONN", "blacklist", 421);
-	    ok = 0;
-	    /*byebye(&letter, 1);*/
 	}
 	else
 #endif
 	if (env->paranoid && !strcmp(letter.deliveredby,letter.deliveredIP)) {
-	    message(out, 421, "%s is not accepting mail from %s,"
-			     " because we cannot resolve your IP address."
-			     " Correct this, then try again later, okay?",
-			     letter.deliveredto, letter.deliveredby);
-	    goodness(&letter, -10);
+	    if ( env->rej.action == spBOUNCE ) {
+		message(out, 421, "%s is not accepting mail from %s,"
+				 " because we cannot resolve your IP address."
+				 " Correct this, then try again later, okay?",
+				 letter.deliveredto, letter.deliveredby);
+		goodness(&letter, -10);
+		audit(&letter, "CONN", "stranger", 421);
+		byebye(&letter, 1);
+	    }
+	    else {
+		message(out, 220, "Hello, site with broken dns.");
+		donotaccept = 1;
+		audit(&letter, "CONN", "stranger", 220);
+	    }
 	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
-	    audit(&letter, "CONN", "stranger", 421);
-	    byebye(&letter, 1);
 	}
 	else {
 	    int fd;
@@ -858,7 +889,9 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			}
 			else {
 			    alarm(0);
-			    if (smtpbugcheck(&letter) && post(&letter) ) {
+			    if ( donotaccept && (env->rej.action == spFILE) )
+				sentence(&letter, emBLACKLIST);
+			    if ( smtpbugcheck(&letter) && post(&letter) ) {
 				audit(&letter, "DATA", "", 250);
 				message(out, 250, "Okay fine."); 
 				score += 2;

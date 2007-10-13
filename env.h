@@ -34,6 +34,7 @@ struct env {
     long  minfree;		/* don't run if the spool directory has less
 				 * than this many bytes free */
     struct spam spam;		/* what to do with spam */
+    struct spam rej;		/*  "  "   "   "  mail from blacklisted sites */
     struct usermap *usermap;	/* map usernames (personal aliases) */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */

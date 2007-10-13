@@ -71,6 +71,160 @@ insecure(char *what)
 }
 
 
+static void
+not_a_secure_cf(char *what, char *why, char *cf)
+{
+    extern char *pgm;
+
+    if (what) {
+	int siz = strlen(what);
+
+	fprintf(stderr, "%s: [%.*s]%s is not a secure path: %s.\n",
+				    pgm, siz, what, cf+siz, why);
+	syslog(LOG_CRIT, "config file [%.*s]%s is not a secure path: %s",
+					 siz, what, cf+siz, why);
+    }
+    else {
+	fprintf(stderr, "%s: %s is not secure: %s.\n", pgm, cf, why);
+	syslog(LOG_CRIT, "config file %s is not secure: %s", cf, why);
+    }
+    exit(EX_OSFILE);
+}
+
+
+int
+configfile(int super, char *cf, ENV *env)
+{
+    char line[200];
+    FILE *f;
+    char *p;
+    struct stat sb;
+
+    if (super) {
+	/* verify that the config file is a file, is owned by
+	 * root, is not world writable, and is in a path that
+	 * is owned by root and which is not world writable.
+	 */
+	 /* first check the file */
+	if ( cf[0] != '/' )
+	    not_a_secure_cf(0, "not /", cf);
+	if ( strlen(cf) >= sizeof line )
+	    not_a_secure_cf(0, "too long", cf);
+	if ( stat(cf, &sb) != 0 )
+	    not_a_secure_cf(0, "can't stat", cf);
+	if ( sb.st_uid != 0 )
+	    not_a_secure_cf(0, "not owner 0", cf);
+	if ( sb.st_gid != 0 )
+	    not_a_secure_cf(0, "not group 0", cf);
+	if ( !S_ISREG(sb.st_mode) )
+	    not_a_secure_cf(0, "not a file", cf);
+	if ( sb.st_mode & S_IWOTH )
+	    not_a_secure_cf(0, "world writable", cf);
+
+#if 0
+	if ( cf[0] != '/' || strlen(cf) >= sizeof line
+			  || stat(cf, &sb) != 0
+			  || sb.st_uid != 0 || sb.st_gid != 0
+			  || !S_ISREG(sb.st_mode)
+			  || (sb.st_mode&S_IWOTH) )
+	    not_a_secure_cf(0, cf);
+#endif
+
+	 /* then check each part of the path */
+	 strcpy(line, cf);
+	 while ( (p = strrchr(line, '/')) ) {
+	    char *elem;
+	    *p = 0;
+
+	    elem = line[0] ? line : "/";
+
+	    if ( stat(elem, &sb) != 0 )
+		not_a_secure_cf(elem, "can't stat", cf);
+	    if ( sb.st_uid != 0 )
+		not_a_secure_cf(elem, "not owner 0", cf);
+	    if ( sb.st_gid != 0 )
+		not_a_secure_cf(elem, "not group 0", cf);
+	    if ( !S_ISDIR(sb.st_mode) )
+		not_a_secure_cf(elem, "not a directory", cf);
+	    if ( sb.st_mode & S_IWOTH )
+		not_a_secure_cf(elem, "world writable", cf);
+
+#if 0
+	    if ( stat(line[0] ? line : "/", &sb) != 0 || sb.st_uid != 0
+						      || sb.st_gid != 0
+						      || !S_ISDIR(sb.st_mode)
+						      || (sb.st_mode&S_IWOTH) )
+		not_a_secure_cf(line[0] ? line : "/", cf);
+#endif
+	 }
+    }
+
+
+    if (f = fopen(cf, "r")) {
+	while (fgets(line, sizeof line, f)) {
+	    if (p = strchr(line, '#')) 
+		*p = 0;
+
+	    p = &line[strlen(line)-1];
+	    while ( (p >= line) && isspace(*p) )
+		*p-- = 0;
+
+	    if (line[0])
+		set_option(super, line, env);
+	}
+	fclose(f);
+	return 1;
+    }
+    return 0;
+}
+
+
+void
+dealwithspam(int super, char *option, int offset, struct spam *ret)
+{
+    char *p, *cmd = option;
+
+    if (p = strchr(option, ':'))
+	*p++ = 0;
+
+    if (!super) insecure(option);
+    
+    option += offset;
+    if (strcasecmp(option, "bounce")  == 0) {
+	ret->action == spBOUNCE;
+	if (p && *p) {
+	    if (ret->reason)
+		free(ret->reason);
+	    ret->reason = strdup(p);
+	}
+    }
+    else if (strcasecmp(option, "accept") == 0) {
+	if (!super) insecure(cmd);
+	ret->action = spACCEPT;
+    }
+    else if (strcasecmp(option, "folder") == 0) {
+	if (p == 0 || *p == 0) {
+	    fprintf(stderr, "need a destination file for %s config\n", cmd);
+	    syslog(LOG_INFO, "need a destination file for %s config", cmd);
+	}
+	else if ( (strncmp(p, "~/", 2) == 0) || (strchr(p, '/') == 0) ) {
+	    if (ret->folder)
+		free(ret->folder);
+	    ret->folder = strdup(p);
+	    ret->action = spFILE;
+	}
+	else {
+	    fprintf(stderr, "malformed %s path (%s)\n", cmd, p);
+	    syslog(LOG_INFO, "malformed %s path (%s)", cmd, p);
+	}
+    }
+    else {
+	fprintf(stderr, "unknown action %s\n", cmd);
+	syslog(LOG_INFO, "unknown action %s\n", cmd);
+    }
+}
+
+
 void
 set_option(int super, char *option, ENV *env)
 {
@@ -79,6 +233,9 @@ set_option(int super, char *option, ENV *env)
     switch (option[0]) {
     case 'a':	if (isopt(option, "audit", &val, 0))
 		    env->auditing = val;
+		return;
+    case 'b':   if (strncmp(option, "blacklist=", 10) == 0)
+		    dealwithspam(super, option, 10, &(env->rej) );
 		return;
     case 'c':   if (isopt(option, "checkhelo", &val, 0))
 		    env->checkhelo = val;
@@ -144,48 +301,8 @@ set_option(int super, char *option, ENV *env)
 		}
 		else if (isopt(option, "soft-deny", &val, 0))
 		    env->soft_deny = val;
-		else if (strncasecmp(option, "spam=", 5) == 0) {
-		    char *p;
-
-		    if (p = strchr(option, ':'))
-			*p++ = 0;
-
-		    if (!super) insecure(option);
-		    
-		    option += 5;
-		    if (strcasecmp(option, "bounce")  == 0) {
-			env->spam.action == spBOUNCE;
-			if (p && *p) {
-			    if (env->spam.reason)
-				free(env->spam.reason);
-			    env->spam.reason = strdup(p);
-			}
-		    }
-		    else if (strcasecmp(option, "accept") == 0) {
-			if (!super) insecure("spam=accept");
-			env->spam.action = spACCEPT;
-		    }
-		    else if (strcasecmp(option, "folder") == 0) {
-			if (p == 0 || *p == 0) {
-			    fprintf(stderr, "need a destination file for spam=folder config\n");
-			    syslog(LOG_INFO, "need a destination file for spam=folder config");
-			}
-			else if ( (strncmp(p, "~/", 2) == 0) || (strchr(p, '/') == 0) ) {
-			    if (env->spam.folder)
-				free(env->spam.folder);
-			    env->spam.folder = strdup(p);
-			    env->spam.action = spFILE;
-			}
-			else {
-			    fprintf(stderr, "malformed spam=folder path (%s).\n", p);
-			    syslog(LOG_INFO, "malformed spam=folder path (%s).", p);
-			}
-		    }
-		    else {
-			fprintf(stderr, "unknown spam action %s\n", option);
-			syslog(LOG_INFO, "unknown spam action %s\n", option);
-		    }
-		}
+		else if (strncasecmp(option, "spam=", 5) == 0)
+		    dealwithspam(super, option, 5, &(env->spam));
 		return;
     case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
 		return;
@@ -219,78 +336,4 @@ set_option(int super, char *option, ENV *env)
 		return;
     }
     /* complain if I want to */
-}
-
-
-static void
-not_a_secure_cf(char *what, char *cf)
-{
-    extern char *pgm;
-
-    if (what) {
-	int siz = strlen(what);
-
-	fprintf(stderr, "%s: [%.*s]%s is not a secure path.\n",
-				    pgm, siz, what, cf+siz);
-	syslog(LOG_CRIT, "config file [%.*s]%s is not a secure path",
-					 siz, what, cf+siz);
-    }
-    else {
-	fprintf(stderr, "%s: %s is not secure.\n", pgm, cf);
-	syslog(LOG_CRIT, "config file %s is not secure", cf);
-    }
-    exit(EX_OSFILE);
-}
-
-
-int
-configfile(int super, char *cf, ENV *env)
-{
-    char line[200];
-    FILE *f;
-    char *p;
-    struct stat sb;
-
-    if (super) {
-	/* verify that the config file is a file, is owned by
-	 * root, is not world writable, and is in a path that
-	 * is owned by root and which is not world writable.
-	 */
-	 /* first check the file */
-	 if ( cf[0] != '/' || strlen(cf) >= sizeof line
-			   || stat(cf, &sb) != 0
-			   || sb.st_uid != 0 || sb.st_gid != 0
-			   || !S_ISREG(sb.st_mode)
-			   || (sb.st_mode&S_IWOTH) )
-	    not_a_secure_cf(0, cf);
-
-	 /* then check each part of the path */
-	 strcpy(line, cf);
-	 while ( (p = strrchr(line, '/')) ) {
-	    *p = 0;
-	    if ( stat(line[0] ? line : "/", &sb) != 0 || sb.st_uid != 0
-						      || sb.st_gid != 0
-						      || !S_ISDIR(sb.st_mode)
-						      || (sb.st_mode&S_IWOTH) )
-		not_a_secure_cf(line[0] ? line : "/", cf);
-	 }
-    }
-
-
-    if (f = fopen(cf, "r")) {
-	while (fgets(line, sizeof line, f)) {
-	    if (p = strchr(line, '#')) 
-		*p = 0;
-
-	    p = &line[strlen(line)-1];
-	    while ( (p >= line) && isspace(*p) )
-		*p-- = 0;
-
-	    if (line[0])
-		set_option(super, line, env);
-	}
-	fclose(f);
-	return 1;
-    }
-    return 0;
 }
