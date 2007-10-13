@@ -117,7 +117,7 @@ being hours.
 .It Li escape-from Ns = Ns Ar N
 If nonzero, all lines beginning with 'From ' in the body of the
 message will be prefixed by '>'.   Some mail readers can't handle raw
-'From ' lines in the middle of a message and will treat them as
+\&'From ' lines in the middle of a message and will treat them as
 the start of a new message, so mangling the message like this will
 stop them from getting confused.
 @MILTERMAN@.It Li filter Ns = Ns Ar socket
