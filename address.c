@@ -12,6 +12,7 @@
 #include "letter.h"
 #include "mx.h"
 #include "domain.h"
+#include "public.h"
 
 void
 freeaddress(struct address *ptr)

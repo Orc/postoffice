@@ -90,8 +90,10 @@ examine(struct letter *let)
 
     /* check the message for headers */
     let->has_headers = headervalidate(let, let->bodytext,let->bodysize);
-    if (let->headsize > 0)
+    if (let->headsize > 0) {
+	let->has_headers = 1;
 	headervalidate(let, let->headtext, let->headsize);
+    }
     return 1;
 }
 
@@ -239,11 +241,13 @@ addheaders(FILE *f, struct letter *let, struct recipient *to)
 }
 
 
+#if 0
 static int
 domaincmp(struct recipient *a, struct recipient *b)
 {
     return strcmp(a->host, b->host);
 }
+#endif
 
 static char*
 restofline(char *p, char *q)

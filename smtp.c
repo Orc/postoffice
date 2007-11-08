@@ -35,6 +35,8 @@ int allow_severity = 0;
 #include "mx.h"
 #include "mf.h"
 #include "audit.h"
+#include "public.h"
+#include "spool.h"
 
 extern char myversion[];
 
@@ -178,7 +180,7 @@ sentence(struct letter *let, enum r_type term)
 static int
 smtpbugcheck(struct letter *let)
 {
-    int code, i;
+    int code;
     char *what = 0;
     
 #if WITH_MILTER
@@ -522,6 +524,9 @@ describe(FILE *f, int code, struct recipient *to)
 	/* should never happen */
 	message(f,-code, "to: ?alias [%s %s]", to->fullname, to->host);
 	break;
+    case emBLACKLIST:
+	message(f,-code, "to: BLACKLIST [%d] %d %d", to->fullname, to->uid, to->gid);
+	break;
     case emSPAM:
 	message(f,-code, "to: SPAM [%d] %d %d", to->fullname, to->uid, to->gid);
 	break;
@@ -647,14 +652,14 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     time_t tick = time(NULL);
     extern char *nameof(struct sockaddr_in*);
     enum cmds c;
-    int ok = 1, donotaccept = 0;
-    char *why = 0;
-    int patience = 5;
+    volatile int ok = 1, donotaccept = 0;
+    volatile char * volatile why = 0;
+    volatile int patience = 5;
     int delay = 0;
-    int rc, score, traf = 0;
-    int timeout = env->timeout;
+    volatile int rc, score, traf = 0;
+    volatile int timeout = env->timeout;
 #ifdef SMTP_AUTH
-    int auth_ok = 0;
+    volatile int auth_ok = 0;
 #else
 #   define auth_ok 0
 #endif
@@ -689,6 +694,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		/*byebye(&letter, 1);*/
 	    }
 	    else {
+		goodness(&letter, -5);
 		message(out, 220, "%s", why);
 		donotaccept = 1;
 	    }
@@ -708,6 +714,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		byebye(&letter, 1);
 	    }
 	    else {
+		goodness(&letter, -5);
 		message(out, 220, "Hello, site with broken dns.");
 		donotaccept = 1;
 		audit(&letter, "CONN", "stranger", 220);
@@ -781,6 +788,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	if (fgets(line, sizeof line, in) == 0)
 	    break;
 
+	if (donotaccept) {
+	    alarm(0);
+	    sleep(15);
+	}
 	psstat(&letter, (c = cmd(line)) == MISC ? "ERR!" : line);
 
 	alarm(60);	/* allow 60 seconds to process a command */
@@ -941,6 +952,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		if ( auth(&letter, line) ) {
 		    auth_ok = 1;
 		    env->relay_ok = 1;
+		    donotaccept = 0;
 		}
 		else
 		    goodness(&letter, -1);

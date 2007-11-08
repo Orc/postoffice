@@ -19,6 +19,8 @@
 
 #include "letter.h"
 #include "env.h"
+#include "spool.h"
+#include "public.h"
 
 static void
 say(char *fmt, ...)
@@ -174,8 +176,7 @@ catchsig(int sig)
 }
 
 
-
-int
+void
 mail(char *from, int argc, char **argv, ENV *env)
 {
     struct letter let;

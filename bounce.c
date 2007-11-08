@@ -7,6 +7,8 @@
 #include "letter.h"
 #include "mbox.h"
 #include "bounce.h"
+#include "spool.h"
+#include "public.h"
 
 extern struct address *mkaddress(char*);
 

@@ -14,19 +14,19 @@
 #include "spool.h"
 
 int
-Qpicker(struct dirent *f)
+Qpicker(const struct dirent *f)
 {
     return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (strlen(f->d_name) == 8);
 }
 
 static int
-Qcompare(const struct dirent *a, const struct dirent *b)
+Qcompare(const struct dirent * const * a, const struct dirent * const * b)
 {
     struct stat sa, sb;
     int  ra, rb;
 
-    ra = stat(a->d_name, &sa);
-    rb = stat(b->d_name, &sb);
+    ra = stat( (*a)->d_name, &sa );
+    rb = stat( (*b)->d_name, &sb );
 
     if (ra == -1)
 	return (rb == -1) ? 0 : 1;
@@ -35,8 +35,6 @@ Qcompare(const struct dirent *a, const struct dirent *b)
 
     return sa.st_ctime - sb.st_ctime;
 }
-
-typedef int (*sdcf)(const void*,const void*);
 
 static char *
 unit(off_t size)
@@ -74,7 +72,7 @@ listq()
     struct stat st;
     int i;
 
-    if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, (sdcf)Qcompare)) < 0) {
+    if (chdir(QUEUEDIR) || (count = scandir(".", &qf, Qpicker, Qcompare)) < 0) {
 	perror(QUEUEDIR);
 	exit(EX_NOPERM);
     }

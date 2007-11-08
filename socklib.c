@@ -16,7 +16,7 @@ timer_expired(int sig)
 int
 attach_in(struct in_addr *ip, int port)
 {
-    int fd = -1;
+    volatile int fd = -1;
     struct sockaddr_in host;
     void (*oldalarm)(int);
 

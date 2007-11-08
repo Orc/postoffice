@@ -10,7 +10,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "config.h"
 
+#if !defined(HAVE_GETLOADAVG)
 int
 getloadavg(double *la, int size)
 {
@@ -33,5 +35,6 @@ getloadavg(double *la, int size)
     }
     return ret;
 }
+#endif
 
 #endif

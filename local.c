@@ -18,6 +18,8 @@
 #include <string.h>
 
 #include "letter.h"
+#include "spool.h"
+#include "public.h"
 
 static char blocked[] = "Mail to %s is blocked by security policy\n";
 static char CannotWrite[] = "Cannot write to mailbox for %s: %s\n";

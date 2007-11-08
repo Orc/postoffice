@@ -28,6 +28,15 @@ AC_INIT $TARGET
 
 AC_PROG_CC
 
+echo "int phui;" > /tmp/ngc$$.c
+if $AC_CC $AC_CFLAGS -Wno-parentheses -c -o /tmp/ngc$$.o /tmp/ngc$$.c; then
+    TLOG "This appears to be gcc; disabling -Wparentheses"
+    AC_CFLAGS="$AC_CFLAGS -Wno-parentheses"
+fi
+rm -f /tmp/ngc$$ /tmp/ngc$$.c
+
+AC_C_VOLATILE
+AC_C_CONST
 AC_SCALAR_TYPES
 AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
@@ -60,6 +69,7 @@ elif AC_CHECK_FUNCS statfs; then
     fi
 fi
 
+AC_CHECK_FUNCS getloadavg
 AC_CHECK_FUNCS setproctitle
 
 if [ "$has_statfs" ]; then

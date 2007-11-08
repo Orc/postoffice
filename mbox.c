@@ -15,6 +15,7 @@
 
 #include "mbox.h"
 #include "socklib.h"
+#include "public.h"
 
 #if HAVE_LIMITS_H
 #   include <limits.h>
@@ -226,7 +227,7 @@ static struct mbox_cache cache[NR_CACHE];
 
 
 static int
-reset(int sess)
+reinit(int sess)
 {
 /* vSMTPv */
     int code;
@@ -258,7 +259,7 @@ session(ENV *env, char *host, int port)
 
     /* first see if this host in in the cache */
     for (i = NR_CACHE; i-- > 0; )
-	if (cache[i].session && (strcmp(cache[i].host, host) == 0) && reset(i))
+	if (cache[i].session && (strcmp(cache[i].host, host) == 0) && reinit(i))
 	    return cache[i].session;
 
     /* then pick up the MXes for this host and see if
@@ -271,7 +272,7 @@ session(ENV *env, char *host, int port)
     for (i = mxes.count; i-- > 0; )
 	for (j=NR_CACHE; j-- > 0; )
 	    if (cache[j].session && (cache[j].mx.s_addr==mxes.a[i].addr.s_addr)
-			     && reset(j))
+			     && reinit(j))
 		return cache[j].session;
 
     for (i = NR_CACHE; i-- > 0; )

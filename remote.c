@@ -13,6 +13,7 @@
 #include "mbox.h"
 #include "bounce.h"
 #include "socklib.h"
+#include "spool.h"
 
 #if 0
 static enum r_status
@@ -21,10 +22,10 @@ statii[10] = { PENDING, PENDING, ACCEPTED, PENDING, PENDING, REFUSED };
 #endif
 
 static int
-SMTPwrite(MBOX *f, char *text, unsigned long size)
+SMTPwrite(MBOX *f, volatile char * volatile text, volatile unsigned long size)
 {
     register c = 0;
-    register x = 0;
+    register volatile x = 0;
     void (*oldalarm)(int);
     int ret;
 
@@ -226,6 +227,7 @@ send_to_remote(struct letter *let, char *host, int i, int j)
 #define Samehost(i,j)	(!strcasecmp(let->remote.to[i].host,let->remote.to[j].host))
 
 
+void
 forward(struct letter *let)
 {
     unsigned int i, j;

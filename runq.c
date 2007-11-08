@@ -15,6 +15,7 @@
 
 #include "spool.h"
 #include "bounce.h"
+#include "public.h"
 
 char pidf [sizeof(QRUNPFX) + 10];
 char xtemp[sizeof(QRUNPFX) + 10];
@@ -29,6 +30,21 @@ too_old(struct letter *let, char *dfile)
 
     return (difftime(time(0), finfo.st_mtime)  > let->env->qreturn);
 }
+
+
+static int
+pending(struct list L)
+{
+    int i;
+    int active = 0;
+
+    for (i=0; i < L.count; i++)
+	if (L.to[i].status == PENDING)
+	    ++active;
+
+    return active;
+}
+
 
 static void
 runremote(struct letter *let, char *qid)

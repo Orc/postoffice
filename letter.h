@@ -102,6 +102,7 @@ extern void freeaddress(struct address*);
 
 extern int newrecipient(struct list*, struct address*, enum r_type,uid_t,gid_t);
 extern int recipients(struct letter*, struct address*);
+extern void freelist(struct list *);
 
 extern struct passwd *getpwemail(struct domain *, char *);
 extern int goodfile(char *, struct passwd *);

@@ -24,9 +24,10 @@
 int   mkspool(struct letter *let);
 int   svspool(struct letter *let);
 int   examine(struct letter *let);
+int   readcontrolfile(struct letter *, char *);
+int   writecontrolfile(struct letter *);
 
 void mboxfrom(FILE *f, struct letter *let);
 void addheaders(FILE *f, struct letter *let, struct recipient *to);
-void   copybody(FILE *f, struct letter *let);
 
 #endif/*__SPOOL_D*/

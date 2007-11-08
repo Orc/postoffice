@@ -21,6 +21,7 @@ extern char myversion[];
 #include "letter.h"
 #include "smtp.h"
 #include "audit.h"
+#include "public.h"
 
 
 #ifndef HAVE_SETPROCTITLE

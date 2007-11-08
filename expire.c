@@ -190,6 +190,7 @@ approve(DBhandle db, char *key, int blacklist)
 }
 
 
+double
 main(int argc, char **argv)
 {
     DBhandle db;
@@ -198,7 +199,7 @@ main(int argc, char **argv)
     char *pgm;
     char *user = 0;
     long age;
-    int  blacklist;
+    int  blacklist = 0;
 
 #if HAVE_BASENAME
     pgm = basename(argv[0]);

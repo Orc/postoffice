@@ -27,6 +27,7 @@
 #include "letter.h"
 #include "smtp.h"
 #include "mx.h"
+#include "public.h"
 
 
 #ifndef HAVE_SETPROCTITLE
@@ -264,27 +265,27 @@ crash(int sig)
 
 
 void
-daemonize(ENV *env, int debug, char *what)
+daemonize(ENV *env, int debug)
 {
     pid_t daemon;
-    int i, nul;
+    int nul;
 
     if (debug) {
 	printf("debug server: startup\n");
     }
     else {
-	for (i=0; i < 2; i++) {
-	    if ( (daemon = fork()) == -1) {
-		syslog(LOG_ERR, "backgrounding server: %m");
-		exit(EX_OSERR);
-	    }
-	    else if (daemon > 0)
-		exit(EX_OK);
-	}
 	close(0);
 	close(1);
 	close(2);
 
+	if ( (daemon = fork()) == -1 ) {
+	    syslog(LOG_ERR, "backgrounding server: %m");
+	    exit(EX_OSERR);
+	}
+	else if (daemon > 0)
+	    exit(EX_OK);
+
+	setsid();
 	if ( (nul = open("/dev/null", O_RDWR)) != -1
 				&& dup2(nul,0) != -1
 				&& dup2(nul,1) != -1
@@ -295,7 +296,6 @@ daemonize(ENV *env, int debug, char *what)
 	    exit(EX_OSERR);
 	}
 
-	setsid();
 	env->verbose = 0;/* can't be usefully verbose in the background */
     }
 }

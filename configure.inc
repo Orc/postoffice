@@ -899,6 +899,28 @@ EOF
 
 
 #
+# AC_C_VOLATILE checks to see if the compiler supports the volatile keyword
+#
+AC_C_VOLATILE () {
+    cat > /tmp/pd$$.c << EOF
+f() { volatile char me=1; }
+EOF
+    LOGN "checking for \"volatile\" keyword"
+
+    if $AC_CC -c /tmp/pd$$.c -o /tmp/pd$$.o; then
+	TLOG " (yes)"
+	rc=0;
+    else
+	AC_DEFINE 'volatile' '/**/'
+	TLOG " (no)"
+	rc=1
+    fi
+    rm -f /tmp/pd$$.o /tmp/pd$$.c
+    return $rc
+}
+
+
+#
 # AC_SCALAR_TYPES checks to see if the compiler can generate 2 and 4 byte ints.
 #
 AC_SCALAR_TYPES () {

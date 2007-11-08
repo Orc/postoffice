@@ -15,6 +15,8 @@
 
 #include "env.h"
 #include "audit.h"
+#include "mf.h"
+#include "public.h"
 
 
 int
@@ -191,7 +193,7 @@ dealwithspam(int super, char *option, int offset, struct spam *ret)
     
     option += offset;
     if (strcasecmp(option, "bounce")  == 0) {
-	ret->action == spBOUNCE;
+	ret->action = spBOUNCE;
 	if (p && *p) {
 	    if (ret->reason)
 		free(ret->reason);

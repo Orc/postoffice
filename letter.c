@@ -25,6 +25,7 @@
 #include "mx.h"
 #include "spool.h"
 #include "domain.h"
+#include "public.h"
 
 
 void
@@ -204,21 +205,6 @@ prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 
     return 1;
 }
-
-
-int
-pending(struct list L)
-{
-    int i;
-    int active = 0;
-
-    for (i=0; i < L.count; i++)
-	if (L.to[i].status == PENDING)
-	    ++active;
-
-    return active;
-}
-
 
 
 char *

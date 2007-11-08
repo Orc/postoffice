@@ -353,11 +353,11 @@ mreply(int f)
 static int
 handshake(struct letter *let, char *channel)
 {
-    int f;
     struct mfdata *ret;
     struct sockaddr_un urk;
     int len;
     DWORD rflags, rhandshake, rversion;
+    int f;
 
     if (channel[0] == '/') {
 	/* connect to named socket
@@ -401,12 +401,12 @@ handshake(struct letter *let, char *channel)
 	if (getIPa(ipchan, &list) <= 0)
 	    return 0;
 
-	for (i=list.count; i > 0; --i)
+	for (f = -1, i=list.count; i > 0; --i)
 	    if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
 		break;
 
 	freeiplist(&list);
-	if (i <= 0)
+	if (f == -1)
 	    return -1;	/* could not connect to socket */
     }
 
