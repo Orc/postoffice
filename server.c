@@ -355,7 +355,7 @@ server(ENV *env, int debug)
 
     while (1) {
 	struct sockaddr j;
-	int js = sizeof j;
+	socklen_t js = sizeof j;
 
 	if ( (client = accept(sock, &j, &js)) == -1 ) {
 	    if (errno == EINTR)
