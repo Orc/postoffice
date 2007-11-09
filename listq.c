@@ -42,7 +42,7 @@ unit(off_t size)
     static char fmt[15];
 
     if (size < 10000)
-	sprintf(fmt, "%ld ", size);
+	sprintf(fmt, "%ld ", (long)size);
     else if (size < 1000000)
 	sprintf(fmt, "%5.2fK", ((float)size)/1024.0);
     else if (size < 1000000000)
