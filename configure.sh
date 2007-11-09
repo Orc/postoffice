@@ -12,6 +12,7 @@ ac_help='
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --with-auth		enable smtp authentication (for AUTH LOGIN)
+--with-gcc-patch	patch the code to stop gcc -Wall from complaining
 --with-milter		Use sendmail-style milters for message authentication
 --with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
@@ -40,6 +41,11 @@ case "$AC_CC $AC_CFLAGS" in
 	    AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
 esac
 
+if [ "$WITH_GCC_PATCH" -a ! -r .patch_applied ]; then
+    TLOG "Applying gcc -Wall patch"
+    patch -p1 < os/gcc/wall.stfu.patch && touch .patch_applied
+fi
+
 AC_C_VOLATILE
 AC_C_CONST
 AC_SCALAR_TYPES
@@ -50,8 +56,8 @@ AC_CHECK_ALLOCA || AC_FAIL "$TARGET requires alloca()"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 AC_CHECK_FUNCS memstr
 
-if ! AC_CHECK_TYPE socklen_t sys/socket.h; then
-    AC_DEFINE	socklen_t	int
+if ! AC_CHECK_TYPE socklen_t sys/types.h sys/socket.h; then
+    AC_DEFINE socklen_t int
 fi
 
 # for basename

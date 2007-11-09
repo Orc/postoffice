@@ -282,11 +282,37 @@ AC_CONTINUE () {
     __fail="return"
 }
 
+
+#
+# generate a .o file from sources
+#
+__MAKEDOTO() {
+    AC_PROG_CC
+
+    if $AC_CC -c -o /tmp/doto$$.o "$@" $AC_LIBS 2>/tmp/doto$$.err; then
+	rm -f /tmp/doto$$.o /tmp/doto$$.err
+	TLOG " (found)"
+	return 0
+    fi
+    rm -f /tmp/doto$$.o
+    TLOG " (not found)"
+    echo "test failed:  command was $AC_CC -c -o /tmp/doto$$.o" "$@" $AC_LIBS
+    echo "output:"
+    cat /tmp/doto$$.err
+    rm -f /tmp/doto$$.err
+    echo "offending sources:"
+    for x in "$@"; do
+	echo "$x:"
+	cat $x
+    done
+    return 1
+}
+
+
 #
 # Emulate gnu autoconf's AC_CHECK_HEADERS() function
 #
 AC_CHECK_HEADERS () {
-    AC_PROG_CC
 
     echo "/* AC_CHECK_HEADERS */" > /tmp/ngc$$.c
     for hdr in $*; do
@@ -296,15 +322,13 @@ AC_CHECK_HEADERS () {
 
     LOGN "checking for header $hdr"
 
-    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c; then
+    if __MAKEDOTO /tmp/ngc$$.c; then
 	AC_DEFINE 'HAVE_'`echo $hdr | tr 'a-z' 'A-Z' | tr './' '_'` 1
-	TLOG " (found)"
 	rc=0
     else
-	TLOG " (not found)"
 	rc=1
     fi
-    rm -f /tmp/ngc$$.c /tmp/ngc$$
+    rm -f /tmp/ngc$$.c
     return $rc
 }
 
@@ -356,7 +380,6 @@ EOF
 # usage: AC_CHECK_STRUCT structure {include ...}
 #
 AC_CHECK_STRUCT () {
-    AC_PROG_CC
     struct=$1
     shift
 
@@ -375,15 +398,13 @@ EOF
 
     LOGN "checking for struct $struct"
 
-    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $AC_LIBS 2>>config.log; then
+    if __MAKEDOTO /tmp/ngc$$.c; then
 	AC_DEFINE HAVE_STRUCT_`echo ${struct} | tr 'a-z' 'A-Z'`
-	TLOG " (found)"
 	rc=0
     else
-	TLOG " (not found)"
 	rc=1
     fi
-    rm -f /tmp/ngc$$.c /tmp/ngc$$
+    rm -f /tmp/ngc$$.c
     return $rc
 }
 
@@ -394,7 +415,6 @@ EOF
 # usage: AC_CHECK_TYPE type {include ...}
 #
 AC_CHECK_TYPE () {
-    AC_PROG_CC
     type=$1
     shift
 
@@ -411,17 +431,15 @@ main()
 }
 EOF
 
-    LOGN "checking for $type"
+    LOGN "checking for $type type"
 
-    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $AC_LIBS 2>>config.log; then
-	AC_DEFINE HAVE_TYPE_`echo ${struct} | tr 'a-z' 'A-Z'`
-	TLOG " (found)"
+    if __MAKEDOTO /tmp/ngc$$.c; then
+	AC_DEFINE HAVE_TYPE_`echo ${type} | tr 'a-z' 'A-Z'`
 	rc=0
     else
-	TLOG " (not found)"
 	rc=1
     fi
-    rm -f /tmp/ngc$$.c /tmp/ngc$$
+    rm -f /tmp/ngc$$.c
     return $rc
 }
 
@@ -432,7 +450,6 @@ EOF
 # usage: AC_CHECK_FIELD structure field {include ...}
 #
 AC_CHECK_FIELD () {
-    AC_PROG_CC
 
     struct=$1
     field=$2
@@ -455,15 +472,13 @@ EOF
 
     LOGN "checking that struct $struct has a $field field"
 
-    if $AC_CC -o /tmp/ngc$$ /tmp/ngc$$.c $AC_LIBS 2>>config.log; then
+    if __MAKEDOTO /tmp/ngc$$.c; then
 	AC_DEFINE HAVE_`echo ${struct}_$field | tr 'a-z' 'A-Z'`
-	TLOG " (yes)"
 	rc=0
     else
-	TLOG " (no)"
 	rc=1
     fi
-    rm -f /tmp/ngc$$.c /tmp/ngc$$
+    rm -f /tmp/ngc$$.c
     return $rc
 }
 
@@ -894,23 +909,9 @@ AC_HEADER_SYS_WAIT () {
 # AC_TYPE_PID_T checks to see if the pid_t type exists
 #
 AC_TYPE_PID_T () {
-    cat > /tmp/pd$$.c << EOF
-#include <sys/types.h>
-main() { pid_t me; }
-EOF
 
-    LOGN "checking for pid_t"
-
-    if $AC_CC -c /tmp/pd$$.c -o /tmp/pd$$.o; then
-	TLOG " (found)"
-	rc=0
-    else
-	echo "typedef int pid_t;" >> $__cwd/config.h
-	TLOG " (not found)"
-	rc=1
-    fi
-    rm -f /tmp/pd$$.o /tmp/pd$$.c
-    return $rc
+    AC_CHECK_TYPE pid_t sys/types.h
+    return $?
 }
 
 
@@ -923,15 +924,13 @@ const char me=1;
 EOF
     LOGN "checking for \"const\" keyword"
 
-    if $AC_CC -c /tmp/pd$$.c -o /tmp/pd$$.o; then
-	TLOG " (yes)"
+    if __MAKEDOTO /tmp/pd$$.c; then
 	rc=0
     else
 	AC_DEFINE 'const' '/**/'
-	TLOG " (no)"
 	rc=1
     fi
-    rm -f /tmp/pd$$.o /tmp/pd$$.c
+    rm -f /tmp/pd$$.c
     return $rc
 }
 
@@ -945,15 +944,13 @@ f() { volatile char me=1; }
 EOF
     LOGN "checking for \"volatile\" keyword"
 
-    if $AC_CC -c /tmp/pd$$.c -o /tmp/pd$$.o; then
-	TLOG " (yes)"
-	rc=0;
+    if __MAKEDOTO /tmp/pd$$.c; then
+	rc=0
     else
 	AC_DEFINE 'volatile' '/**/'
-	TLOG " (no)"
 	rc=1
     fi
-    rm -f /tmp/pd$$.o /tmp/pd$$.c
+    rm -f /tmp/pd$$.c
     return $rc
 }
 
