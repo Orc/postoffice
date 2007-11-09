@@ -177,22 +177,22 @@ dname(char **np, DNS_REC *rec, unsigned char *p, unsigned char *end)
 }
 
 
-static char *
+static unsigned char *
 query(char *host, short qtype, DNS_REC *dp)
 {
-    char *p;
+    unsigned char *p;
     int size;
     short rtype, rclass;
     int rc;
     char *name;
 
-    dp->eod = (char*)(&dp->h);
+    dp->eod = (unsigned char*)(&dp->h);
 
-   size = res_query(host, C_IN, qtype, (char*)(&dp->h), dp->alloc);
+   size = res_query(host, C_IN, qtype, (unsigned char*)(&dp->h), dp->alloc);
     if (size < sizeof(HEADER))
 	return 0;
 
-    dp->eod = size + (char*)(&dp->h);
+    dp->eod = size + (unsigned char*)(&dp->h);
 
     if (dp->h.tc || (dp->h.rcode != 0) )
 	return 0;
@@ -225,7 +225,7 @@ cname(char *host)
 {
     char *name;
     short reclen;
-    char *p;
+    unsigned char *p;
     int count = 0;
 
     name = host;
@@ -248,7 +248,8 @@ ptr(struct in_addr *ip)
 {
     char *name;
     short reclen;
-    char *p, *q;
+    unsigned char *p;
+    char *q;
     char candidate[DNSIZE];
     int i;
 
@@ -259,9 +260,9 @@ ptr(struct in_addr *ip)
 
     candidate[0] = 0;
 
-    while (p = strrchr(q, '.')) {
+    while (p = (unsigned char*)strrchr(q, '.')) {
 	*p++ = 0;
-	strcat(candidate, p);
+	strcat(candidate, (char*)p);
 	strcat(candidate, ".");
     }
     strcat(candidate, q);
@@ -290,7 +291,7 @@ mx(char *host, struct mxlist *list)
 {
 
     char *name;
-    char *p;
+    unsigned char *p;
     int   count, reclen;
     short prio;
 
@@ -316,7 +317,7 @@ mx(char *host, struct mxlist *list)
 static void
 address(struct iplist *list, int key, char* host, int allow_localhost)
 {
-    char *p;
+    unsigned char *p;
     int count;
     short reclen;
     int i;

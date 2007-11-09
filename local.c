@@ -128,7 +128,7 @@ _exe(struct letter *let, struct recipient *to)
 	    chdir("/tmp");
 
 	nice(5);
-	execlp("/bin/sh", "sh", "-c", (to->fullname) + 1, 0);
+	execlp("/bin/sh", "sh", "-c", (to->fullname) + 1, (char*)0);
 	syslog(LOG_ERR, "cannot exec %s: %m", to->fullname);
 	fseek(let->log, 0L, SEEK_END);
 	fprintf(let->log, "cannot exec %s\n", to->fullname);
