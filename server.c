@@ -174,7 +174,8 @@ do_smtp_connection(int client, ENV *env)
     double loadavg[3];
     pid_t child;
     char *peername;
-    int ret = 0, i, cs;
+    int ret = 0, i;
+    socklen_t cs;
 
     for (i=nwindow; i-- > 0; )
 	if (window[i].clerk == -1)

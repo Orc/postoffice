@@ -45,6 +45,10 @@ AC_CHECK_ALLOCA || AC_FAIL "$TARGET requires alloca()"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 AC_CHECK_FUNCS memstr
 
+if ! AC_CHECK_TYPE socklen_t sys/socket.h; then
+    AC_DEFINE	socklen_t	int
+fi
+
 # for basename
 if AC_CHECK_FUNCS basename; then
     AC_CHECK_HEADERS libgen.h
