@@ -369,9 +369,12 @@ server(ENV *env, int debug)
 		syslog(LOG_ERR, "%m -- restarting daemon");
 		close(sock);
 		retries = 0;
-		while ( sleep(60) , ((sock = attach(port)) == -1) )
-		    syslog(LOG_ERR, "daemon cannot attach (retry %d): %m",
-			    ++retries);
+		while (1) {
+		    sleep(60);
+		    if ( (sock=attach(port)) != -1 )
+			break;
+		    syslog(LOG_ERR, "daemon cannot attach (retry %d): %m", ++retries);
+		}
 	    }
 	}
 	else {

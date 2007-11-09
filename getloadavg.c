@@ -1,6 +1,9 @@
 /*
  * getloadavg() for systems that don't have that library call.
  */
+#include "config.h"
+
+#if !defined(HAVE_GETLOADAVG)
 
 #if __linux__
 
@@ -10,9 +13,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "config.h"
-
-#if !defined(HAVE_GETLOADAVG)
 int
 getloadavg(double *la, int size)
 {
@@ -37,4 +37,4 @@ getloadavg(double *la, int size)
 }
 #endif
 
-#endif
+#endif/*HAVE_GETLOADAVG*/

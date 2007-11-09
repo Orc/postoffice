@@ -517,11 +517,10 @@ getMXes(char *host, struct iplist *ipp)
 
 #ifdef DEBUG
 
+void
 main(int argc, char **argv)
 {
-    char candidate[100];
     char *host;
-    char *wildcard;
     struct iplist hosts = { 0 };
     unsigned long ip_addr;
     int i;

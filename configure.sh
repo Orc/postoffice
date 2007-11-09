@@ -33,7 +33,12 @@ if $AC_CC $AC_CFLAGS -Wno-parentheses -c -o /tmp/ngc$$.o /tmp/ngc$$.c; then
     TLOG "This appears to be gcc; disabling -Wparentheses"
     AC_CFLAGS="$AC_CFLAGS -Wno-parentheses"
 fi
-rm -f /tmp/ngc$$ /tmp/ngc$$.c
+rm -f /tmp/ngc$$.o /tmp/ngc$$.c
+
+case "$AC_CC $AC_CFLAGS" in
+*-Wall*)    AC_DEFINE 'while(x)' 'while( (x) != 0 )'
+	    AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
+esac
 
 AC_C_VOLATILE
 AC_C_CONST

@@ -21,6 +21,7 @@ in the public domain.
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <unistd.h>
 
@@ -127,6 +128,7 @@ quote(char *s, int mustquote)
 	puts(s);
 }
 
+long
 main(int argc, char **argv)
 {
     int c;

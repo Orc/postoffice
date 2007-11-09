@@ -123,38 +123,50 @@ distclean spotless: clean
 	rm -f @GENERATED_FILES@ @CONFIGURE_FILES@
 
 addr.o: addr.c
-address.o: address.c config.h letter.h env.h domain.h mx.h
-arpatok.o: arpatok.c
-audit.o: audit.c env.h letter.h domain.h
-auth.o: auth.c config.h letter.h env.h domain.h dbif.h
-b64.o: b64.c
-bounce.o: bounce.c config.h letter.h env.h domain.h mbox.h bounce.h
-config.o: config.c config.h env.h
-dbif.o: dbif.c dbif.h config.h
+address.o: address.c config.h letter.h env.h domain.h mx.h public.h
+arpatok.o: arpatok.c config.h
+audit.o: audit.c audit.h env.h letter.h domain.h
+auth.o: auth.c config.h letter.h env.h domain.h dbif.h audit.h
+b64.o: b64.c config.h
+bounce.o: bounce.c config.h letter.h env.h domain.h mbox.h bounce.h \
+          spool.h public.h
+config.o: config.c config.h env.h audit.h letter.h domain.h mf.h \
+          public.h
+dbif.o: dbif.c config.h dbif.h
 dbm.o: dbm.c config.h dbif.h
 domain.o: domain.c config.h letter.h env.h domain.h
-expire.o: expire.c dbif.h config.h
+expire.o: expire.c config.h dbif.h
 getif.o: getif.c config.h
-getloadavg.o: getloadavg.c
-goodness.o: goodness.c config.h dbif.h letter.h env.h domain.h
+getloadavg.o: getloadavg.c config.h
+getopt.o: getopt.c config.h
+goodfile.o: goodfile.c config.h letter.h env.h domain.h
+goodness.o: goodness.c config.h dbif.h letter.h env.h domain.h audit.h
 greylist.o: greylist.c config.h letter.h env.h domain.h dbif.h
-letter.o: letter.c config.h letter.h env.h domain.h mx.h spool.h
+letter.o: letter.c config.h letter.h env.h domain.h mx.h spool.h \
+          public.h
 listq.o: listq.c config.h spool.h letter.h env.h domain.h
-local.o: local.c config.h letter.h env.h domain.h
-mail.o: mail.c config.h letter.h env.h domain.h
+local.o: local.c config.h letter.h env.h domain.h spool.h public.h
+mail.o: mail.c config.h letter.h env.h domain.h spool.h public.h
 mapfd.o: mapfd.c
-mbox.o: mbox.c config.h mbox.h env.h mx.h
+mbox.o: mbox.c config.h mbox.h env.h socklib.h public.h letter.h \
+         domain.h mx.h
+mf.o: mf.c config.h mf.h letter.h env.h domain.h mx.h socklib.h
 mx.o: mx.c config.h mx.h
 newaliases.o: newaliases.c config.h dbif.h aliases.h env.h domain.h
-ns.o: ns.c
-postoffice.o: postoffice.c config.h letter.h env.h domain.h smtp.h
+postoffice.o: postoffice.c config.h letter.h env.h domain.h smtp.h \
+              audit.h public.h
 recipient.o: recipient.c config.h letter.h env.h domain.h
-remote.o: remote.c config.h letter.h env.h domain.h mbox.h bounce.h socklib.h
-runq.o: runq.c config.h spool.h letter.h env.h domain.h bounce.h
-server.o: server.c config.h letter.h env.h domain.h smtp.h mx.h
-smtp.o: smtp.c config.h letter.h env.h domain.h smtp.h mx.h mf.h
+remote.o: remote.c config.h letter.h env.h domain.h mbox.h bounce.h \
+          socklib.h spool.h
+runq.o: runq.c config.h spool.h letter.h env.h domain.h bounce.h \
+        public.h
+server.o: server.c config.h letter.h env.h domain.h smtp.h mx.h \
+          public.h
+smtp.o: smtp.c config.h letter.h env.h domain.h smtp.h mx.h mf.h \
+        audit.h public.h spool.h
+socklib.o: socklib.c config.h socklib.h
 spool.o: spool.c config.h spool.h letter.h env.h domain.h mx.h
-userok.o: userok.c config.h letter.h env.h domain.h dbif.h
-virusscan.o: virusscan.c config.h letter.h env.h domain.h
 usermap.o: usermap.c config.h letter.h env.h domain.h usermap.h
-goodfile.o: goodfile.c config.h letter.h env.h domain.h
+userok.o: userok.c config.h letter.h env.h domain.h dbif.h usermap.h
+version.o: version.c
+virusscan.o: virusscan.c config.h letter.h env.h domain.h

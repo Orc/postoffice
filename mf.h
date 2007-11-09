@@ -1,14 +1,13 @@
 #ifndef __MF_D
 #define __MF_D
 
+#include "config.h"
 #include "letter.h"
-
 
 struct mfdata {
 	int size;
 	char data[1];
 } ;
-
 
 #define MF_OK		0		/* transaction ok */
 #define MF_REJ		1		/* quietly reject transaction */
@@ -17,20 +16,6 @@ struct mfdata {
 #define MF_ERR		4		/* system error of some sort */
 #define MF_EOF		5		/* a filter shut down */
 
-
-/*
- * 2 kinds of filters;  a soft filter fails on;  if any of the transaction
- * EOFs, it shuts off and does not return an error status.  A hard filter
- * returns error statuses.
- *
- * filter=/path.to.socket
- * filter=host:port
- * filter.soft=/path.to.socket
- * filter.soft=host:port
- * filter.retry=(yes|no)   ! yes:  filter rejects cause 5xx responses.
- *			   ! no:   filter rejects cause 4xx responses.
- * 
- */
 #ifdef WITH_MILTER
 extern int mfregister(char* socket, char **opts);
 extern int mfconnect(struct letter *let);
