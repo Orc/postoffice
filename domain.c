@@ -76,28 +76,26 @@ add_dom(char *domain, char *spool, char *etc)
 int
 initdomain()
 {
-    FILE *f;
-
     if (domains) return 1;
 
-
     add_dom(0, _PATH_MAILDIR, "/etc");
-
 #ifdef VPATH
-    if ( f = fopen(VPATH "/domains.cf", "r") ) {
+    {   FILE *f;
 	char bfr[200];
 	char *owner, *domain, *active;
 
-	while (fgets(bfr, sizeof bfr, f)) {
-	    owner = strtok(bfr, ":");
-	    domain = strtok(0, ":");
-	    active = strtok(0, ":");
+	if ( f = fopen(VPATH "/domains.cf", "r") ) {
+	    while (fgets(bfr, sizeof bfr, f)) {
+		owner = strtok(bfr, ":");
+		domain = strtok(0, ":");
+		active = strtok(0, ":");
 
-	    if (owner && domain && active)
-		add_dom(domain,VSPOOL,VPATH);
+		if (owner && domain && active)
+		    add_dom(domain,VSPOOL,VPATH);
+	    }
+	    fclose(f);
+	    return 1;
 	}
-	fclose(f);
-	return 1;
     }
 #endif
     return 0;
