@@ -43,9 +43,13 @@ case "$AC_CC $AC_CFLAGS" in
 	    AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
 esac
 
-if [ "$WITH_GCC_PATCH" -a ! -r .patch_applied ]; then
+if [ "$WITH_GCC_PATCH" -a \( \( .patch_applied -ot configure.sh \) \
+                           -o ! -r .patch_applied \) ]; then
     TLOG "Applying gcc -Wall patch"
-    patch -p1 < os/gcc/wall.stfu.patch && touch .patch_applied
+    if patch -N -p1 < os/gcc/wall.stfu.patch; then
+	rm -f *.orig
+	touch .patch_applied
+    fi
 fi
 
 AC_C_VOLATILE
