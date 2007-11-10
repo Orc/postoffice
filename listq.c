@@ -14,19 +14,22 @@
 #include "spool.h"
 
 int
-Qpicker(const struct dirent *f)
+Qpicker(struct dirent *f)
 {
     return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (strlen(f->d_name) == 8);
 }
 
+
 static int
-Qcompare(const struct dirent * const * a, const struct dirent * const * b)
+Qcompare(void *va, void *vb)
 {
+    struct dirent *a = *((struct dirent**)va);
+    struct dirent *b = *((struct dirent**)vb);
     struct stat sa, sb;
     int  ra, rb;
 
-    ra = stat( (*a)->d_name, &sa );
-    rb = stat( (*b)->d_name, &sb );
+    ra = stat( a->d_name, &sa );
+    rb = stat( b->d_name, &sb );
 
     if (ra == -1)
 	return (rb == -1) ? 0 : 1;
@@ -35,6 +38,7 @@ Qcompare(const struct dirent * const * a, const struct dirent * const * b)
 
     return sa.st_ctime - sb.st_ctime;
 }
+
 
 static char *
 unit(off_t size)
@@ -56,6 +60,7 @@ unit(off_t size)
 #define TFMT	"%8s %8s %17s %s"
 #define FFMT	"%35s %s%c"
 #define CFMT	"%17s %.62s"
+
 
 void
 listq()

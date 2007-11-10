@@ -32,6 +32,7 @@ AC_PROG_CC
 echo "int phui;" > /tmp/ngc$$.c
 if $AC_CC $AC_CFLAGS -Wno-parentheses -c -o /tmp/ngc$$.o /tmp/ngc$$.c; then
     TLOG "It looks like you are using gcc.  You have my deepest sympathies."
+    GCC_NOT_C=1
     AC_DEFINE "GCC_NOT_C" "1"
     AC_CFLAGS="$AC_CFLAGS -Wno-parentheses"
 fi
@@ -54,6 +55,7 @@ AC_CHECK_HEADERS limits.h || AC_DEFINE "INT_MAX" "1<<((sizeof(int)*8)-1)"
 
 AC_CHECK_ALLOCA || AC_FAIL "$TARGET requires alloca()"
 
+AC_CHECK_FUNCS scandir || AC_FAIL "$TARGET requires scandir()"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 AC_CHECK_FUNCS memstr
 
