@@ -96,7 +96,7 @@ from64(unsigned char *code)
     unsigned char c[4];
 
     if (code == 0) return 0;
-    sz = strlen(code);
+    sz = strlen((char*)code);
 
     while ( (sz > 0) && isspace(code[sz-1]))
 	--sz;
@@ -135,7 +135,7 @@ from64(unsigned char *code)
 
 
 #if DEBUG
-void
+int
 main(argc, argv)
 char **argv;
 {
@@ -155,7 +155,7 @@ char **argv;
     }
     for (i=1; i < argc; i++) {
 	if (decode) {
-	    res=from64(argv[i]);
+	    res=from64((unsigned char*)argv[i]);
 	    printf("[%s] -> [%s]\n", argv[i], res);
 	}
 	else {

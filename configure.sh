@@ -31,7 +31,8 @@ AC_PROG_CC
 
 echo "int phui;" > /tmp/ngc$$.c
 if $AC_CC $AC_CFLAGS -Wno-parentheses -c -o /tmp/ngc$$.o /tmp/ngc$$.c; then
-    TLOG "This appears to be gcc; disabling -Wparentheses"
+    TLOG "It looks like you are using gcc.  You have my deepest sympathies."
+    AC_DEFINE "GCC_NOT_C" "1"
     AC_CFLAGS="$AC_CFLAGS -Wno-parentheses"
 fi
 rm -f /tmp/ngc$$.o /tmp/ngc$$.c

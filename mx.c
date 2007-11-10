@@ -517,7 +517,7 @@ getMXes(char *host, struct iplist *ipp)
 
 #ifdef DEBUG
 
-void
+int
 main(int argc, char **argv)
 {
     char *host;
@@ -547,6 +547,7 @@ main(int argc, char **argv)
 	for (i=0; i < hosts.count; i++)
 	    printf("%d\t%s\n", hosts.a[i].key, inet_ntoa(hosts.a[i].addr));
     }
+    exit(0);
 }
 
 #endif

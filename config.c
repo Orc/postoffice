@@ -15,7 +15,9 @@
 
 #include "env.h"
 #include "audit.h"
+#ifdef WITH_MILTER
 #include "mf.h"
+#endif
 #include "public.h"
 
 
