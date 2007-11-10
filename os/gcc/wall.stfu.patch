@@ -207,3 +207,16 @@ index 4918373..281acd2 100644
  
      if (mkspool(let) == 0) {
  	message(let->out, 452,
+diff --git a/auth.c b/auth.c
+index 2991a7e..f6c7bfb 100644
+--- a/auth.c
++++ b/auth.c
+@@ -148,7 +148,7 @@ done:
+ int
+ auth(struct letter *let, char *line)
+ {
+-    static didauth=0;
++    static int didauth=0;
+     int ret = 0;
+ 
+     if (didauth) {
