@@ -21,7 +21,7 @@ Qpicker(struct dirent *f)
 
 
 static int
-Qcompare(void *va, void *vb)
+Qcompare(const void *va, const void *vb)
 {
     struct dirent *a = *((struct dirent**)va);
     struct dirent *b = *((struct dirent**)vb);
