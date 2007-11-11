@@ -28,13 +28,13 @@
 #ifdef DEBUG
 #include <signal.h>
 #define PERROR(x)	perror(x)
+#ifndef WITH_MILTER
+#define WITH_MILTER 1
+#endif
 #else
 #define	PERROR(x)	
 #endif
 
-#ifndef WITH_MILTER
-#  define WITH_MILTER
-#endif
 #include "mf.h"
 #include "mx.h"
 #include "socklib.h"
@@ -58,6 +58,7 @@ static int nrfilters = 0;
 int
 mfregister(char *filter, char **opts)
 {
+#if WITH_MILTER
     filters = filters ? realloc(filters, (1+nrfilters)*sizeof filters[0])
 		      : malloc(sizeof filters[0]);
     
@@ -69,14 +70,15 @@ mfregister(char *filter, char **opts)
 	filters[nrfilters].flags = 0;
 	++nrfilters;
     }
+#endif
     return nrfilters;
 }
 
 
-#if !DEBUG
 void
 mflist(FILE *out, int rc)
 {
+#if WITH_MILTER
     int i;
     char flags[80];
     int flag;
@@ -98,10 +100,11 @@ mflist(FILE *out, int rc)
 
 	message(out, rc, "filter:[<%s>]%s", filters[i].socket, flags);
     }
-}
 #endif
+}
 
 
+#if WITH_MILTER
 static int
 xread(int fd, void *ptr, int size)
 {
@@ -116,6 +119,7 @@ xread(int fd, void *ptr, int size)
 
     return size;
 }
+#endif
 
 
 static int maxsize = 0;
@@ -125,13 +129,18 @@ static struct mfdata *lastpkt = 0;
 char *
 mfresult()
 {
+#if WITH_MILTER
     return ( lastpkt && (lastpkt->data[0] == 'y') ) ? 1 + lastpkt->data : 0;
+#else
+    return 0;
+#endif
 }
 
 
 int
 mfcode()
 {
+#if WITH_MILTER
     if (lastpkt == 0)
 	return 554;
     if (lastpkt->data[0] == 'y') {
@@ -142,12 +151,16 @@ mfcode()
     else if (lastpkt->data[0] == 't')
 	return 454;
     return 554;
+#else
+    return 0;
+#endif
 }
 
 
 void
 mfcomplain(struct letter *let, char *generic)
 {
+#if WITH_MILTER
     char *q = mfresult();
     int code = mfcode();
 
@@ -158,9 +171,11 @@ mfcomplain(struct letter *let, char *generic)
     }
     else
 	message(let->out, code, "%s", generic);
+#endif
 }
 
 
+#if WITH_MILTER
 static struct mfdata *
 mread(int f)
 {
@@ -187,7 +202,9 @@ mread(int f)
 
     return lastpkt;
 }
+#endif
 
+#if WITH_MILTER
 static int
 mdscanf(struct mfdata *f, char *fmt, ...)
 {
@@ -257,8 +274,10 @@ mdscanf(struct mfdata *f, char *fmt, ...)
 
     return results;
 }
+#endif
 
 
+#if WITH_MILTER
 static int
 mfprintf(int f, char cmd, char *fmt, ...)
 {
@@ -328,8 +347,10 @@ mfprintf(int f, char cmd, char *fmt, ...)
     va_end(ptr);
     return rc;
 }
+#endif
 
 
+#if WITH_MILTER
 static int
 mreply(int f)
 {
@@ -348,8 +369,10 @@ mreply(int f)
     }
     return MF_EOF;
 }
+#endif
 
 
+#if WITH_MILTER
 static int
 handshake(struct letter *let, char *channel)
 {
@@ -423,11 +446,13 @@ handshake(struct letter *let, char *channel)
     close(f);
     return -1;
 }
+#endif
 
 
 int
 mfconnect(struct letter *let)
 {
+#if WITH_MILTER
     int i;
 
     for (i=0; i < nrfilters; i++) {
@@ -437,10 +462,12 @@ mfconnect(struct letter *let)
 		return MF_REJ;
 	}
     }
+#endif
     return MF_OK;
 }
 
 
+#if WITH_MILTER
 #define FORALL(args)	\
     int i, status; \
     for (i=0; i < nrfilters; i++) \
@@ -455,11 +482,15 @@ mfconnect(struct letter *let)
 		return status; \
 	} \
     return MF_OK
+#else
+#define FORALL(args)	return MF_OK
+#endif
 
 
 int
 mfheader(struct letter *let,  char *start, char *sep, char *end)
 {
+#if WITH_MILTER
     char *header = alloca(1 + (sep-start));
     char *content= alloca(1 + (end-sep));
 
@@ -467,24 +498,27 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
     header[sep-start] = 0;
     memcpy(content,sep+1, (end-sep)-1);
     content[end-sep-1] = 0;
-
-
+#endif
     {
 	FORALL( (filters[i].fd, 'L', "%s%s", header, content) );
     }
 }
 
+#if WITH_MILTER
 static int
 mfeoh()
 {
     FORALL( (filters[i].fd, 'N', "") );
 }
+#endif
 
+#if WITH_MILTER
 static int
 mfchunk(char *p, int size)
 {
     FORALL( (filters[i].fd, 'B', "%*", size, p) );
 }
+#endif
 
 int
 mfhelo(struct letter *let, char *hellostring)
@@ -509,6 +543,7 @@ mfto(struct letter *let, char *to)
 int
 mfreset(struct letter *let)
 {
+#if WITH_MILTER
     int i;
 
     for (i=0; i < nrfilters; i++)
@@ -516,12 +551,14 @@ mfreset(struct letter *let)
 	    mfprintf(filters[i].fd, 'A', "");
 	    filters[i].flags &= ~FAILED;
 	}
+#endif
     return MF_OK;
 }
 
 int
 mfquit(struct letter *let)
 {
+#if WITH_MILTER
     int i;
 
     for (i=0; i < nrfilters; i++)
@@ -530,6 +567,7 @@ mfquit(struct letter *let)
 	    close(filters[i].fd);
 	    filters[i].fd = -1;
 	}
+#endif
     return MF_OK;
 }
 
@@ -537,6 +575,7 @@ mfquit(struct letter *let)
 int
 mfeom()
 {
+#if WITH_MILTER
     int i;
     int status;
 
@@ -555,6 +594,7 @@ mfeom()
 	    if (status != MF_OK)
 		return status;
 	}
+#endif
     return MF_OK;
 }
 
@@ -562,6 +602,7 @@ mfeom()
 int
 mfdata(struct letter *let)
 {
+#if WITH_MILTER
     char *p, *q, *c;
     int size = let->bodysize;
     char *map = let->bodytext,
@@ -604,6 +645,7 @@ mfdata(struct letter *let)
 	    return status;
 	p += chunk;
     }
+#endif
     status = mfeom();
     return status;
 }
