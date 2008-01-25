@@ -347,8 +347,13 @@ to(struct letter *let, char *line)
      * before FROM addresses.
      */
     if ( !let->from ) {
+#if 1
+	/* say "yes", but ignore the command */
+	return 1;
+#else
 	message(let->out, 501, "But who is it from?");
 	return 0;
+#endif
     }
 #endif
 

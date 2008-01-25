@@ -118,7 +118,7 @@ main(int argc, char **argv)
 
     /* handle magic program names */
     if ( SAME(pgm, "mailq") ) {
-	options = "vV";
+	options = "vA:V";
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
@@ -142,6 +142,8 @@ main(int argc, char **argv)
 	switch (opt) {
 	case 'a':
 		env.auditing = 1;
+		break;
+	case 'A':/*ignored*/
 		break;
 	case 'C':
 		if (configfile( 0, z_optarg, &env ) == 0) {
