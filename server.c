@@ -231,7 +231,7 @@ do_smtp_connection(int client, ENV *env)
 	    struct iplist mx;
 	    int i;
 
-	    getMXes(peername, &mx);
+	    getMXes(peername, 1, &mx);
 
 	    for ( i = mx.count; i-- > 0; )
 		if (islocalhost(env, &mx.a[i].addr)) {
