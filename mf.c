@@ -602,12 +602,12 @@ mfeom()
 int
 mfdata(struct letter *let)
 {
-    int status;
 #if WITH_MILTER
     char *p, *q, *c;
     int size = let->bodysize;
     char *map = let->bodytext,
          *end = let->bodytext + size;
+    int status;
 #define MCHUNKSIZE	65535
 
     for (p = map; p < end; p = 1+q) {

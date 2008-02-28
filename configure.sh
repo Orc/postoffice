@@ -200,8 +200,10 @@ test "$WITH_GREYLIST" && AC_DEFINE WITH_GREYLIST 1
 test "$WITH_COAL"     && AC_DEFINE WITH_COAL 1
 if [ "$WITH_MILTER" ]; then
     AC_DEFINE WITH_MILTER 
+    AC_SUB MILTERLIB mf.o
     AC_SUB MILTERMAN ''
 else
+    AC_SUB MILTERLIB ''
     AC_SUB MILTERMAN '.\\"'
 
     case "$WITH_AV" in
