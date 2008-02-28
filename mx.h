@@ -15,7 +15,7 @@ struct iplist {
 } ;
 
 
-int getMXes(char*, int, struct iplist*);
+int getMXes(char*, struct iplist*);
 int getIPa(char*, struct iplist*);
 void freeiplist(struct iplist*);
 

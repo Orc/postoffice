@@ -432,10 +432,12 @@ freeiplist(struct iplist *p)
 
 
 int
-getMXes(char *host, int checkdomain, struct iplist *ipp)
+getMXes(char *host, struct iplist *ipp)
 {
     struct mxlist list = { 0 };
-    char *candidate, *fq, *wildcard, *p;
+    char *candidate;
+    char *fq;
+    char *wildcard;
     int i;
     static struct in_addr localhost_buffer;
     struct in_addr ipa;
@@ -486,31 +488,10 @@ getMXes(char *host, int checkdomain, struct iplist *ipp)
     mx(fq, &list);
 
     if (list.count < 1) {
-	/* if that fails, try the MXes for the wildcard host,( *.host.dom.)
-	 * the domain part of the hostname, or               ( dom. )
-	 * the wildcard host for the domain                  ( *.dom )
-	 */
+	/* if that fails, try the MXes for the wildcard host */
 	if ( wildcard = malloc(strlen(fq)+5) ) {
-
-	    if ( list.count < 1 ) {
-		sprintf(wildcard, "*.%s", fq);
-		mx(wildcard, &list);
-	    }
-
-	    if ( checkdomain && (p = strchr(fq, '.')) && p[1] ) {
-		/* check mx for containing domain
-		 */
-		if ( list.count < 1 )
-		    mx(p+1, &list);
-
-		/* check wildcard mx for containing domain
-		 */
-		if ( p && (list.count < 1) ) {
-		    sprintf(wildcard, "*.%s", p+1);
-		    mx(wildcard,&list);
-		}
-	    }
-
+	    sprintf(wildcard, "*.%s", fq);
+	    mx(wildcard, &list);
 	    free(wildcard);
 	}
 	else {
