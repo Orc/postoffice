@@ -360,7 +360,7 @@ addresslist(struct iplist *list, struct mxlist *mx)
 
 
 int
-getIPa(char *host, struct iplist *ipp)
+getIPa(char *host, int mode, struct iplist *ipp)
 {
     char *fqn, *p;
     struct in_addr ipa;
@@ -368,7 +368,8 @@ getIPa(char *host, struct iplist *ipp)
     if (ipp == 0)
 	return 0;
 
-    memset(ipp, 0, sizeof *ipp);
+    if (mode == IP_NEW)
+	memset(ipp, 0, sizeof *ipp);
 
     if ( *host == 0 || (fqn = malloc(strlen(host)+2)) == 0)
 	return 0;
@@ -432,7 +433,7 @@ freeiplist(struct iplist *p)
 
 
 int
-getMXes(char *host, struct iplist *ipp)
+getMXes(char *host, int trywildcard, struct iplist *ipp)
 {
     struct mxlist list = { 0 };
     char *candidate;
@@ -487,7 +488,7 @@ getMXes(char *host, struct iplist *ipp)
     /* then find the MXes for the new host */
     mx(fq, &list);
 
-    if (list.count < 1) {
+    if (trywildcard && (list.count < 1)) {
 	/* if that fails, try the MXes for the wildcard host */
 	if ( wildcard = malloc(strlen(fq)+5) ) {
 	    sprintf(wildcard, "*.%s", fq);
@@ -524,7 +525,14 @@ main(int argc, char **argv)
     struct iplist hosts = { 0 };
     unsigned long ip_addr;
     int i;
+    int trywildcard = 0;
     struct in_addr ip;
+
+    if (strcasecmp(argv[1], "*") == 0) {
+	trywildcard = 1;
+	++argv;
+	--argc;
+    }
 
     if (argc <= 1) {
 	fprintf(stderr, "usage: mx host-name\n");
@@ -542,7 +550,7 @@ main(int argc, char **argv)
 	}
     }
     else {
-	getMXes(argv[1], &hosts);
+	getMXes(argv[1], trywildcard, &hosts);
 
 	for (i=0; i < hosts.count; i++)
 	    printf("%d\t%s\n", hosts.a[i].key, inet_ntoa(hosts.a[i].addr));

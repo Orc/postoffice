@@ -296,6 +296,14 @@ For example,
 or 
 .Ql timeout=1h
 both set the timeout to one hour.
+.It Li trusted Ns = Ns Ar host
+Treat connections from
+.Ar host
+as if they were local, and give them the permissions that
+local clients have.
+.Ar Host
+may be a hostname or an ip address quoted with square
+brackets (ie: [10.0.10.5])
 .It Li usermap Ns = Ns Ar pattern:target(s)
 Define personal aliases
 (the format is described in the

@@ -265,7 +265,7 @@ session(ENV *env, char *host, int port)
     /* then pick up the MXes for this host and see if
      * any of them match a cached MX
      */
-    getMXes(host, &mxes);
+    getMXes(host, 1, &mxes);
     if (mxes.count == 0)
 	return 0;
 

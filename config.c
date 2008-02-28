@@ -306,7 +306,12 @@ set_option(int super, char *option, ENV *env)
 		else if (strncasecmp(option, "spam=", 5) == 0)
 		    dealwithspam(super, option, 5, &(env->spam));
 		return;
-    case 't':   isopt(option,"timeout", &env->timeout,"m=60,h=3600,d=86400");
+    case 't':   if (strncasecmp(option,"trusted=",8) == 0) {
+		    if (!super) insecure("trusted");
+		    getIPa(option+8, 0, &env->trusted);
+		}
+		else 
+		    isopt(option,"timeout",&env->timeout,"m=60,h=3600,d=86400");
 		return;
     case 'u':   if (strncasecmp(option, "usermap=", 8) == 0) {
 		    struct usermap *tmp, *t;

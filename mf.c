@@ -421,7 +421,7 @@ handshake(struct letter *let, char *channel)
 	if ( (port = atoi(p)) <= 0)
 	    return -1;	/* bogus port */
 
-	if (getIPa(ipchan, &list) <= 0)
+	if (getIPa(ipchan, IP_NEW, &list) <= 0)
 	    return 0;
 
 	for (f = -1, i=list.count; i > 0; --i)
@@ -602,12 +602,12 @@ mfeom()
 int
 mfdata(struct letter *let)
 {
+    int status;
 #if WITH_MILTER
     char *p, *q, *c;
     int size = let->bodysize;
     char *map = let->bodytext,
          *end = let->bodytext + size;
-    int status;
 #define MCHUNKSIZE	65535
 
     for (p = map; p < end; p = 1+q) {

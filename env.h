@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "mx.h"
+
 struct usermap {
     char *pat;
     char *map;
@@ -36,6 +38,7 @@ struct env {
     struct spam spam;		/* what to do with spam */
     struct spam rej;		/*  "  "   "   "  mail from blacklisted sites */
     struct usermap *usermap;	/* map usernames (personal aliases) */
+    struct iplist trusted;	/* trusted hosts */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */
     unsigned int   verbose:1;	/* be chattery */
     unsigned int   paranoid:1;	/* don't accept email from clients we can't

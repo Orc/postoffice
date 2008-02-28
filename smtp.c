@@ -506,7 +506,7 @@ helo(struct letter *let, enum cmds cmd, char *line)
 	    *p = 0;
 	}
 
-	if (getIPa(p=skipspace(line+4), &list) > 0) {
+	if (getIPa(p=skipspace(line+4), IP_NEW, &list) > 0) {
 	    for (i=0; i < list.count; i++)
 		if (islocalhost(let->env, &(list.a[i].addr))) {
 		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 521);
@@ -610,6 +610,11 @@ debug(struct letter *let)
 			um->pat, um->map);
     }
 
+    for (i=env->trusted.count; i-- > 0; )
+	message(let->out, -250, "Trusted IP: %s\n",
+			    inet_ntoa(env->trusted.a[i].addr));
+
+
 #if USE_PEER_FLAG
     message(let->out,-250, "Peer flag: T\n");
 #endif
@@ -660,7 +665,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     volatile int ok = 1, donotaccept = 0;
     volatile char * volatile why = 0;
     volatile int patience = 5;
-    int delay = 0;
+    int i, delay = 0;
     volatile int rc, score, traf = 0;
     volatile int timeout = env->timeout;
 #ifdef SMTP_AUTH
@@ -673,8 +678,16 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
     if ( prepare(&letter, in, out, env) ) {
 	letter.deliveredby = peer ? strdup(nameof(peer)) : env->localhost;
-	letter.deliveredIP = peer ? inet_ntoa(peer->sin_addr) : "127.0.0.1";
+	letter.deliveredIP = peer ? strdup(inet_ntoa(peer->sin_addr)) : "127.0.0.1";
 	letter.deliveredto = env->localhost;
+
+	if (peer)	/* see if this is a trusted host */
+	    for (i=0; i < env->trusted.count; i++)
+		if (peer->sin_addr.s_addr == env->trusted.a[i].addr.s_addr) {
+		    env->relay_ok = 1;
+		    env->paranoid = 0;
+		    break;
+		}
 
 	if ( (rc = mfconnect(&letter)) != MF_OK ) {
 	    syslog(LOG_ERR, "milter problems");

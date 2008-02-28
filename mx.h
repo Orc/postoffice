@@ -15,8 +15,10 @@ struct iplist {
 } ;
 
 
-int getMXes(char*, struct iplist*);
-int getIPa(char*, struct iplist*);
+int getMXes(char*, int, struct iplist*);
+int getIPa(char*, int, struct iplist*);
+#define IP_NEW	0x01
+
 void freeiplist(struct iplist*);
 
 char *ptr(struct in_addr *addr);

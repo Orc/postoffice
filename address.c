@@ -96,7 +96,7 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	     * if that fails we fail unless verify_from is off and it's
 	     * a MAIL FROM:<> address
 	     */
-	    if ( (getMXes(ret->domain, &mxes) > 0) ) {
+	    if ( (getMXes(ret->domain, 1, &mxes) > 0) ) {
 		for (lip=let->env->local_if; lip->s_addr; lip++)
 		    for (i=0; i < mxes.count; i++)
 			if (lip->s_addr == mxes.a[i].addr.s_addr) {
