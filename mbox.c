@@ -109,30 +109,42 @@ char *
 readmbox(MBOX *f)
 {
     static char *buf = 0;
-    static int alloc = 0,
-	       len   = 0;
-
+    static int alloc = 0;
+    volatile int len   = 0;
+    void (*oldalarm)(int);
     int c;
+    volatile int ok = 1;
 
-    len = 0;
+    oldalarm = signal(SIGALRM, timer_expired);
 
-    while ( (c = fgetc(f->in)) != EOF && c != '\n') {
-	if (c == '\r')
-	    continue;
+    if (setjmp(timer_jmp) == 0) {
+	alarm(300);
+	while ( (c = fgetc(f->in)) != EOF && c != '\n') {
+	    if (c == '\r')
+		continue;
 
-	if (len >= alloc-1) {
-	    alloc = len + 100;
-	    buf = buf ? realloc(buf, alloc) : malloc(alloc);
-	    if (buf == 0) {
-		syslog(LOG_ERR, "readmbox: %m");
-		return 0;
+	    if (len >= alloc-1) {
+		alloc = len + 100;
+		buf = buf ? realloc(buf, alloc) : malloc(alloc);
+		if (buf == 0) {
+		    syslog(LOG_ERR, "readmbox: %m");
+		    ok = 0;
+		    break;
+		}
 	    }
+	    buf[len++] = c;
 	}
-	buf[len++] = c;
     }
+    else {
+	syslog(LOG_INFO, "%s teergrube", inet_ntoa(f->ip));
+	ok = 0;
+    }
+
     if (buf) buf[len] = 0;
 
-    return buf;
+    alarm(0);
+    signal(SIGALRM, oldalarm);
+    return ok ? buf : 0;
 }
 
 int
