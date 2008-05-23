@@ -10,6 +10,7 @@
 #if HAVE_ALLOCA_H
 #   include <alloca.h>
 #endif
+#include <limits.h>
 
 #define GREYLIST "/var/db/smtpauth"
 
