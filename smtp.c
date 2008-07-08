@@ -97,7 +97,7 @@ message(FILE *f, int code, char *fmt, ...)
     int size;
     int i, j;
     int dash = (code < 0);
-    int shout = (abs(code) / 100) != 3;
+    int shout = 1;
 
     va_start(ptr, fmt);
     size = vsnprintf(bfr, sizeof bfr, fmt, ptr);

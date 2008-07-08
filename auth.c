@@ -99,14 +99,14 @@ authlogin(struct letter *let, char *restofline)
     if (*restofline) 
 	user = from64(restofline);
     else {
-	message(let->out, 334, res=to64("Username:"));
+	message(let->out, 334, "<%s>", res=to64("Username:"));
 	free(res);
 	if ( (user = authgets(let, &err)) == 0 )
 	    goto done;
     }
     strncpy(auser,user, sizeof auser - 1);
 
-    message(let->out, 334, res=to64("Password:"));
+    message(let->out, 334, "<%s>", res=to64("Password:"));
     free(res);
     if ( (pass = authgets(let, &err)) == 0 ) {
 	free(user);
