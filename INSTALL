@@ -56,19 +56,24 @@ postoffice-(version)/os/redhat/postoffice.spec and do a
        mail messages.  If your previous MTA has left messages in this
        directory, POSTOFFICE should ignore them, but if it doesn't your
        first runq will have surprising results.
-    c) I have not done any exhaustive checks for vulnerabilities in this
+    c) By default, AUTH LOGIN only works with virtual domains.  If you
+       wish to have AUTH LOGIN work for every domain on the machine,
+       you need to configure POSTOFFICE with --with-auth=passwd.
+       WARNING:  This means that actual passwords will be passed over
+       the wire in plaintext, which is a whopping huge security hole.
+    d) I have not done any exhaustive checks for vulnerabilities in this
        code.   It tries not to write anything as root (except for mail
        into the root mailbox, which you can and probably should override
        with a mail alias) but the evil hackers are cleverer than I am
        by definition, and if there are vulnerabilities they will find
        them.
-    d) The AV script needs to accept the file to be scanned on its
+    e) The AV script needs to accept the file to be scanned on its
        standard input.  I use --with-av="|/usr/local/bin/clamscan --mbox -i --disable-summary -"
        as my standard av scanner;  the leading | bar is not necessary
        for the av command (it will be stripped off during execution),
        but you can put it there to remind you how the AV script is
        supposed to work.
-    e) POSTOFFICE is written in C, not GCC, so it contains perfectly
+    f) POSTOFFICE is written in C, not GCC, so it contains perfectly
        legitimate code that will generate warnings when built with
        ``gcc -Wall''   If Configure.sh detects that you're trying
        to build with gcc, it attempts to get around some of this

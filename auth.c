@@ -10,7 +10,6 @@
 #include "dbif.h"
 #include "audit.h"
 
-
 /*
  * C:AUTH LOGIN
  * 334 b64'Username:
@@ -42,7 +41,8 @@ authmeharder(struct letter *let, char *user, char *pass)
     if ( addr = mkaddress(user) ) { 
 #if AUTH_PASSWD
 	struct domain *dom = getdomain(addr->domain);
-	pw = dom ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
+
+	pw = isvhost(dom) ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
 #else
 	pw = getvpwemail(getdomain(addr->domain), addr->user);
 #endif
