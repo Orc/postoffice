@@ -390,7 +390,6 @@ to(struct letter *let, char *line)
 static int
 data(struct letter *let)
 {
-#define CRLF	0x100
     register c;
     register dot = 0;
 
@@ -405,7 +404,7 @@ data(struct letter *let)
     alarm(let->env->timeout);
     if ( (c = fgetc(let->in)) == '.' )
 	dot = 1;
-    else if ( c != EOF )
+    else if ( c != EOF && c != '\r' )
 	fputc(c, let->body);
     
     while (1) {
@@ -417,20 +416,24 @@ data(struct letter *let)
 	    break;
 	}
 
+#if 0
 	/* collapse all cr/lf pairs to lf */
 	if ( (c == '\r') && ((c = fgetc(let->in)) != '\n') )
 	    fputc('\r', let->body);
+#else
+	if ( c == '\r' )
+	    continue;
+#endif
 	    
 	/* last two characters were \n. -- see if the current char
 	 * makes it \n.\n
 	 */
 	if ( dot ) {
-	    dot = 0;
 	    if ( c == '\n' ) {
 		alarm(0);
 		return examine(let);
 	    }
-	    fputc('.', let->body);
+	    dot = 0;
 	}
 	else if ( c == '\n' ) {
 	    if ( (c = fgetc(let->in)) == '.' ) {
@@ -441,7 +444,7 @@ data(struct letter *let)
 		fputc('\n',let->body);
 	}
 
-	if ( c != EOF ) {
+	if ( c != EOF && c != '\r' ) {
 	    if ( fputc(c, let->body) == EOF ) {
 		syslog(LOG_ERR, "spool write error: %m");
 		message(let->out, 452, "Cannot store message body. Try again later.");
