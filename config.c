@@ -118,7 +118,7 @@ configfile(int super, char *cf, ENV *env)
 	    not_a_secure_cf(0, "can't stat", cf);
 	if ( sb.st_uid != 0 )
 	    not_a_secure_cf(0, "not owner 0", cf);
-	if ( sb.st_gid != 0 )
+	if ( sb.st_gid != 0 && (sb.st_mode & S_IWGRP) )
 	    not_a_secure_cf(0, "not group 0", cf);
 	if ( !S_ISREG(sb.st_mode) )
 	    not_a_secure_cf(0, "not a file", cf);
@@ -146,7 +146,7 @@ configfile(int super, char *cf, ENV *env)
 		not_a_secure_cf(elem, "can't stat", cf);
 	    if ( sb.st_uid != 0 )
 		not_a_secure_cf(elem, "not owner 0", cf);
-	    if ( sb.st_gid != 0 )
+	    if ( (sb.st_gid != 0) && (sb.st_mode & S_IWGRP) && !(sb.st_mode & S_ISVTX))
 		not_a_secure_cf(elem, "not group 0", cf);
 	    if ( !S_ISDIR(sb.st_mode) )
 		not_a_secure_cf(elem, "not a directory", cf);

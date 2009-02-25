@@ -391,9 +391,8 @@ static int
 data(struct letter *let)
 {
 #define CRLF	0x100
-    register c = 0;
-    register c1 = CRLF;
-    register c2 = 0;
+    register c;
+    register dot = 0;
 
     if (mkspool(let) == 0) {
 	message(let->out, 452,
@@ -403,6 +402,12 @@ data(struct letter *let)
 
     message(let->out, 354, "Bring it on.");
 
+    alarm(let->env->timeout);
+    if ( (c = fgetc(let->in)) == '.' )
+	dot = 1;
+    else if ( c != EOF )
+	fputc(c, let->body);
+    
     while (1) {
 	alarm(let->env->timeout);
 
@@ -411,35 +416,38 @@ data(struct letter *let)
 	    message(let->out, 451, "Unexpected EOF?");
 	    break;
 	}
-	else if (c == '\r') {
-	    if ( (c = fgetc(let->in)) == '\n')
-		c = CRLF;
-	    else {
-		fputc('\r', let->body);
-	    }
-	}
-	else if ( c == '\n')	/* let \n stand in for \r\n */
-	    c = CRLF;
 
-	if (c2 == CRLF && c1 == '.') {
-	    if (c == CRLF) {
+	/* collapse all cr/lf pairs to lf */
+	if ( (c == '\r') && ((c = fgetc(let->in)) != '\n') )
+	    fputc('\r', let->body);
+	    
+	/* last two characters were \n. -- see if the current char
+	 * makes it \n.\n
+	 */
+	if ( dot ) {
+	    dot = 0;
+	    if ( c == '\n' ) {
 		alarm(0);
 		return examine(let);
 	    }
+	    fputc('.', let->body);
+	}
+	else if ( c == '\n' ) {
+	    if ( (c = fgetc(let->in)) == '.' ) {
+		dot = 1;
+		c = '\n';
+	    }
 	    else
-		c2 = 0;
+		fputc('\n',let->body);
 	}
 
-	if (c2) {
-	    if ( fputc( (c1 == CRLF) ? '\n' : c1, let->body) == EOF ) {
+	if ( c != EOF ) {
+	    if ( fputc(c, let->body) == EOF ) {
 		syslog(LOG_ERR, "spool write error: %m");
-		message(let->out, 452,
-		    "Cannot store message body. Try again later.");
+		message(let->out, 452, "Cannot store message body. Try again later.");
 		break;
 	    }
 	}
-	c2 = c1;
-	c1 = c;
     }
     alarm(0);
     do_reset(let);
