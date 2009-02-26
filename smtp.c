@@ -421,6 +421,7 @@ data(struct letter *let)
 	if ( (c == '\r') && ((c = fgetc(let->in)) != '\n') )
 	    fputc('\r', let->body);
 #else
+	/* silently eat \r's */
 	if ( c == '\r' )
 	    continue;
 #endif
