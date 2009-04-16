@@ -96,6 +96,7 @@ struct email *getemail(struct address *);
 #define VF_USER	0x01
 #define VF_FROM	0x02
 
+extern int localIP(ENV *, struct in_addr *);
 extern struct address* verify(struct letter*, struct domain*, char*, int, int*);
 extern struct address *mkaddress(char *);
 extern void freeaddress(struct address*);

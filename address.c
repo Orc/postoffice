@@ -73,12 +73,12 @@ okayanyhow(struct env *env, int flags)
 }
 
 
-static int
-localIP(struct letter *let, struct in_addr *addr)
+int
+localIP(ENV *env, struct in_addr *addr)
 {
     struct in_addr *lip;
 
-    for (lip=let->env->local_if; lip->s_addr; lip++)
+    for (lip=env->local_if; lip->s_addr; lip++)
 	if ( lip->s_addr == addr->s_addr )
 	    return 1;
     return 0;
@@ -114,7 +114,7 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 		     * mx, otherwise if we're a mx we'll handle this
 		     * mail locally.
 		     */
-		    if ( localIP(let, &mxes.a[0].addr) ) {
+		    if ( localIP(let->env, &mxes.a[0].addr) ) {
 			ret->local = 1;
 			ret->dom = getdomain(ret->domain);
 			goto esc;
@@ -122,7 +122,7 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 		}
 		else 
 		    for (i=0; i < mxes.count; i++)
-			if ( localIP(let, &mxes.a[i].addr) ) {
+			if ( localIP(let->env, &mxes.a[i].addr) ) {
 			    /* we are a legitimate mx for this address.
 			     */
 			    ret->local = 1;
