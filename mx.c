@@ -405,7 +405,7 @@ getIPa(char *host, int mode, struct iplist *ipp)
 static int
 cmp(struct ipa *a, struct ipa *b)
 {
-    return b->key - a->key;
+    return a->key - b->key;
 }
 
 typedef int (*qcf)(const void*,const void*);

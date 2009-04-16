@@ -274,11 +274,13 @@ set_option(int super, char *option, ENV *env)
 		else if (isopt(option, "localmx", &val, 0))
 		    env->localmx = val;
 		return;
+    case 'm':	if ( isopt(option, "mxpool", &val, 0) )
+		    env->mxpool = val;
 #if HAVE_STATFS || HAVE_STATVFS
-    case 'm':   if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
+		else if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
 		    env->minfree = val * 1024;
-		return;
 #endif
+		return;
     case 'n':   if (isopt(option, "nodaemon", &val, 0))
 		    env->nodaemon = val;
 		return;

@@ -533,30 +533,30 @@ helo(struct letter *let, enum cmds cmd, char *line)
 
 
 static void
-describe(FILE *f, int code, struct recipient *to)
+describe(FILE *f, int code, struct recipient *to, char *key)
 {
     switch (to->typ) {
     case emALIAS:
 	/* should never happen */
-	message(f,-code, "to: ?alias [%s %s]", to->fullname, to->host);
+	message(f,-code, "to: ?alias [%s %s] %s", to->fullname, to->host, key);
 	break;
     case emBLACKLIST:
-	message(f,-code, "to: BLACKLIST [%d] %d %d", to->fullname, to->uid, to->gid);
+	message(f,-code, "to: BLACKLIST [%d] %d %d %s", to->fullname, to->uid, to->gid, key);
 	break;
     case emSPAM:
-	message(f,-code, "to: SPAM [%d] %d %d", to->fullname, to->uid, to->gid);
+	message(f,-code, "to: SPAM [%d] %d %d %s", to->fullname, to->uid, to->gid, key);
 	break;
     case emFILE:
-	message(f,-code, "to: file [%s] %d %d", to->fullname, to->uid, to->gid);
+	message(f,-code, "to: file [%s] %d %d %s", to->fullname, to->uid, to->gid, key);
 	break;
     case emEXE:
-	message(f,-code, "to: prog <[%s]> %d %d", to->fullname, to->uid, to->gid);
+	message(f,-code, "to: prog <[%s]> %d %d %s", to->fullname, to->uid, to->gid, key);
 	break;
     case emUSER:
 	if (to->host)
-	    message(f,-code, "to: user %s [%s]", to->fullname, to->host);
+	    message(f,-code, "to: user %s [%s] %s", to->fullname, to->host, key);
 	else
-	    message(f,-code, "to: user %s", username(to->dom,to->user));
+	    message(f,-code, "to: user %s %s", username(to->dom,to->user), key);
 	break;
     }
 }
@@ -595,10 +595,10 @@ debug(struct letter *let)
 		    let->from->alias);
 
     for (i=let->local.count; i-- > 0; )
-	describe(let->out, 250, &let->local.to[i] );
+	describe(let->out, 250, &let->local.to[i], "local");
 
     for (i=let->remote.count; i-- > 0; )
-	describe(let->out, 250, &let->remote.to[i] );
+	describe(let->out, 250, &let->remote.to[i], "remote" );
 
     message(let->out,-250, "Version: <%s>\n", myversion);
     message(let->out,-250, "B1FF!!!!: T\n");

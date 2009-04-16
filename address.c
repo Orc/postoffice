@@ -73,6 +73,18 @@ okayanyhow(struct env *env, int flags)
 }
 
 
+static int
+localIP(struct letter *let, struct in_addr *addr)
+{
+    struct in_addr *lip;
+
+    for (lip=let->env->local_if; lip->s_addr; lip++)
+	if ( lip->s_addr == addr->s_addr )
+	    return 1;
+    return 0;
+}
+		
+
 struct address *
 verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 {
@@ -97,9 +109,20 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	     * a MAIL FROM:<> address
 	     */
 	    if ( (getMXes(ret->domain, 1, &mxes) > 0) ) {
-		for (lip=let->env->local_if; lip->s_addr; lip++)
+		if ( let->env->mxpool && !(flags & VF_FROM) ) {
+		    /* If mxpool is set, we forward to the best match
+		     * mx, otherwise if we're a mx we'll handle this
+		     * mail locally.
+		     */
+		    if ( localIP(let, &mxes.a[0].addr) ) {
+			ret->local = 1;
+			ret->dom = getdomain(ret->domain);
+			goto esc;
+		    }
+		}
+		else 
 		    for (i=0; i < mxes.count; i++)
-			if (lip->s_addr == mxes.a[i].addr.s_addr) {
+			if ( localIP(let, &mxes.a[i].addr) ) {
 			    /* we are a legitimate mx for this address.
 			     */
 			    ret->local = 1;
