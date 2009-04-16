@@ -109,27 +109,22 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	     * a MAIL FROM:<> address
 	     */
 	    if ( (getMXes(ret->domain, 1, &mxes) > 0) ) {
-		if ( let->env->mxpool && !(flags & VF_FROM) ) {
-		    /* If mxpool is set, we forward to the best match
-		     * mx, otherwise if we're a mx we'll handle this
-		     * mail locally.
-		     */
-		    if ( localIP(let->env, &mxes.a[0].addr) ) {
+		for (i=0; i < mxes.count; i++)
+		    if ( localIP(let->env, &mxes.a[i].addr) ) {
+			/* we are a legitimate mx for this address.
+			 */
 			ret->local = 1;
-			ret->dom = getdomain(ret->domain);
-			goto esc;
-		    }
-		}
-		else 
-		    for (i=0; i < mxes.count; i++)
-			if ( localIP(let->env, &mxes.a[i].addr) ) {
-			    /* we are a legitimate mx for this address.
+			if ( ! (let->env->mxpool || i) ) {
+			    /* If we're not mxpooling, we handle mail for
+			     * this domain locally, but if we are mxpooling
+			     * we only handle the mail locally if we're the
+			     * best mx for the domain
 			     */
-			    ret->local = 1;
+			    ret->deliver_here = 1;
 			    ret->dom = getdomain(ret->domain);
-			    goto esc;
 			}
-	      esc:
+			break;
+		    }
 		freeiplist(&mxes);
 	    }
 	    else if ( !okayanyhow(let->env,flags) ) {
@@ -140,11 +135,11 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 
 	}
 	else {
-	    ret->local = 1;
+	    ret->deliver_here = ret->local = 1;
 	    ret->dom = dom;
 	}
 
-	if (ret->local && (!userok(let,ret)) && (flags & VF_USER) ) {
+	if (ret->deliver_here && (!userok(let,ret)) && (flags & VF_USER) ) {
 	    if (reason) *reason = V_WRONG;
 	    freeaddress(ret);
 	    return 0;

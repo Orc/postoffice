@@ -129,7 +129,7 @@ recipients(struct letter *let, struct address *to)
 {
     if (to->alias)
 	return expand(let, 0, to, to->alias, 0, NOBODY_UID, NOBODY_GID, 1);
-    else if (to->local)
+    else if (to->deliver_here)
 	return localprocess(let, to, 0);
     else 
 	return newrecipient(&let->remote, to, emUSER, NOBODY_UID, NOBODY_GID);
@@ -254,7 +254,7 @@ expand(struct letter *let,
 		else if (p->alias) {
 		    rc = expand(let,&link,p,p->alias,token,uid,gid,alias);
 		}
-		else if (p->local) {
+		else if (p->deliver_here) {
 		    rc = localprocess(let,p,&link);
 		}
 		else

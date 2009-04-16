@@ -13,8 +13,9 @@ struct address {
     char *domain;		/* domain we want to send it to */
     char *user;			/* user at that domain */
     char *alias;		/* (or alias in /etc/aliases) */
-    int   local;		/* is this a local address? */
     struct domain *dom;		/* local mail domain */
+    int   local:1;		/* is this a local address? */
+    int   deliver_here:1;	/* should this mail be delivered to this machine? */
 } ;
 
 struct email {
