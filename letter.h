@@ -13,9 +13,9 @@ struct address {
     char *domain;		/* domain we want to send it to */
     char *user;			/* user at that domain */
     char *alias;		/* (or alias in /etc/aliases) */
+    unsigned int   local:1;		/* is this a local address? */
+    unsigned int   deliver_here:1;	/* should this mail be delivered to this machine? */
     struct domain *dom;		/* local mail domain */
-    int   local:1;		/* is this a local address? */
-    int   deliver_here:1;	/* should this mail be delivered to this machine? */
 } ;
 
 struct email {
@@ -97,7 +97,7 @@ struct email *getemail(struct address *);
 #define VF_USER	0x01
 #define VF_FROM	0x02
 
-extern int localIP(ENV *, struct in_addr *);
+extern int localIP(ENV *, struct ipa *);
 extern struct address* verify(struct letter*, struct domain*, char*, int, int*);
 extern struct address *mkaddress(char *);
 extern void freeaddress(struct address*);

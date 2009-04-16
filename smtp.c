@@ -651,6 +651,7 @@ debug(struct letter *let)
 		      "NoDaemon: %s\n"
 		      "LocalMX: %s\n"
 		      "Paranoid: %s\n"
+		      "MXpool: %s\n"
 		      "Escape-from: %s",
 			  env->timeout,
 			  env->delay,
@@ -662,6 +663,7 @@ debug(struct letter *let)
 			  env->nodaemon ? "T" : "NIL",
 			  env->localmx ? "T" : "NIL",
 			  env->paranoid ? "T" : "NIL",
+			  env->mxpool ? "T" : "NIL", 
 			  env->escape_from ? "T" : "NIL" );
 }
 

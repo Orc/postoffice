@@ -311,7 +311,7 @@ session(ENV *env, char *host, int port)
     ses->session = freembox(ses->session);
 
     for (i=mxes.count; i-- > 0; )
-	if ( !localIP(env, &mxes.a[i].addr) && (ses->session = newmbox(&mxes.a[i].addr, port, env->verbose)) ) {
+	if ( !localIP(env, &mxes.a[i]) && (ses->session = newmbox(&mxes.a[i].addr, port, env->verbose)) ) {
 	    ses->mx = mxes.a[i].addr;
 	    ses->host = strdup(host);
 	    ses->prio = 1;

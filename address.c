@@ -74,13 +74,21 @@ okayanyhow(struct env *env, int flags)
 
 
 int
-localIP(ENV *env, struct in_addr *addr)
+localIP(ENV *e, struct ipa *a)
 {
+    ENV *e2 = e;
+    struct ipa *a2 = a;
     struct in_addr *lip;
 
-    for (lip=env->local_if; lip->s_addr; lip++)
-	if ( lip->s_addr == addr->s_addr )
+    if ( !a ) return 0;
+
+    lip = e->local_if;
+    while ( lip->s_addr ) {
+	if ( e2 != e ) abort();
+	if ( a2 != a ) abort();
+	if ( (lip++)->s_addr == a->addr.s_addr )
 	    return 1;
+    }
     return 0;
 }
 		
@@ -94,7 +102,6 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
     extern char *addr(char*,int*);
     struct iplist mxes;
     int i;
-    struct in_addr *lip;
 
     while ( (e > p) && (isspace(e[-1]) || e[-1] == '\r' || e[-1] == '\n') )
 	--e;
@@ -110,11 +117,11 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	     */
 	    if ( (getMXes(ret->domain, 1, &mxes) > 0) ) {
 		for (i=0; i < mxes.count; i++)
-		    if ( localIP(let->env, &mxes.a[i].addr) ) {
+		    if ( localIP(let->env, &mxes.a[i] ) ) {
 			/* we are a legitimate mx for this address.
 			 */
 			ret->local = 1;
-			if ( ! (let->env->mxpool || i) ) {
+			if ( (i == 0) || !(let->env->mxpool) ) {
 			    /* If we're not mxpooling, we handle mail for
 			     * this domain locally, but if we are mxpooling
 			     * we only handle the mail locally if we're the
