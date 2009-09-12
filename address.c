@@ -76,16 +76,16 @@ okayanyhow(struct env *env, int flags)
 int
 localIP(ENV *e, struct ipa *a)
 {
-    ENV *e2 = e;
-    struct ipa *a2 = a;
+    /*ENV *e2 = e;
+    struct ipa *a2 = a;*/
     struct in_addr *lip;
 
     if ( !a ) return 0;
 
     lip = e->local_if;
     while ( lip->s_addr ) {
-	if ( e2 != e ) abort();
-	if ( a2 != a ) abort();
+	/*if ( e2 != e ) abort();
+	if ( a2 != a ) abort();*/
 	if ( (lip++)->s_addr == a->addr.s_addr )
 	    return 1;
     }

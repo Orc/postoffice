@@ -328,7 +328,7 @@ session(ENV *env, char *host, int port)
 /* ^SMTP^ */
 	}
 	else
-	    whynot(strerror(errno));
+	    whynot(errno ? strerror(errno) : "session timed out");
 
     return 0;
 }
