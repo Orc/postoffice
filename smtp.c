@@ -908,11 +908,17 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 # define GREYCODE 421
 #endif
 
-			sprintf(buf,"delay %d", delay);
-			audit(&letter, "DATA", buf, GREYCODE);
-			message(out, GREYCODE,
-				    "System busy.  Try again in %d second%s.",
-				     delay, (delay==1) ? "" : "s");
+			if ( delay == INT_MAX ) {
+			    audit(&letter, "DATA", "prohibited", GREYCODE);
+			    message(out, GREYCODE, "System busy.  Try again later");
+			}
+			else {
+			    sprintf(buf,"delay %d", delay);
+			    audit(&letter, "DATA", buf, GREYCODE);
+			    message(out, GREYCODE,
+					"System busy.  Try again in %d second%s.",
+					 delay, (delay==1) ? "" : "s");
+			}
 #if GREYCODE == 421
 			audit(&letter, "QUIT", "greylist", 421);
 			byebye(&letter,1);

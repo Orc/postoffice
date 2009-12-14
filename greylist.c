@@ -72,10 +72,12 @@ greylist(struct letter *let, int delete)
 	status = let->env->delay;
     }
     else {
-	if ( (value = dbif_get(db, key)) != 0 ) {
+	if ( (value = dbif_get(db, key)) == 0 && let->from && let->from->full )
+	    value = dbif_get(db, let->from->full);
 
+	if ( value ) {
 	    if (value[0] == '*')
-		status = delay = INT_MAX;
+		delay = status = INT_MAX;
 	    else {
 		delay = atol(value);
 
@@ -94,7 +96,10 @@ greylist(struct letter *let, int delete)
 	    status = multiplier * let->env->delay;
 	    delay = now + status;
 	}
-	sprintf(dates, "%ld %ld", delay-10, now);
+	if ( status == INT_MAX )
+	    sprintf(dates, "* %ld", now);
+	else
+	    sprintf(dates, "%ld %ld", delay-10, now);
 
 	if (dbif_put(db, key, dates, mode) != 0)
 	    syslog(LOG_ERR, "Cannot %s %s in greylist",
