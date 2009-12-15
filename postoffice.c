@@ -118,7 +118,7 @@ main(int argc, char **argv)
 
     /* handle magic program names */
     if ( SAME(pgm, "mailq") ) {
-	options = "vA:V";
+	options = "vA:Vq:";
 	env.bmode = 'p';
     }
     else if ( SAME(pgm, "sendmail") || SAME(pgm, "send-mail") ) {
@@ -166,7 +166,9 @@ main(int argc, char **argv)
 #endif
 		break;
 	case 'q':
-		if (z_optarg && *z_optarg) {
+		if ( env.bmode == 'p' )
+		    /*add_pquery(z_optarg)*/;
+		else if (z_optarg && *z_optarg) {
 		    value(z_optarg, &qruntime, "m=1,h=60,d=1440");
 		}
 		else

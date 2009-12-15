@@ -64,8 +64,11 @@ if it's being displayed on your terminal.
 .It Fl a Ar user
 Approve this user by clearing their greylist entry
 .It Fl b Ar user
-Blacklist this user by setting their greylist entry to the end of time
-(2038, which is when the 32 bit unix time_t rolls over.)
+Blacklist this user by setting their greylist entry to the magic token
+.Ql * ,
+which tells
+.Nm Postoffice
+to never let the greylist expire for this entry.
 .El
 .Sh FILES
 .Pp

@@ -14,23 +14,25 @@
 This file records client access to the
 .Sy postoffice
 SMTP server.
-It contains records that have the
-.Bl -tag -width ClientAddress -compact
-.It username
-given in the SMTP
+It contains records that either have the
+address given in the SMTP
 .Ql MAIL FROM:
-command, the
-.It IP address
-That the client is connecting from, the
-.It date
-when this client & username can send mail
-to the
-.Sy postoffice
-server, and the
-.It date
-when this client & username last connected
-to the server.
-.El
+command, or the
+.Sy username
+from the SMTP
+.Ql MAIL FROM:
+and the 
+.Sy IP address
+that the mail connected from.
+In both cases, this address is followed by
+two dates (in UNIX
+.Sy time_t
+format) which are, in order, the
+time when 
+.Nm postoffice
+will accept mail from this user, and
+the time
+when the last connection was made.
 .Pp
 This file is a
 .Xr @NDBM@ 3
@@ -40,8 +42,13 @@ program is used to maintain it and remove old records.
 .Pp
 The record format used in this database is:
 .Bl -tag -width USER@[IP] -compact
-.It USER@[IP]
-The key
+.It ADDRESS
+Either the SMTP
+.Ql MAIL FROM:
+address or the username from that address, followed
+by the IP address of the connecting machine (quoted
+with 
+.Ql [] )
 .It DATE DATE
 When the client can connect and when the client last connected (both
 in seconds after the epoch).   If the client is blacklisted (via the
@@ -49,9 +56,7 @@ in seconds after the epoch).   If the client is blacklisted (via the
 flag in 
 .Xr authexpire 8 ),
 the first DATE will be the magic token
-.Sy * ,
-and the second DATE will be the last time the client connected before
-being blacklisted.
+.Sy * .
 .El
 .Sh SEE ALSO
 .Xr @NDBM@ 1 ,
