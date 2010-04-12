@@ -310,7 +310,7 @@ session(ENV *env, char *host, int port)
     }
     ses->session = freembox(ses->session);
 
-    for (i=mxes.count; i-- > 0; )
+    for (i=0; i < mxes.count; i++) {
 	if ( !localIP(env, &mxes.a[i]) && (ses->session = newmbox(&mxes.a[i].addr, port, env->verbose)) ) {
 	    ses->mx = mxes.a[i].addr;
 	    ses->host = strdup(host);
@@ -329,6 +329,7 @@ session(ENV *env, char *host, int port)
 	}
 	else
 	    whynot(errno ? strerror(errno) : "session timed out");
+    }
 
     return 0;
 }
