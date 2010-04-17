@@ -90,7 +90,7 @@ initdomain()
 		domain = strtok(0, ":");
 		active = strtok(0, ":");
 
-		if (owner && domain && active && atoi(active))
+		if (owner && domain && active)
 		    add_dom(domain,VSPOOL,VPATH);
 	    }
 	    fclose(f);

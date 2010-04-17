@@ -405,6 +405,8 @@ getIPa(char *host, int mode, struct iplist *ipp)
 static int
 cmp(struct ipa *a, struct ipa *b)
 {
+    if ( a->key == b->key )
+	return Deal&01;
     return a->key - b->key;
 }
 
@@ -528,15 +530,17 @@ main(int argc, char **argv)
     int trywildcard = 0;
     struct in_addr ip;
 
+    if (argc <= 1) {
+	fprintf(stderr, "usage: mx host-name\n");
+	exit(1);
+    }
+
+    Shuffle;
+
     if (strcasecmp(argv[1], "*") == 0) {
 	trywildcard = 1;
 	++argv;
 	--argc;
-    }
-
-    if (argc <= 1) {
-	fprintf(stderr, "usage: mx host-name\n");
-	exit(1);
     }
 
     if (strcmp(argv[1], "ptr") == 0) {

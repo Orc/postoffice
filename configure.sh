@@ -94,6 +94,17 @@ fi
 AC_CHECK_FUNCS getloadavg
 AC_CHECK_FUNCS setproctitle
 
+if AC_CHECK_FUNCS random; then
+    AC_DEFINE Deal	'random()'
+    AC_DEFINE Shuffle	'srandom(time(0))'
+elif AC_CHECK_FUNCS rand; then
+    AC_DEFINE Deal	'rand()'
+    AC_Define Shuffle	'srand(time(0))'
+else
+    AC_DEFINE Deal     0
+    AC_DEFINE Shuffle  0
+fi
+
 if [ "$has_statfs" ]; then
     AC_SUB STATFS  ''
 else

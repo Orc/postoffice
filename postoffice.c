@@ -86,6 +86,8 @@ main(int argc, char **argv)
     env.spam.action = spBOUNCE;
     env.rej.action = spBOUNCE;
 
+    Shuffle;			/* set up the random # generator for mx sorting */
+
 #ifndef HAVE_SETPROCTITLE
     argv0 = argv[0];
     szargv0 = 80;
