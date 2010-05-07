@@ -418,7 +418,6 @@ data(struct letter *let)
 	if ( c == '\n' ) {
 	    if ( dot == 1 ) {
 		alarm(0);
-		syslog(LOG_INFO, "mail message: %ld byte%s", size, (size!=1)?"s":"");
 		return examine(let);
 	    }
 	    dot = 0;
@@ -428,7 +427,7 @@ data(struct letter *let)
 	    continue;
 	}
 	else {
-	    if ( dot == 1 ) { fputc('.', let->body); size++; }
+	    if ( dot == 1 ) fputc('.', let->body);
 	    dot = 2;
 	}
 	if ( fputc(c, let->body) == EOF ) {
@@ -437,7 +436,6 @@ data(struct letter *let)
 		    "Cannot store message body. Try again later.");
 	    break;
 	}
-	size++;
     }
     do_reset(let);
     return 0;
