@@ -422,7 +422,7 @@ handshake(struct letter *let, char *channel)
 	    return -1;	/* bogus port */
 
 	if (getIPa(ipchan, IP_NEW, &list) <= 0)
-	    return 0;
+	    return -1;
 
 	for (f = -1, i=list.count; i > 0; --i)
 	    if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
