@@ -177,23 +177,24 @@ sentence(struct letter *let, enum r_type term)
 }
 
 
+/* smtpbugcheck() - check the letter for spam (or other
+ *                  milterish excuses) and return 1 if
+ *                  it's okay, 0 if it's not. (exception:
+ *                  if it's spam and the filter action is
+ *                  to keep it, it sets a mailbox flag and
+ *                  claims it's okay.  The actual delivery
+ *                  agent will process according to the flag.
+ */
 static int
 smtpbugcheck(struct letter *let)
 {
-    int code;
+#if WITH_MILTER
     char *what = 0;
     
-#if WITH_MILTER
     if (mfdata(let) == MF_OK)
 	return 1;
-
-    code = mfcode();
-    what = mfresult();
-#else
-    if ( (code=virus_scan(let)) == 0 )
-	return 1;
-#endif
-    if (what) {
+    
+    if ( what = mfresult() ) {
 	anotherheader(let, "X-Spam", what);
 	syslog(LOG_ERR, "VIRUS from (%s,%s): %s",
 			let->deliveredby, let->deliveredIP, what);
@@ -203,16 +204,22 @@ smtpbugcheck(struct letter *let)
 	syslog(LOG_ERR, "VIRUS from (%s,%s)",
 			let->deliveredby, let->deliveredIP);
     }
-	
-    greylist(let, 1);
     
     if (bouncespam(let)) {
-	message(let->out, code, what ? "%s:\n%s" : "%s",
-				bouncereason(let), what);
+	mfcomplain(let, bouncereason(let));
 	return 0;
     }
+	
     if (let->env->spam.action == spFILE)
 	sentence(let, emSPAM);
+    
+    greylist(let, 1);
+#else
+    if ( (code=virus_scan(let)) != 0 ) {
+	message(let->out, 550, "%s", bouncereason(let));
+	return 0;
+    }
+#endif
     return 1;
 }
 
