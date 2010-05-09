@@ -415,6 +415,7 @@ data(struct letter *let)
 
 	if ( c == '\r' ) continue; /* silently ignore \r's */
 
+	/* dot states: 0 == newline, 1 == first char dot, 2 == rest of line */
 	if ( c == '\n' ) {
 	    if ( dot == 1 ) {
 		alarm(0);
@@ -426,10 +427,9 @@ data(struct letter *let)
 	    dot = 1;
 	    continue;
 	}
-	else {
-	    if ( dot == 1 ) fputc('.', let->body);
+	else
 	    dot = 2;
-	}
+    
 	if ( fputc(c, let->body) == EOF ) {
 	    syslog(LOG_ERR, "spool write error: %m");
 	    message(let->out, 452,
