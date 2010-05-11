@@ -93,6 +93,7 @@ fi
 
 AC_CHECK_FUNCS getloadavg
 AC_CHECK_FUNCS setproctitle
+AC_CHECK_FUNCS setlinebuf
 
 if AC_CHECK_FUNCS random; then
     AC_DEFINE Deal	'random()'

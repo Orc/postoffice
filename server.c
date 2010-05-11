@@ -213,6 +213,10 @@ do_smtp_connection(int client, ENV *env)
 	signal(SIGUSR1, SIG_IGN);
 	setsid();
 
+#if HAVE_SETLINEBUF
+	setlinebuf(in);
+#endif
+
 	setproctitle("SMTP startup");
 	alarm(30);	/* give 30 seconds to figure out the peer name */
 	peername = nameof(&window[i].customer);
