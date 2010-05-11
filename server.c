@@ -143,12 +143,18 @@ attach(int port)
     struct sockaddr_in *af_inet = (struct sockaddr_in*)&service;
     int ret;
     int on = 1;
+    int flags;
 
     if ( (ret = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	return -1;
 
     setsockopt(ret, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(ret, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
+
+#if HAVE_FCNTL && defined(FD_CLOEXEC)
+    if ( (flags = fcntl(ret, F_GETFD, 0)) != -1 )
+	fcntl(ret, F_SETFD, flags|FD_CLOEXEC);
+#endif
 
     memset(&service, 0, sizeof service);
 
