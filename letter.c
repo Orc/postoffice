@@ -199,6 +199,9 @@ prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 	setlinebuf(let->in);
     if (let->out = out)
 	setlinebuf(let->out);
+#else
+    let->in = in;
+    let->out = out;
 #endif
 
     let->env = e;
