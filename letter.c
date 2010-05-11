@@ -194,10 +194,12 @@ prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 {
     memset(let, 0, sizeof *let);
 
+#if HAVE_SETLINEBUF
     if (let->in = in)
 	setlinebuf(let->in);
     if (let->out = out)
 	setlinebuf(let->out);
+#endif
 
     let->env = e;
     time(&let->posted);

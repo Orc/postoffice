@@ -77,8 +77,10 @@ newmbox(struct in_addr *ip, int port, int verbose)
 	ret->opened = 1;
 	if ( (ret->in = fdopen(ret->fd,"r"))
 	  && (ret->out = fdopen(ret->fd,"w")) ) {
+#if HAVE_SETLINEBUF
 	    setlinebuf(ret->in);
 	    setlinebuf(ret->out);
+#endif
 	    if (ret->verbose)
 		fprintf(stderr, "%15s OPEN\n", inet_ntoa(ret->ip));
 	    return ret;
