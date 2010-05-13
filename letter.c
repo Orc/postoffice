@@ -154,8 +154,8 @@ getemail(struct address *u)
 {
     struct passwd *pwd;
     static struct email ret;
-    static char bfr[200];
-    int fd;
+    static char bfr[512];
+    FILE *f;
     char *forward;
 
     pwd = getpwemail(u->dom, u->user);
@@ -176,10 +176,17 @@ getemail(struct address *u)
     if (forward = alloca(strlen(pwd->pw_dir) + sizeof "/.forward" + 1)) {
 	sprintf(forward, "%s/.forward", pwd->pw_dir);
 	if ( goodfile(forward,pwd) ) {
-	    if ( (fd = open(forward, O_RDONLY)) != -1) {
-		if (read(fd, bfr, sizeof bfr) > 0)
+	    if ( f = fopen(forward, "r") ) {
+		char *nl;
+		fgets(bfr, sizeof bfr, f);
+		fclose(f);
+		if ( (nl = memchr(bfr, '\n', sizeof bfr)) && (nl > bfr) ) {
+		    /* only accept the contents of a .forward if it's a
+		     * properly formed line that's <= the bufsize
+		     */
+		    *nl = 0;
 		    ret.forward = bfr;
-		close(fd);
+		}
 	    }
 	}
     }
