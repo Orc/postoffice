@@ -113,7 +113,7 @@ _exe(struct letter *let, struct recipient *to)
     }
     if (child == 0) {
 	/* I am the child */
-	if ( setregid(to->gid, to->gid) || setreuid(to->uid, to->uid) ) {
+	if ( setgid(to->gid) || setuid(to->uid) ) {
 	    fprintf(let->log, CannotWrite, to->user, strerror(errno));
 	    syslog(LOG_ERR, "cannot drop privileges: %m\n");
 	    exit(EX_OSERR);
@@ -177,24 +177,25 @@ exe(struct letter *let, struct recipient *to)
 }
 
 
+/* fork off a child process to actually put the message
+ * into a mailbox.   Can't use setreuid/gid because that
+ * doesn't work on FreeBSD 7.2 (!?!)
+ */
 static int
 mbox(struct letter *let, struct recipient *to, char *mbox)
 {
     int status = 0;
     FILE *f;
-    uid_t saveuid = getuid();
+    pid_t writer = fork();
 
-    if ( setregid(-1, to->gid) || setreuid(-1, to->uid) ) {
-	syslog(LOG_ERR, "cannot drop privileges: %m\n");
-	fprintf(let->log, CannotWrite, to->user, strerror(errno));
-	return 0;
-    }
-    umask(077);
-    if ( (f = fopen(mbox, "a")) == 0) {
-	syslog(LOG_ERR, "%s: %m", to->fullname);
-	fprintf(let->log, CannotWrite, to->user, strerror(errno));
-    }
-    else {
+    if ( writer == 0 ) {
+	/* child */
+	umask(077);
+	if ( setgid(to->gid) || setuid(to->uid) || !(f = fopen(mbox,"a")) ) {
+	    syslog(LOG_ERR, "%s: %m", to->fullname);
+	    fprintf(let->log, CannotWrite, to->user, strerror(errno));
+	    exit(1);
+	}
 	flock(fileno(f), LOCK_EX);
 
 	mboxfrom(f, let);
@@ -204,17 +205,16 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 
 	flock(fileno(f), LOCK_UN);
 	fclose(f);
-	status = 1;
+	exit(0);
     }
+    else if ( writer > 0 && (waitpid(writer, &status, 0) != -1
+					    || errno == ECHILD) )
+	    return WEXITSTATUS(status) ? 0 : 1;
 
-    if (setreuid(-1, saveuid) || setregid(-1, saveuid) ) {
-	syslog(LOG_ERR, "cannot regain privileges: %m\n");
-	fprintf(let->log, "Fatal error writing to mailbox for %s: %s\n",
-			to->user, strerror(errno));
-	let->fatal = 1;
-	return 0;
-    }
-    return status;
+    syslog(LOG_ERR, "%s: %m", to->fullname);
+    fprintf(let->log, CannotWrite, to->user, strerror(errno));
+    let->fatal = 1;
+    return 0;
 }
 
 
