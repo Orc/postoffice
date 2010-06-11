@@ -610,7 +610,7 @@ mfdata(struct letter *let)
          *end = let->bodytext + size;
 #define MCHUNKSIZE	65535
 
-    for (p = map; p < end; p = 1+q) {
+    for (p = map; p < end; p = q) {
 	/* find a newline */
 	if ( (q = memchr(p, '\n', size - (p - map))) == 0)
 		break;
@@ -619,16 +619,12 @@ mfdata(struct letter *let)
 	    break;
 
 	/* valid header line.  grab continuation lines */
-	while ( (q+1 < p+size) && (q[1] == '\t' || q[1] == 'n') ) {
-	    char *q2;
-
-	    if ( (q2 = memchr(q+1, '\n', size - (q - map) - 1)) != 0 )
-		q = q2;
-	    else
-		q = p+size;
+	for (++q; (q < map+size) && isspace(*q) && (*q != '\n'); ++q) {
+	    if ( (q = memchr(q, '\n', size - (q - map))) == 0 )
+		q = map+size;
 	}
 	/* [p .. q-1] is a valid header, perhaps.  Send it */
-	if ( (status = mfheader(let,p,c,q)) != MF_OK )
+	if ( (status = mfheader(let,p,c,q-1)) != MF_OK )
 	    return status;
     }
     /* end of file or blank/malformed line == no more headers */
