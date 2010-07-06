@@ -290,7 +290,7 @@ static void
 mx(char *host, struct mxlist *list)
 {
 
-    char *name;
+    char *name = 0;
     unsigned char *p;
     int   count, reclen;
     short prio;
@@ -307,8 +307,8 @@ mx(char *host, struct mxlist *list)
 	    GETSHORT(reclen, p);
 	    GETSHORT(prio, p);
 	    p = dname(&name, &dns_rec, p, p + (reclen-sizeof(prio)) );
-
-	    NewMX(list, prio, strdup(name));
+	    if ( name )
+		NewMX(list, prio, strdup(name));
 	}
     }
 }
