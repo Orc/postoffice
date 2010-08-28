@@ -251,8 +251,6 @@ raw data for alias names.
 data base of alias names.
 .It Pa /etc/issue.smtp
 smtp server welcome banner.
-.It Pa /var/log/mail.stat
-collected statistics.
 .It Pa /var/spool/mqueue/*
 temp files.
 .It Pa /var/db/smtpauth.db
