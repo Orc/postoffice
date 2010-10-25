@@ -101,7 +101,8 @@ protocol as described in
 .Em RFC821
 on standard input and output.
 .It Fl C Ns Ar file
-Read options from the named configuration file.
+Read options from the named configuration file instead of from
+.Pa @confdir@/postoffice.cf .
 .It Fl d
 When running as a daemon, 
 .Nm
@@ -167,8 +168,9 @@ Options may be set either on the command line
 using the
 .Fl o
 flag,
-in the configuration file /etc/postoffice.cf, or in a configuration
-file specified by the
+in the configuration file
+.Pa @confdir@/postoffice.cf ,
+or in a configuration file specified by the
 .Fl C
 flag.
 .Pp
