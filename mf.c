@@ -49,6 +49,21 @@ struct milter {
 #define HARD	0x01
 #define FAILED	0x02
 #define DEAD	0x04
+    DWORD rflags;
+#define ADD_HDRS	0x01	/* milter wants to add headers */
+#define EDIT_DATA	0x02	/* milter wants to edit the message */
+#define ADD_TO		0x04	/* milter wants to add recipients */
+#define DEL_TO		0x08	/* milter wants to delete recipients */
+#define EDIT_HDRS	0x10	/* milter wants to edit headers */
+#define ISOLATE		0x20	/* milter wants to quarantine the message */
+    DWORD pflags;
+#define SKIP_CONN	0x01	/* don't do connect message */
+#define SKIP_HELO	0x02	/* don't do helo message */
+#define SKIP_FROM	0x04	/* or MAIL FROM: */
+#define SKIP_TO		0x08	/* or RCPT TO: */
+#define SKIP_DATA	0x10	/* or send the data */
+#define SKIP_HDRS	0x20	/* ... or headers */
+#define SKIP_EOH	0x40
 };
 
 static struct milter *filters = 0;
@@ -65,9 +80,9 @@ mfregister(char *filter, char **opts)
     if (filters == 0)
 	nrfilters = 0;
     else {
+	memset(&filters[nrfilters], sizeof filters[nrfilters], 0);
 	filters[nrfilters].socket = strdup(filter);
 	filters[nrfilters].fd = -1;
-	filters[nrfilters].flags = 0;
 	++nrfilters;
     }
 #endif
@@ -374,18 +389,18 @@ mreply(int f)
 
 #if WITH_MILTER
 static int
-handshake(struct letter *let, char *channel)
+handshake(struct letter *let, struct milter *mf)
 {
     struct mfdata *ret;
     struct sockaddr_un urk;
     int len;
-    DWORD rflags, rhandshake, rversion;
+    DWORD rrflags, rpflags, rversion;
     int f;
 
-    if (channel[0] == '/') {
+    if (mf->socket[0] == '/') {
 	/* connect to named socket
 	 */
-	if (strlen(channel) > sizeof urk.sun_path)
+	if (strlen(mf->socket) > sizeof urk.sun_path)
 	    return -1;
 
 	if ( (f = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -394,11 +409,11 @@ handshake(struct letter *let, char *channel)
 	}
 
 	urk.sun_family = AF_UNIX;
-	strncpy(urk.sun_path, channel, sizeof urk.sun_path);
+	strncpy(urk.sun_path, mf->socket, sizeof urk.sun_path);
 	len = strlen(urk.sun_path) + sizeof(urk.sun_family);
 
 	if ( connect(f, (struct sockaddr*)&urk, len) != 0 ) {
-	    PERROR(channel);
+	    PERROR(mf->socket);
 	    close(f);
 	    return -1;
 	}
@@ -409,9 +424,9 @@ handshake(struct letter *let, char *channel)
 	char *p;
 	struct iplist list;
 	int i, port;
-	char *ipchan = alloca(strlen(channel)+1);
+	char *ipchan = alloca(strlen(mf->socket)+1);
 
-	strcpy(ipchan, channel);
+	strcpy(ipchan, mf->socket);
 
 	if ( (p = strchr(ipchan, ':')) == 0 )
 	    return -1;	/* format is host:port */
@@ -434,17 +449,25 @@ handshake(struct letter *let, char *channel)
     }
 
 
-    mfprintf(f, 'O', "%l%l%l", 2, 0xff, 0);
+    mfprintf(f, 'O', "%l%l%l", 2, 0xff, 0xff);
     if ( (ret = mread(f)) && (ret->data[0] == 'O') 
-			  && (mdscanf(ret, "%l%l%l", &rversion, &rflags,
-						     &rhandshake) == 3) ) {
-	mfprintf(f, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
-				     let->deliveredIP);
-	if (mreply(f) == MF_OK)
-	    return f;
+			  && (mdscanf(ret, "%l%l%l", &rversion, &rrflags,
+						     &rpflags) == 3) ) {
+	mf->fd = f;
+	mf->rflags = rrflags;
+	mf->pflags = rpflags;
+
+	if ( mf->pflags & SKIP_CONN )
+	    return 0;
+	else {
+	    mfprintf(f, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
+					 let->deliveredIP);
+	    if (mreply(f) == MF_OK)
+		return 0;
+	}
     }
     close(f);
-    return -1;
+    return mf->fd = -1;
 }
 #endif
 
@@ -456,7 +479,7 @@ mfconnect(struct letter *let)
     int i;
 
     for (i=0; i < nrfilters; i++) {
-	if ( (filters[i].fd = handshake(let, filters[i].socket)) == -1) {
+	if ( handshake(let, &filters[i]) == -1) {
 	    filters[i].flags |= FAILED;
 	    if ( filters[i].flags & HARD )
 		return MF_REJ;
@@ -468,10 +491,10 @@ mfconnect(struct letter *let)
 
 
 #if WITH_MILTER
-#define FORALL(args)	\
+#define FORALL(unless, args)	\
     int i, status; \
     for (i=0; i < nrfilters; i++) \
-	if ( (filters[i].flags & FAILED) == 0 ) { \
+	if ( !((filters[i].flags & FAILED) || (filters[i].pflags & unless)) ) {\
 	    mfprintf args; \
 	    if ( (status = mreply(filters[i].fd)) == MF_EOF) { \
 		filters[i].flags |= FAILED; \
@@ -500,7 +523,7 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
     content[end-sep-1] = 0;
 #endif
     {
-	FORALL( (filters[i].fd, 'L', "%s%s", header, content) );
+	FORALL(SKIP_HDRS, (filters[i].fd, 'L', "%s%s", header, content) );
     }
 }
 
@@ -508,7 +531,7 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
 static int
 mfeoh()
 {
-    FORALL( (filters[i].fd, 'N', "") );
+    FORALL(SKIP_EOH, (filters[i].fd, 'N', "") );
 }
 #endif
 
@@ -516,27 +539,27 @@ mfeoh()
 static int
 mfchunk(char *p, int size)
 {
-    FORALL( (filters[i].fd, 'B', "%*", size, p) );
+    FORALL(SKIP_DATA, (filters[i].fd, 'B', "%*", size, p) );
 }
 #endif
 
 int
 mfhelo(struct letter *let, char *hellostring)
 {
-    FORALL( (filters[i].fd, 'H', "%s", hellostring) );
+    FORALL(SKIP_HELO, (filters[i].fd, 'H', "%s", hellostring) );
 }
 
 
 int
 mffrom(struct letter *let, char *from)
 {
-    FORALL( (filters[i].fd, 'M', "%s", from) );
+    FORALL(SKIP_FROM, (filters[i].fd, 'M', "%s", from) );
 }
 
 int
 mfto(struct letter *let, char *to)
 {
-    FORALL( (filters[i].fd, 'R', "%s", to) );
+    FORALL(SKIP_TO, (filters[i].fd, 'R', "%s", to) );
 }
 
 
