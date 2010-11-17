@@ -59,8 +59,7 @@ unit(off_t size)
 
 #define TFMT	"%8s %8s %17s %s"
 #define FFMT	"%35s %s%c"
-#define CFMT	"%17s %.*s"
-#define CSIZE	62
+#define CFMT	"%17s %.62s"
 
 
 void
@@ -130,12 +129,8 @@ listq()
 #endif
 
 	printf(TFMT, qid, unit(st.st_size), date, line+1);
-	if (comment[0]) {
-	    printf(CFMT, "", CSIZE, comment);
-	    comment[CSIZE] = 0;
-	    if ( comment[strlen(comment)-1] != '\n' )
-		putchar('\n');
-	}
+	if (comment[0])
+	    printf(CFMT, "", comment);
 
 	rewind(f);
 	while ( fgets(line, sizeof line, f) != 0 && line[0] != C_HEADER)

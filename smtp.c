@@ -703,23 +703,25 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 #ifdef WITH_TCPWRAPPERS
 	if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
+	    int status;
 	    if ( (why=getenv("WHY")) == 0)
 		why = "We get too much spam from your domain";
 
 	    if ( env->rej.action == spBOUNCE ) {
-		message(out, 421, "%s does not accept mail"
-				  " from %s, because %s.", letter.deliveredto,
-				  letter.deliveredby, why);
+		status=421;
 		goodness(&letter, -10);
 		audit(&letter, "CONN", "blacklist", 421);
 		ok = 0;
 		/*byebye(&letter, 1);*/
 	    }
 	    else {
+		status=220;
 		goodness(&letter, -5);
-		message(out, 220, "%s", why);
 		donotaccept = 1;
 	    }
+	    message(out, status, "%s does not accept mail"
+			      " from %s, because %s.", letter.deliveredto,
+			      letter.deliveredby, why);
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
 	}
