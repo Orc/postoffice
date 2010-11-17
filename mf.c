@@ -367,11 +367,11 @@ mfprintf(int f, char cmd, char *fmt, ...)
 
 #if WITH_MILTER
 static int
-mreply(int f)
+mreply(struct milter *mf)
 {
     struct mfdata *ret;
 
-    while ( (ret = mread(f)) && (ret->size > 0) ) {
+    while ( (ret = mread(mf->fd)) && (ret->size > 0) ) {
 	switch (ret->data[0]) {
 	case 'p':   break;	/* no-op */
 	case 'r':
@@ -462,7 +462,7 @@ handshake(struct letter *let, struct milter *mf)
 	else {
 	    mfprintf(f, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
 					 let->deliveredIP);
-	    if (mreply(f) == MF_OK)
+	    if (mreply(mf) == MF_OK)
 		return 0;
 	}
     }
@@ -496,7 +496,7 @@ mfconnect(struct letter *let)
     for (i=0; i < nrfilters; i++) \
 	if ( !((filters[i].flags & FAILED) || (filters[i].pflags & unless)) ) {\
 	    mfprintf args; \
-	    if ( (status = mreply(filters[i].fd)) == MF_EOF) { \
+	    if ( (status = mreply(&filters[i])) == MF_EOF) { \
 		filters[i].flags |= FAILED; \
 		if ( filters[i].flags & HARD ) \
 		    return status; \
@@ -606,7 +606,7 @@ mfeom()
 	if ( (filters[i].flags & FAILED) == 0 ) {
 	    mfprintf(filters[i].fd, 'E', "");
 	    do {
-		if ( (status=mreply(filters[i].fd)) == MF_EOF ) {
+		if ( (status=mreply(&filters[i])) == MF_EOF ) {
 		    filters[i].flags |= FAILED;
 		    if (filters[i].flags & HARD)
 			return MF_REJ;
@@ -676,6 +676,31 @@ void message(FILE* q,int r,char* s, ...)
 {
 }
 
+
+void
+mfwhy()
+{
+    char *code;
+
+    if ( code = mfresult() ) {
+	int status = mfcode();
+	while (isdigit(*code) || isspace(*code) || *code == '.') ++code;
+	printf("%03d %s\n", status, code);
+    }
+}
+
+mfdo(struct letter *let, char *phase, int status)
+{
+    printf("%-7.7s: %s\n", phase, status ? "failed" : "ok");
+    if ( status ) {
+	mfwhy();
+	if ( strcmp(phase, "quit") != 0 )
+	    mfquit(let);
+	exit(1);
+    }
+}
+
+
 double
 main(int argc, char **argv)
 {
@@ -696,7 +721,7 @@ main(int argc, char **argv)
 
     bzero(&let, sizeof let);
     let.deliveredby = "localhost";
-    let.deliveredIP = "127.0.0.1";
+    let.deliveredIP = "127.0.0.2";
 
 
     if (isatty(0)) {
@@ -730,18 +755,13 @@ main(int argc, char **argv)
 	mfregister(argv[i], 0);
 
 
-    printf("connect: %s\n", mfconnect(&let) ? "failed" : "ok");
-    printf("helo   : %s\n", mfhelo(&let, "world") ? "failed" : "ok");
-    printf("from   : %s\n", mffrom(&let, "<orc>") ? "failed" : "ok");
-    printf("to     : %s\n", mfto(&let, "<orc>") ? "failed" : "ok");
-    printf("data   : %s\n", mfdata(&let) ? "failed" : "ok");
-    if ( code = mfresult() ) {
-	int status = mfcode();
-	while (isdigit(*code) || isspace(*code) || *code == '.') ++code;
-	printf("%03d %s\n", status, code);
-    }
-    printf("reset  : %s\n", mfreset(&let) ? "failed" : "ok");
-    printf("quit   : %s\n", mfquit(&let) ? "failed" : "ok");
+    mfdo(&let, "connect", mfconnect(&let));
+    mfdo(&let, "helo",    mfhelo(&let, "world"));
+    mfdo(&let, "from",    mffrom(&let, "<orc>"));
+    mfdo(&let, "to",      mfto(&let, "<orc>"));
+    mfdo(&let, "data",    mfdata(&let));
+    mfdo(&let, "reset",   mfreset(&let));
+    mfdo(&let, "quit",    mfquit(&let));
     exit(0);
 }
 #endif
