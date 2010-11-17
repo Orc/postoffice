@@ -349,7 +349,7 @@ server(ENV *env, int debug)
 
     catchsigs(crash);
 
-    signal(SIGHUP,  sigexit);
+    signal(SIGHUP,  SIG_IGN);
     signal(SIGINT,  sigexit);
     signal(SIGQUIT, sigexit);
     signal(SIGKILL, sigexit);
