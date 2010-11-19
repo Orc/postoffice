@@ -64,6 +64,7 @@ reset(struct letter *let)
     let->mboxfrom = 0;
     let->tempfile = 0;
     let->qcomment = 0;
+    let->healthy  = 1;
 }
 
 
