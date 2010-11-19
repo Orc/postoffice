@@ -38,6 +38,7 @@
 #include "mf.h"
 #include "mx.h"
 #include "socklib.h"
+#include "cstring.h"
 
 
 extern void message(FILE *f, int code, char *fmt, ...);
@@ -80,7 +81,7 @@ mfregister(char *filter, char **opts)
     if (filters == 0)
 	nrfilters = 0;
     else {
-	memset(&filters[nrfilters], sizeof filters[nrfilters], 0);
+	memset(&filters[nrfilters], 0, sizeof filters[nrfilters]);
 	filters[nrfilters].socket = strdup(filter);
 	filters[nrfilters].fd = -1;
 	++nrfilters;
@@ -133,6 +134,17 @@ xread(int fd, void *ptr, int size)
     } while (left > 0);
 
     return size;
+}
+#endif
+
+
+#if WITH_MILTER
+static void
+allfail()
+{
+    int i;
+    for ( i=0; i < nrfilters; i++)
+	filters[i].flags |= FAILED;
 }
 #endif
 
@@ -192,16 +204,14 @@ mfcomplain(struct letter *let, char *generic)
 
 #if WITH_MILTER
 static struct mfdata *
-mread(int f)
+mread(struct milter *f)
 {
     DWORD nwsize;
     DWORD size;
 
-    if (xread(f, &nwsize, 4) != 4)
-	    return 0;
-    
+    if (xread(f->fd, &nwsize, 4) != 4)
+	return 0;
     size = ntohl(nwsize);
-
 
     if (size > maxsize) {
 	lastpkt = lastpkt ? realloc(lastpkt, sizeof(lastpkt->size) + size)
@@ -212,7 +222,7 @@ mread(int f)
 	    return 0;
     
     lastpkt->size = size;
-    if (xread(f, lastpkt->data, size) != size)
+    if (xread(f->fd, lastpkt->data, size) != size)
 	    return 0;
 
     return lastpkt;
@@ -294,71 +304,71 @@ mdscanf(struct mfdata *f, char *fmt, ...)
 
 #if WITH_MILTER
 static int
-mfprintf(int f, char cmd, char *fmt, ...)
+vmfprintf(struct milter *f, char cmd, char *fmt, va_list ptr)
 {
-    va_list ptr;
-    int size = 1;
     char   *p, *q;
     DWORD  nw32;
     WORD   nw16;
-    char   c[1];
-    int    rc = 0, len;
+    int    len;
 
-    va_start(ptr,fmt);
+    static Cstring printbuf = { 0 };
+
+    if ( ALLOCATED(printbuf) == 0 )
+	RESERVE(printbuf,512);
+
+    S(printbuf) = 5; /* 4 bytes length, 1 byte command */
+    T(printbuf)[4] = cmd;
 
     for (p = fmt; *p; ++p) {
-	if ( (*p == '%') && p[1]) {
-	    switch (*++p) {
-	    case 'l':   size += 4;
-			(void)va_arg(ptr,DWORD);
-			break;
-	    case 'd':   size += 2;
-			(void)va_arg(ptr,int);
-			break;
-	    case 'c':   size++;
-			(void)va_arg(ptr,int);
-			break;
-	    case '*':	size += va_arg(ptr,int);
-			break;
-	    case 's':   q = va_arg(ptr,char*);
-			size += strlen(q) + 1;
-			break;
-	    }
-	}
-    }
-
-    va_end(ptr);
-
-    nw32 = htonl(size);
-
-    c[0] = cmd;
-    if (write(f, &nw32, 4) != 4 || write(f, c, 1) != 1)
-	return 0;
-
-    va_start(ptr, fmt);
-    for (p = fmt; *p; ++p) {
-	rc = 1;
 	if ( (*p == '%') && p[1]) {
 	    switch (*++p) {
 	    case 'l':   nw32 = htonl(va_arg(ptr,DWORD));
-			rc = write(f, &nw32, 4) == 4;
+			SUFFIX(printbuf, &nw32, 4);
 			break;
 	    case 'd':   nw16 = htons(va_arg(ptr,int));
-			rc = write(f, &nw16, 2) == 2;
+			SUFFIX(printbuf, &nw16, 2);
 			break;
-	    case 'c':   c[0] = va_arg(ptr, int);
-			rc = write(f, c, 1) == 1;
+	    case 'c':   EXPAND(printbuf) = (char)va_arg(ptr, int);
 			break;
 	    case '*':	len = va_arg(ptr, int);
-			rc = write(f, va_arg(ptr,char*), len) == len;
+			SUFFIX(printbuf, va_arg(ptr,char*), len);
 			break;
 	    case 's':   q = va_arg(ptr, char*);
-			rc = write(f, q, strlen(q)+1) == strlen(q)+1;
+			len = strlen(q) + 1;
+			SUFFIX(printbuf, q, len);
 			break;
 	    }
 	}
-	if (!rc) break;
+	else
+	    EXPAND(printbuf) = *p;
     }
+    nw32 = htonl(S(printbuf)-4);
+    memcpy(T(printbuf), &nw32, 4);
+
+#if 0
+{   int i;
+    fprintf(stderr, "Write %d bytes to %d: [", S(printbuf), f->fd);
+    for (i=0; i < S(printbuf); i++)
+	if ( isprint(T(printbuf)[i]) )
+	    fprintf(stderr, " %c ", T(printbuf)[i]);
+	else
+	    fprintf(stderr, "$%02x", ((unsigned char*)T(printbuf))[i]);
+    fprintf(stderr, "]\n");
+}
+#endif
+
+    return write(f->fd, T(printbuf), S(printbuf));
+}
+
+
+static int
+mfprintf(struct milter *f, char cmd, char *fmt, ...)
+{
+    va_list ptr;
+    int rc;
+
+    va_start(ptr, fmt);
+    rc = vmfprintf(f,cmd,fmt,ptr);
     va_end(ptr);
     return rc;
 }
@@ -371,7 +381,7 @@ mreply(struct milter *mf)
 {
     struct mfdata *ret;
 
-    while ( (ret = mread(mf->fd)) && (ret->size > 0) ) {
+    while ( (ret = mread(mf)) && (ret->size > 0) ) {
 	switch (ret->data[0]) {
 	case 'p':   break;	/* no-op */
 	case 'r':
@@ -395,7 +405,6 @@ handshake(struct letter *let, struct milter *mf)
     struct sockaddr_un urk;
     int len;
     DWORD rrflags, rpflags, rversion;
-    int f;
 
     if (mf->socket[0] == '/') {
 	/* connect to named socket
@@ -403,7 +412,7 @@ handshake(struct letter *let, struct milter *mf)
 	if (strlen(mf->socket) > sizeof urk.sun_path)
 	    return -1;
 
-	if ( (f = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if ( (mf->fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	    PERROR("socket");
 	    return -1;
 	}
@@ -412,9 +421,9 @@ handshake(struct letter *let, struct milter *mf)
 	strncpy(urk.sun_path, mf->socket, sizeof urk.sun_path);
 	len = strlen(urk.sun_path) + sizeof(urk.sun_family);
 
-	if ( connect(f, (struct sockaddr*)&urk, len) != 0 ) {
+	if ( connect(mf->fd, (struct sockaddr*)&urk, len) != 0 ) {
 	    PERROR(mf->socket);
-	    close(f);
+	    close(mf->fd);
 	    return -1;
 	}
     }
@@ -439,35 +448,34 @@ handshake(struct letter *let, struct milter *mf)
 	if (getIPa(ipchan, IP_NEW, &list) <= 0)
 	    return -1;
 
-	for (f = -1, i=list.count; i > 0; --i)
-	    if ( (f = attach_in(&(list.a[i-1].addr), port)) != -1 )
+	for (mf->fd = -1, i=list.count; i > 0; --i)
+	    if ( (mf->fd = attach_in(&(list.a[i-1].addr), port)) != -1 )
 		break;
 
 	freeiplist(&list);
-	if (f == -1)
+	if (mf->fd == -1)
 	    return -1;	/* could not connect to socket */
     }
 
+    mfprintf(mf, 'O', "%l%l%l", 2, 0xff, 0xff);
 
-    mfprintf(f, 'O', "%l%l%l", 2, 0xff, 0xff);
-    if ( (ret = mread(f)) && (ret->data[0] == 'O') 
-			  && (mdscanf(ret, "%l%l%l", &rversion, &rrflags,
-						     &rpflags) == 3) ) {
-	mf->fd = f;
+    if ( (ret = mread(mf)) && (ret->data[0] == 'O') 
+			   && (mdscanf(ret, "%l%l%l", &rversion, &rrflags,
+						      &rpflags) == 3) ) {
 	mf->rflags = rrflags;
 	mf->pflags = rpflags;
 
 	if ( mf->pflags & SKIP_CONN )
 	    return 0;
 	else {
-	    mfprintf(f, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
-					 let->deliveredIP);
+	    mfprintf(mf, 'C', "%s%c%d%s", let->deliveredby, '4', 25,
+					  let->deliveredIP);
 	    if (mreply(mf) == MF_OK)
 		return 0;
 	}
     }
-    close(f);
-    return mf->fd = -1;
+    close(mf->fd);
+    return -1;
 }
 #endif
 
@@ -490,25 +498,37 @@ mfconnect(struct letter *let)
 }
 
 
+static int
+foreach(int unless, char cmd, char *fmt, ...)
+{
 #if WITH_MILTER
-#define FORALL(unless, args)	\
-    int i, status; \
-    for (i=0; i < nrfilters; i++) \
-	if ( !((filters[i].flags & FAILED) || (filters[i].pflags & unless)) ) {\
-	    mfprintf args; \
-	    if ( (status = mreply(&filters[i])) == MF_EOF) { \
-		filters[i].flags |= FAILED; \
-		if ( filters[i].flags & HARD ) \
-		    return status; \
-	    } \
-	    else if (status != MF_OK) \
-		return status; \
-	} \
-    return MF_OK
-#else
-#define FORALL(args)	return MF_OK
-#endif
+    int i, status;
+    va_list ptr;
 
+    for (i=0; i < nrfilters; i++)
+	if ( filters[i].flags & FAILED )
+	    continue;
+	else if ( filters[i].pflags & unless )
+	    continue;
+	else {
+	    va_start(ptr, fmt);
+	    vmfprintf(&filters[i], cmd, fmt, ptr);
+	    va_end(ptr);
+	    if ( (status = mreply(&filters[i])) == MF_EOF) {
+		filters[i].flags |= FAILED|DEAD; 
+		if ( filters[i].flags & HARD ) {
+		    allfail();
+		    return status; 
+		}
+	    }
+	    else if (status != MF_OK) {
+		allfail();
+		return status;
+	    }
+	}
+#endif
+    return MF_OK;
+}
 
 int
 mfheader(struct letter *let,  char *start, char *sep, char *end)
@@ -522,16 +542,14 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
     memcpy(content,sep+1, (end-sep)-1);
     content[end-sep-1] = 0;
 #endif
-    {
-	FORALL(SKIP_HDRS, (filters[i].fd, 'L', "%s%s", header, content) );
-    }
+    return foreach(SKIP_HDRS, 'L', "%s%s", header, content);
 }
 
 #if WITH_MILTER
 static int
 mfeoh()
 {
-    FORALL(SKIP_EOH, (filters[i].fd, 'N', "") );
+    return foreach(SKIP_EOH, 'N', "" );
 }
 #endif
 
@@ -539,27 +557,27 @@ mfeoh()
 static int
 mfchunk(char *p, int size)
 {
-    FORALL(SKIP_DATA, (filters[i].fd, 'B', "%*", size, p) );
+    return foreach(SKIP_DATA, 'B', "%*", size, p);
 }
 #endif
 
 int
 mfhelo(struct letter *let, char *hellostring)
 {
-    FORALL(SKIP_HELO, (filters[i].fd, 'H', "%s", hellostring) );
+    return foreach(SKIP_HELO, 'H', "%s", hellostring);
 }
 
 
 int
 mffrom(struct letter *let, char *from)
 {
-    FORALL(SKIP_FROM, (filters[i].fd, 'M', "%s", from) );
+    return foreach(SKIP_FROM, 'M', "%s", from );
 }
 
 int
 mfto(struct letter *let, char *to)
 {
-    FORALL(SKIP_TO, (filters[i].fd, 'R', "%s", to) );
+    return foreach(SKIP_TO, 'R', "%s", to );
 }
 
 
@@ -571,7 +589,7 @@ mfreset(struct letter *let)
 
     for (i=0; i < nrfilters; i++)
 	if (filters[i].fd != -1) {
-	    mfprintf(filters[i].fd, 'A', "");
+	    mfprintf(&filters[i], 'A', "");
 	    filters[i].flags &= ~FAILED;
 	}
 #endif
@@ -586,7 +604,7 @@ mfquit(struct letter *let)
 
     for (i=0; i < nrfilters; i++)
 	if (filters[i].fd != -1) {
-	    mfprintf(filters[i].fd, 'Q', "");
+	    mfprintf(&filters[i], 'Q', "");
 	    close(filters[i].fd);
 	    filters[i].fd = -1;
 	}
@@ -604,10 +622,10 @@ mfeom()
 
     for (i=0; i < nrfilters; i++)
 	if ( (filters[i].flags & FAILED) == 0 ) {
-	    mfprintf(filters[i].fd, 'E', "");
+	    mfprintf(&filters[i], 'E', "");
 	    do {
 		if ( (status=mreply(&filters[i])) == MF_EOF ) {
-		    filters[i].flags |= FAILED;
+		    filters[i].flags |= FAILED|DEAD;
 		    if (filters[i].flags & HARD)
 			return MF_REJ;
 		    status = MF_OK;

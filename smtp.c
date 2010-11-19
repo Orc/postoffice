@@ -191,7 +191,7 @@ smtpbugcheck(struct letter *let)
 #if WITH_MILTER
     char *what = 0;
     
-    if (mfdata(let) == MF_OK)
+    if ( let->healthy && (mfdata(let) == MF_OK) )
 	return 1;
     
     if ( what = mfresult() ) {
@@ -276,9 +276,14 @@ from(struct letter *let, char *line, int *delay)
 
     p = skipspace(p+1);
 
-    if (mffrom(let, p) != MF_OK) {
-	mfcomplain(let, "Not Allowed");
-	return mfcode() / 100;
+    if ( let->healthy && (mffrom(let, p) != MF_OK) ) {
+	switch ( let->env->spam.action ) {
+	case spBOUNCE:  mfcomplain(let, "Not Allowed");
+			let->healthy = 0;
+			return mfcode() / 100;
+	case spFILE:	let->healthy = 0;
+			break;
+	}
     }
 
     if ( (from = parse_address(let, p, 0)) == 0)
@@ -366,9 +371,14 @@ to(struct letter *let, char *line)
 
     p = skipspace(p+1);
 
-    if (mfto(let,p) != MF_OK) {
-	mfcomplain(let, "Not Allowed");
-	return 0;
+    if ( let->healthy && (mfto(let,p) != MF_OK) ) {
+	switch ( let->env->spam.action ) {
+	case spBOUNCE:  mfcomplain(let, "Not Allowed");
+			let->healthy = 0;
+			return 0;
+	case spFILE:	let->healthy = 0;
+			break;
+	}
     }
 
     if ( (a = parse_address(let, p, 1)) == 0) return 0;
@@ -493,9 +503,14 @@ helo(struct letter *let, enum cmds cmd, char *line)
     struct iplist list;
     char *p;
 
-    if (mfhelo(let,line) != MF_OK) {
-	mfcomplain(let, "How ill-mannered");
-	return 0;
+    if ( let->healthy && (mfhelo(let,line) != MF_OK) ) {
+	switch ( let->env->spam.action ) {
+	case spBOUNCE:  mfcomplain(let, "How ill-mannered");
+			let->healthy = 0;
+			return 0;
+	case spFILE:	let->healthy = 0;
+			break;
+	}
     }
 
     let->helo = 1;
@@ -593,6 +608,8 @@ debug(struct letter *let)
 
     message(let->out,-250, "Version: <%s>\n", myversion);
     message(let->out,-250, "B1FF!!!!: T\n");
+    message(let->out,-250, "Health: %s\n", let->healthy ? "Good"
+							: "Pining for the fjords");
 #if WITH_TCPWRAPPERS
     message(let->out,-250, "Tcp-Wrappers: T\n");
 #endif

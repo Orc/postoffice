@@ -201,6 +201,8 @@ prepare(struct letter *let, FILE *in, FILE *out, struct env *e)
 {
     memset(let, 0, sizeof *let);
 
+    let->healthy = 1;
+
 #if HAVE_SETLINEBUF
     if (let->in = in)
 	setlinebuf(let->in);
