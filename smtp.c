@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sysexits.h>
+#include <fcntl.h>
 
 #ifdef WITH_TCPWRAPPERS
 #include <tcpd.h>
@@ -132,6 +133,31 @@ message(FILE *f, int code, char *fmt, ...)
 }
 
 
+static int
+purge(int fd)
+{
+    int flags;
+    char bfr[256];
+    int size;
+    int eaten=0;
+
+    if ( (flags = fcntl(fd, F_GETFL)) == -1 )
+       return 0;
+
+    if ( fcntl(fd, F_SETFL, O_NONBLOCK) == -1 )
+       return 0;
+
+    sleep(1);
+    while ( (size = read(fd, bfr, 256)) > 0 ) {
+       eaten += size;
+    }
+
+    fcntl(fd, F_SETFL, flags);
+
+    return eaten;
+}
+
+
 static jmp_buf bye;
 
 static void
@@ -191,8 +217,15 @@ smtpbugcheck(struct letter *let)
 #if WITH_MILTER
     char *what = 0;
     
-    if ( let->healthy && (mfdata(let) == MF_OK) )
-	return 1;
+    if ( let->healthy ) {
+	int status = mfdata(let);
+	if ( status == MF_OK )
+	    return 1;
+	else if ( status == MF_TEMP ) {
+	    mfcomplain(let, "My brain hurts!");
+	    return 0;
+	}
+    }
     
     if ( what = mfresult() ) {
 	anotherheader(let, "X-Spam", what);
@@ -256,6 +289,33 @@ parse_address(struct letter *let, char *p, int to)
 }
 
 
+typedef int (*mfcheck)(struct letter *, char *);
+
+
+static int
+mfchk(mfcheck mf, struct letter *let, char *arg, char *soft, char *hard)
+{
+    if ( let->healthy ) {
+	int status = (*mf)(let, arg);
+
+	if ( status == MF_TEMP ) {
+	    mfcomplain(let, soft);
+	    return 0;
+	}
+	else if ( status != MF_OK ) {
+	    switch ( let->env->spam.action ) {
+	    case spBOUNCE:  mfcomplain(let, hard);
+			    let->healthy = 0;
+			    return 0;
+	    case spFILE:    let->healthy = 0;
+			    break;
+	    }
+	}
+    }
+    return 1;
+}
+
+
 static int
 from(struct letter *let, char *line, int *delay)
 {
@@ -276,15 +336,8 @@ from(struct letter *let, char *line, int *delay)
 
     p = skipspace(p+1);
 
-    if ( let->healthy && (mffrom(let, p) != MF_OK) ) {
-	switch ( let->env->spam.action ) {
-	case spBOUNCE:  mfcomplain(let, "Not Allowed");
-			let->healthy = 0;
-			return mfcode() / 100;
-	case spFILE:	let->healthy = 0;
-			break;
-	}
-    }
+    if ( !mfchk(mffrom, let, p, "I'm sorry, your name was?", "Not Allowed") )
+	return mfcode() / 100;
 
     if ( (from = parse_address(let, p, 0)) == 0)
 	return 5;
@@ -371,15 +424,8 @@ to(struct letter *let, char *line)
 
     p = skipspace(p+1);
 
-    if ( let->healthy && (mfto(let,p) != MF_OK) ) {
-	switch ( let->env->spam.action ) {
-	case spBOUNCE:  mfcomplain(let, "Not Allowed");
-			let->healthy = 0;
-			return 0;
-	case spFILE:	let->healthy = 0;
-			break;
-	}
-    }
+    if ( !mfchk(mfto,let,p,"I can't read this address", "Not Allowed") )
+	return 0;
 
     if ( (a = parse_address(let, p, 1)) == 0) return 0;
 
@@ -503,15 +549,8 @@ helo(struct letter *let, enum cmds cmd, char *line)
     struct iplist list;
     char *p;
 
-    if ( let->healthy && (mfhelo(let,line) != MF_OK) ) {
-	switch ( let->env->spam.action ) {
-	case spBOUNCE:  mfcomplain(let, "How ill-mannered");
-			let->healthy = 0;
-			return 0;
-	case spFILE:	let->healthy = 0;
-			break;
-	}
-    }
+    if ( !mfchk(mfhelo,let,line, "Where's my toast?", "How ill-mannered") )
+	return 0;
 
     let->helo = 1;
     if (let->env->checkhelo && !let->env->relay_ok) {
@@ -829,10 +868,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	if (fgets(line, sizeof line, in) == 0)
 	    break;
 
+#if 0
 	if (donotaccept) {
 	    alarm(0);
 	    sleep(15);
 	}
+#endif
 	psstat(&letter, (c = cmd(line)) == MISC ? "ERR!" : line);
 
 	alarm(60);	/* allow 60 seconds to process a command */
@@ -963,6 +1004,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    do_reset(&letter);
 		}
 		else {
+		    purge(fileno(letter.in));
 		    audit(&letter, "DATA", "", 503);
 		    message(out, 503, "Who is it %s?", letter.from ? "TO" : "FROM");
 		    score -= 2;

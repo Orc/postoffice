@@ -518,11 +518,12 @@ foreach(int unless, char cmd, char *fmt, ...)
 		filters[i].flags |= FAILED|DEAD; 
 		if ( filters[i].flags & HARD ) {
 		    allfail();
-		    return status; 
+		    return MF_TEMP; 
 		}
 	    }
 	    else if (status != MF_OK) {
-		allfail();
+		if ( status != MF_TEMP )
+		    allfail();
 		return status;
 	    }
 	}
