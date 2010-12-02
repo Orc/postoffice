@@ -38,7 +38,7 @@ authmeharder(struct letter *let, char *user, char *pass)
     struct passwd *pw;
     int ret = 0;
 
-    if ( addr = mkaddress(user) ) { 
+    if ( (addr = mkaddress(user)) && (addr->user != 0) ) { 
 #if AUTH_PASSWD
 	struct domain *dom = getdomain(addr->domain);
 
