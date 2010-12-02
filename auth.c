@@ -38,16 +38,19 @@ authmeharder(struct letter *let, char *user, char *pass)
     struct passwd *pw;
     int ret = 0;
 
-    if ( (addr = mkaddress(user)) && (addr->user != 0) ) { 
-#if AUTH_PASSWD
-	struct domain *dom = getdomain(addr->domain);
+    if ( addr = mkaddress(user) ) {
 
-	pw = isvhost(dom) ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
+	if ( addr->user ) { 
+#if AUTH_PASSWD
+	    struct domain *dom = getdomain(addr->domain);
+
+	    pw = isvhost(dom) ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
 #else
-	pw = getvpwemail(getdomain(addr->domain), addr->user);
+	    pw = getvpwemail(getdomain(addr->domain), addr->user);
 #endif
-	if (pw)
-	    ret = (strcmp(pw->pw_passwd, crypt(pass, pw->pw_passwd)) == 0);
+	    if (pw)
+		ret = (strcmp(pw->pw_passwd, crypt(pass, pw->pw_passwd)) == 0);
+	}
 	freeaddress(addr);
     }
 

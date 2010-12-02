@@ -342,8 +342,7 @@ from(struct letter *let, char *line, int *delay)
     if ( (from = parse_address(let, p, 0)) == 0)
 	return 5;
 
-    if ( from->local && from->user
-		     && let->env->verify_from
+    if ( from->local && let->env->verify_from
 		     && !(isvhost(from->dom) || let->env->relay_ok) ) {
 	message(let->out, 501, "You are not a local client.");
 	freeaddress(from);
@@ -760,6 +759,17 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	if (!hosts_ctl("smtp", letter.deliveredby,
 			       letter.deliveredIP, STRING_UNKNOWN)) {
 	    int status;
+	    if ( why=getenv("DENY") ) {
+		goodness(&letter,-10);
+		audit(&letter,"CONN","outlawed", 521);
+		message(out, 521, "%s does not accept mail"
+				  " from %s, because %s.", letter.deliveredto,
+				  letter.deliveredby, why);
+		syslog(LOG_ERR, "REJECT: outlawed (%s, %s)",
+				    letter.deliveredby, letter.deliveredIP);
+		byebye(&letter,1);
+	    }
+
 	    if ( (why=getenv("WHY")) == 0)
 		why = "We get too much spam from your domain";
 

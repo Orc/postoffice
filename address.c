@@ -151,7 +151,6 @@ verify(struct letter *let, struct domain *dom, char *p, int flags, int *reason)
 	    freeaddress(ret);
 	    return 0;
 	}
-
 	return ret;
     }
     if (reason) { *reason = bad ? V_BOGUS : V_ERROR; }
