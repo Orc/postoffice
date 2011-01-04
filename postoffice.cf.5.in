@@ -172,6 +172,15 @@ local clients have.
 @STATFS@and
 @STATFS@.Ql g
 @STATFS@being gigabytes
+.It Li msp
+If set,
+.Sy postoffice
+accepts connections on port
+.Em 587
+as well as the normal port
+.Em 25 .
+This allows access from mail clients that
+live behind firewalls which block port 25.
 .It Li nodaemon
 Do not accept mail from
 .Em <> .
