@@ -330,10 +330,9 @@ catchsigs(void (*newsig)(int))
 }
 
 void
-server(ENV *env, int debug)
+server(ENV *env, int smtp_port, int debug)
 {
-    struct servent *proto = getservbyname("smtp", "tcp");
-    int port = proto ? proto->s_port : htons(25);
+    int port = htons(smtp_port);
     unsigned int retries;
     int sock, client;
     int status, i;

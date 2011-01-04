@@ -50,6 +50,7 @@ float
 main(int argc, char **argv)
 {
     int opt;
+    int smtp_port = 25;
     int Cflag = 0;			/* flag for -C */
     extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
@@ -137,7 +138,7 @@ main(int argc, char **argv)
 	env.bmode = 'i';
     }
     else if ( SAME(pgm, "smtpd") ) {
-	options = "aA:B:C:do:h:q:R:GUmnvV";
+	options = "aA:B:C:do:h:q:p:R:GUmnvV";
 	env.bmode = 'd';
     }
 
@@ -168,6 +169,9 @@ main(int argc, char **argv)
 		    }
 		}
 #endif
+		break;
+	case 'p':
+		smtp_port=atoi(z_optarg);
 		break;
 	case 'q':
 		if ( env.bmode == 'p' )
@@ -244,7 +248,7 @@ main(int argc, char **argv)
 			auditon(0);
 		    else
 			auditoff(0);
-		    server(&env, debug);
+		    server(&env, smtp_port, debug);
 		    exit(EX_OK);
 		}
 		fprintf(stderr, "%s: Permission denied.\n", pgm);
