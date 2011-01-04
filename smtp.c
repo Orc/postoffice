@@ -683,6 +683,8 @@ debug(struct letter *let)
     if (env->minfree)
 	message(let->out,-250, "minfree: %ld", env->minfree);
     
+    if (env->submission_port)
+	message(let->out,-250, "submission port: %d", env->submission_port);
     about(let, "spam", &(env->spam));
     about(let, "blacklist", &(env->rej));
 

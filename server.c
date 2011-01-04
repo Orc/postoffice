@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <limits.h>
@@ -329,13 +330,39 @@ catchsigs(void (*newsig)(int))
     }
 }
 
-void
-server(ENV *env, int smtp_port, int debug)
+
+static void
+reattach(ENV *env, int i, int sock[], int port[])
 {
-    int port = htons(smtp_port);
-    unsigned int retries;
-    int sock, client;
+    unsigned int retries = 0;
+    
+    syslog(LOG_ERR, "%m -- reattaching to port %d", port[i]);
+    close(sock[i]);
+    while ( 1 ) {
+	sleep(60);
+	sock[i] = attach(htons(port[i]));
+
+	if ( sock[i] == -1 )
+	    syslog(LOG_ERR, "cannot attach to port %d (retry %d): %m",
+			     port[i], ++retries);
+	else
+	    return;
+    }
+}
+
+
+void
+server(ENV *env, int debug)
+{
+    int port[2], sock[2];
+    int nrports = env->submission_port ? 2 : 1;
+    int maxfd;
+    int client;
     int status, i;
+    fd_set reads, errors;
+
+    port[0] = 25;
+    port[1] = env->submission_port;
 
     setproctitle("accepting connections");
     nwindow = env->max_clients;
@@ -357,41 +384,48 @@ server(ENV *env, int smtp_port, int debug)
     signal(SIGCHLD, reaper);
     signal(SIGPIPE, SIG_IGN);
 
-    if ( (sock = attach(port)) == -1) {
-	syslog(LOG_ERR, "daemon cannot attach: %m");
-	exit(EX_OSERR);
-    }
+    for (i=0; i < nrports; i++ )
+	if ( ( sock[i] = attach(htons(port[i])) ) == -1 ) {
+	    syslog(LOG_ERR, "daemon cannot attach to port %d: %m", port[i]);
+	    exit(EX_OSERR);
+	}
 
     while (1) {
 	struct sockaddr j;
 	socklen_t js = sizeof j;
 
-	if ( (client = accept(sock, &j, &js)) == -1 ) {
-	    if (errno == EINTR)
-		continue;
-	    else if (errno != EBADF) {
-		syslog(LOG_ERR, "accept: %m");
-		if (debug) printf("debug server:%s\n", strerror(errno));
-	    }
-	    else {
-	reattach:
-		syslog(LOG_ERR, "%m -- restarting daemon");
-		close(sock);
-		retries = 0;
-		while (1) {
-		    sleep(60);
-		    if ( (sock=attach(port)) != -1 )
-			break;
-		    syslog(LOG_ERR, "daemon cannot attach (retry %d): %m", ++retries);
-		}
-	    }
+	FD_ZERO(&reads);
+	FD_ZERO(&errors);
+	for (maxfd=i=0; i < nrports; i++) {
+	    FD_SET(sock[i], &reads);
+	    FD_SET(sock[i], &errors);
+	    if ( maxfd < sock[i] )
+		maxfd = sock[i];
 	}
-	else {
-	    if (debug) printf("debug server:session\n");
-	    status = do_smtp_connection(client, env);
-	    close(client);
-	    if (status < 0)
-		goto reattach;
+
+	if ( (status = select(1+maxfd, &reads, 0, &errors, 0)) > 0 ) {
+	    for (i=0; i < nrports; i++)
+		if ( FD_ISSET(sock[i], &reads) ) {
+		    if ( (client = accept(sock[i], &j, &js)) != -1 ) {
+			if (debug)
+			    printf("debug server:session (port %d)\n", port[i]);
+			status = do_smtp_connection(client, env);
+			close(client);
+			if (status < 0)
+			    reattach(env,i,sock,port);
+		    }
+		    else if ( errno == EINTR )
+			continue;
+		    else if ( errno != EBADF ) {
+			syslog(LOG_ERR, "accept (%d): %m", port[i]);
+			if (debug) printf("debug server (port %d): %s\n",
+					    port[i], strerror(errno));
+		    }
+		    else
+			reattach(env,i,sock,port);
+		}
+		else if ( FD_ISSET(sock[i], &errors) )
+		    reattach(env, i,sock,port);
 	}
     }
     syslog(LOG_ERR, "daemon aborting: %m");

@@ -279,6 +279,8 @@ set_option(int super, char *option, ENV *env)
 #if HAVE_STATFS || HAVE_STATVFS
 		else if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
 		    env->minfree = val * 1024;
+		else if (isopt(option, "msp", &val, 0) )
+		    env->submission_port = ( option[3] == '=' ) ? val : 587;
 #endif
 		return;
     case 'n':   if (isopt(option, "nodaemon", &val, 0))

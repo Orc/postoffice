@@ -55,7 +55,7 @@ void setproctitle(char *, ...);
 #endif
 int islocalhost(ENV *, struct in_addr *);
 void daemonize(ENV *, int);
-void server(ENV *, int, int);
+void server(ENV *, int);
 void runqd(ENV *, int);
 
 /* userok.c */

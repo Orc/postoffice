@@ -35,6 +35,7 @@ struct env {
     char *relay_host;		/* mail relay */
     long  minfree;		/* don't run if the spool directory has less
 				 * than this many bytes free */
+    int   submission_port;	/* secondary smtp server port (if any) */
     struct spam spam;		/* what to do with spam */
     struct spam rej;		/*  "  "   "   "  mail from blacklisted sites */
     struct usermap *usermap;	/* map usernames (personal aliases) */
