@@ -320,6 +320,7 @@ address(struct iplist *list, int key, char* host, int allow_localhost)
     unsigned char *p;
     int count;
     short reclen;
+    short rectype;
     int i;
 
     if (p = query(host, T_A, &dns_rec)) {
@@ -328,10 +329,13 @@ address(struct iplist *list, int key, char* host, int allow_localhost)
 	while ( p && (count-- > 0) ) {
 	    if ( (p = dname(0, &dns_rec, p, dns_rec.eod)) == 0 )
 		return;
+	    
+	    rectype = ntohs(*((short*)p));
+
 	    p += 8;
 	    GETSHORT(reclen, p);
 
-	    if ( allow_localhost || (memcmp(localhost, p, reclen) != 0) ) {
+	    if ( (rectype == 1) && (allow_localhost || (memcmp(localhost, p, reclen) != 0)) ) {
 		for (i=0; i<list->count; i++)
 		    if (memcmp( &(list->a[i].addr), p, reclen) == 0)
 			break;
