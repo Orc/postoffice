@@ -295,6 +295,9 @@ typedef int (*mfcheck)(struct letter *, char *);
 static int
 mfchk(mfcheck mf, struct letter *let, char *arg, char *soft, char *hard)
 {
+    if ( let->safe )
+	return 1;
+	
     if ( let->healthy ) {
 	int status = (*mf)(let, arg);
 
@@ -698,6 +701,7 @@ debug(struct letter *let)
 		      "NoDaemon: %s\n"
 		      "LocalMX: %s\n"
 		      "Paranoid: %s\n"
+		      "Safe: %s\n"
 		      "MXpool: %s\n"
 		      "Escape-from: %s",
 			  env->timeout,
@@ -710,6 +714,7 @@ debug(struct letter *let)
 			  env->nodaemon ? "T" : "NIL",
 			  env->localmx ? "T" : "NIL",
 			  env->paranoid ? "T" : "NIL",
+			  env->safe ? "T" : "NIL",
 			  env->mxpool ? "T" : "NIL", 
 			  env->escape_from ? "T" : "NIL" );
 }
@@ -1051,6 +1056,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 #if SMTP_AUTH
 	    case AUTH:
 		if ( auth(&letter, line) ) {
+		    if ( env->safe )
+			letter.safe = 1;
 		    auth_ok = 1;
 		    env->relay_ok = 1;
 		    donotaccept = 0;

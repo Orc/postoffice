@@ -76,6 +76,7 @@ struct letter {
     unsigned int mboxfrom:1;	/* Is the first header line ``From ...'' */
     unsigned int reject:1;	/* don't process this letter */
     unsigned int healthy:1;	/* no viruses detected here */
+    unsigned int safe:1;	/* user signed in via AUTH and can be trusted */
 } ;
 
 int prepare(struct letter *, FILE *, FILE *, ENV *);

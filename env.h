@@ -60,6 +60,7 @@ struct env {
     unsigned int   immediate:1;	/* try to run the queue immediately after */
 				/* someone sends mail */
     unsigned int   mxpool:1;	/* forward mail to best mx for domain */
+    unsigned int   safe:1;	/* AUTH USER bypasses milter checks */
 } ;
 
 typedef struct env ENV;

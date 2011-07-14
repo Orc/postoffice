@@ -61,7 +61,6 @@ isopt(char *arg, char *opt, int *val, char *m)
     return 0;
 }
 
-
 static void
 insecure(char *what)
 {
@@ -302,6 +301,8 @@ set_option(int super, char *option, ENV *env)
 		return;
     case 's':   if (isopt(option, "size", &val, "k=1000,m=1000000"))
 		    env->largest = val;
+		else if (isopt(option, "safe", &val, 0))
+		    env->safe = val;
 		else if (strncasecmp(option, "self=", 5) == 0) {
 		    if (env->localhost)
 			free(env->localhost);
