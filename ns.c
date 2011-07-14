@@ -1,10 +1,22 @@
+#include "config.h"
+
+#include <stdlib.h>
+
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
 
 #include <stdio.h>
+#include <string.h>
 
+#if HAVE_MALLOC_H
+#   include <malloc.h>
+#endif
+
+#include "mx.h"
 /*
  * how the dns records look (roughly)
  *
@@ -24,7 +36,9 @@
  * and the next one.   If the PELL.PORTLAND.OR.US above was located
  * at position 55 in the dns record, a second reference to it could
  * be done as <192><55> and a reference to ORC.PELL.PORTLAND.OR.US
- * would be <3>ORC<192><55>.
+ * would be <3>ORC<192><55>.   Note that the first NAME in a QUERY
+ * record will always be a pointer, thus preserving the offsets
+ * of the query type, class, ttl, and size.
  *
  */
 
@@ -51,7 +65,7 @@ name(unsigned char *base, unsigned char *p)
 	    putchar('{');
 	    name (base, base + z);
 	    putchar('}');
-	    return p;
+	    return (char*)p;
 	}
 	else {
 	    for ( ; size-- > 0; ++p)
@@ -59,7 +73,7 @@ name(unsigned char *base, unsigned char *p)
 	    putchar('.');
 	}
     }
-    return p;
+    return (char*)p;
 }
 
 char *
@@ -69,7 +83,7 @@ string(unsigned char *base, unsigned char *p)
 
     printf("%.*s", size, p);
 
-    return p + size;
+    return (char*)(p + size);
 }
 
 
@@ -137,19 +151,19 @@ data(unsigned char *base, unsigned char *p)
 	break;
     case 13:	/* HINFO */
 	fputs("[HINFO]",stdout);
-	q = string(base, p);
+	q = (unsigned char*)string(base, p);
 	putchar(',');
-	q = string(base, q);
+	q = (unsigned char*)string(base, q);
 	break;
     case 16:	/* TXT */
 	fputs("[TXT]",stdout);
-	q = string(base, p);
+	q = (unsigned char*)string(base, p);
 	break;
     case 6:	/* SOA */
 	fputs("[SOA]",stdout);
-	q = name(base, p);
+	q = (unsigned char*)name(base, p);
 	putchar(',');
-	q = name(base, q);
+	q = (unsigned char*)name(base, q);
 	putchar(',');
 	q = dword(q);
 	putchar(',');
@@ -166,7 +180,7 @@ data(unsigned char *base, unsigned char *p)
 	fputs("[MX]",stdout);
 	q = word(p);
 	putchar(' ');
-	return name(base, q);
+	return (unsigned char*)name(base, q);
 
     default:
 	printf("answer is (%d,%d) %d byte%s:", dtype, dclass, count, (count!=1)?"s":"");
@@ -224,9 +238,9 @@ main(int argc, char **argv)
 
 
     if (host[strlen(host)] == '.')
-	ret = res_query(host, C_IN, qtype, bfr, sizeof bfr);
+	ret = res_query(host, C_IN, qtype, (unsigned char*)bfr, sizeof bfr);
     else
-	ret = res_search(host, C_IN, qtype, bfr, sizeof bfr);
+	ret = res_search(host, C_IN, qtype, (unsigned char*)bfr, sizeof bfr);
 
     if (ret < 0) {
 	herror(host);
@@ -243,12 +257,12 @@ main(int argc, char **argv)
     say("authority",hdr->nscount);
     say("resource", hdr->arcount);
 
-    p = (char*)(&hdr[1]);
+    p = (unsigned char*)(&hdr[1]);
 
     for (count=ntohs(hdr->qdcount); count>0; --count) {
 
 	printf("query:");
-	p = name (hdr, p);
+	p = (unsigned char*)name ((unsigned char*)hdr, p);
 	putchar('\n');
 
 	/* skip type(x2)/class(x2) */
@@ -258,27 +272,27 @@ main(int argc, char **argv)
     for (count=ntohs(hdr->ancount); count>0; --count) {
 
 	printf("answer:");
-	p = name(hdr, p);
+	p = (unsigned char*)name((unsigned char*)hdr, p);
 	putchar(':');
-	p = data(hdr, p);
+	p = (unsigned char*)data((unsigned char*)hdr, p);
 	putchar('\n');
     }
 
     for (count=ntohs(hdr->nscount); count>0; --count) {
 
 	printf("authority:");
-	p = name(hdr, p);
+	p = (unsigned char*)name((unsigned char*)hdr, p);
 	putchar(':');
-	p = data(hdr, p);
+	p = (unsigned char*)data((unsigned char*)hdr, p);
 	putchar('\n');
     }
 
     for (count=ntohs(hdr->arcount); count>0; --count) {
 
 	printf("resource:");
-	p = name(hdr, p);
+	p = (unsigned char*)name((unsigned char*)hdr, p);
 	putchar(':');
-	p = data(hdr, p);
+	p = (unsigned char*)data((unsigned char*)hdr, p);
 	putchar('\n');
     }
 }
