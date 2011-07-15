@@ -335,7 +335,7 @@ address(struct iplist *list, int key, char* host, int allow_localhost)
 	    p += 8;
 	    GETSHORT(reclen, p);
 
-	    if ( (rectype == 1) && (allow_localhost || (memcmp(localhost, p, reclen) != 0)) ) {
+	    if ( (rectype == T_A) && (allow_localhost || (memcmp(localhost, p, reclen) != 0)) ) {
 		for (i=0; i<list->count; i++)
 		    if (memcmp( &(list->a[i].addr), p, reclen) == 0)
 			break;
