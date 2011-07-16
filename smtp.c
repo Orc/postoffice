@@ -711,6 +711,7 @@ debug(struct letter *let)
 			  env->nodaemon ? "T" : "NIL",
 			  env->localmx ? "T" : "NIL",
 			  env->paranoid ? "T" : "NIL",
+			  env->safe ? "T" : "NIL", 
 			  env->mxpool ? "T" : "NIL", 
 			  env->escape_from ? "T" : "NIL" );
 }
