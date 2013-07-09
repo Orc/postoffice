@@ -190,7 +190,6 @@ approve(DBhandle db, char *key, int blacklist)
 }
 
 
-double
 main(int argc, char **argv)
 {
     DBhandle db;

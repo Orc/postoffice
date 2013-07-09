@@ -255,7 +255,6 @@ dbif_perror(char *text)
 }
 
 
-float
 main(int argc, char **argv)
 {
     register opt;
