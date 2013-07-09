@@ -1137,6 +1137,7 @@ EOF
 	AC_DEFINE BIND_8_COMPAT 1
     elif $AC_CC -DBIND_8_COMPAT -o /tmp/ngc$$ /tmp/ngc$$.c -lresolv; then
 	TLOG " (found, needs BIND_8_COMPAT & -lresolv)"
+	AC_LIBS="$AC_LIBS -lresolv"
 	AC_DEFINE BIND_8_COMPAT 1
     else
 	TLOG " (not found)"
