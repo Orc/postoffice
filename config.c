@@ -258,9 +258,15 @@ set_option(int super, char *option, ENV *env)
 		    if (!super) insecure("forward-all");
 		    env->forward_all = val;
 		}
-#ifdef WITH_MILTER
+#if WITH_MILTER
 		else if (strncasecmp(option, "filter=", 7) == 0)
 		    mfregister(option+7,0);
+#endif
+		return;
+    case 'g':
+#if WITH_GREYLIST
+		if ( isopt(option,"greylist-from", &val, 0) )
+		    env->greylist_from = val;
 #endif
 		return;
     case 'h':	isopt(option,"hops", &env->max_hops, 0);

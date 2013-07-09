@@ -46,7 +46,6 @@ superpowers()
 
 char *pgm;
 
-float
 main(int argc, char **argv)
 {
     int opt;

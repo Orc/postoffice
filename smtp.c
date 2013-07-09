@@ -652,7 +652,10 @@ debug(struct letter *let)
     message(let->out,-250, "Tcp-Wrappers: T\n");
 #endif
 #if WITH_GREYLIST
-    message(let->out,-250, "Greylist: T\n");
+    if ( let->env->greylist_from )
+	message(let->out,-250, "Greylist: from-address\n");
+    else
+	message(let->out,-250, "Greylist: IP\n");
 #endif
 #ifdef AV_PROGRAM
     message(let->out,-250, "AV program: <%s>\n", AV_PROGRAM);

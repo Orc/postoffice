@@ -61,6 +61,7 @@ struct env {
 				/* someone sends mail */
     unsigned int   mxpool:1;	/* forward mail to best mx for domain */
     unsigned int   safe:1;	/* AUTH USER bypasses milter checks */
+    unsigned int   greylist_from:1; /* greylist from addresses, not IP */
 } ;
 
 typedef struct env ENV;

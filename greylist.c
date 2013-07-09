@@ -43,15 +43,23 @@ greylist(struct letter *let, int delete)
     if (let->from && let->from->user) {
 	char *p;
 
-	key = alloca(strlen(let->from->user) + strlen(let->deliveredIP) + 10);
-	if (key)
-	    sprintf(key, "%s@[%s]", let->from->user, let->deliveredIP);
+	if ( let->env->greylist_from ) {
+	    key = alloca(strlen(let->from->full)+1);
+	    if ( key ) 
+		strcpy(key, let->from->full);
+	}
+	else {
+	    key = alloca(strlen(let->from->user) + strlen(let->deliveredIP) + 10);
+	    if (key)
+		sprintf(key, "%s@[%s]", let->from->user, let->deliveredIP);
+	}
 
 	for (p = let->from->user; *p; ++p)
 	    if (*p <= ' ' || !isprint(*p))
 		multiplier++;
     }
     else {
+	/* mailerdaemon greylit is always by IP */
 	mailerdaemon = 1;
 	multiplier += 4;
 	if (key = alloca(strlen(let->deliveredIP) + 10))
