@@ -333,6 +333,8 @@ vmfprintf(struct milter *f, char cmd, char *fmt, va_list ptr)
 	    case '*':	len = va_arg(ptr, int);
 			SUFFIX(printbuf, va_arg(ptr,char*), len);
 			break;
+	    case '0':   EXPAND(printbuf) = 0;
+			break;
 	    case 's':   q = va_arg(ptr, char*);
 			len = strlen(q) + 1;
 			SUFFIX(printbuf, q, len);
@@ -344,7 +346,6 @@ vmfprintf(struct milter *f, char cmd, char *fmt, va_list ptr)
     }
     nw32 = htonl(S(printbuf)-4);
     memcpy(T(printbuf), &nw32, 4);
-
 #if 0
 {   int i;
     fprintf(stderr, "Write %d bytes to %d: [", S(printbuf), f->fd);
@@ -543,7 +544,7 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
     memcpy(content,sep+1, (end-sep)-1);
     content[end-sep-1] = 0;
 #endif
-    return foreach(SKIP_HDRS, 'L', "%s%c%s", header, 0, content);
+    return foreach(SKIP_HDRS, 'L', "%s%s", header, content);
 }
 
 #if WITH_MILTER
@@ -569,16 +570,29 @@ mfhelo(struct letter *let, char *hellostring)
 }
 
 
+/* strip the \r\n off the end of a line
+ */
+static int
+withoutnl(char *text)
+{
+    int total = strlen(text);
+
+    if ( total > 0 && text[total-1] == '\n') --total;
+    if ( total > 0 && text[total-1] == '\r') --total;
+
+    return total;
+}
+
 int
 mffrom(struct letter *let, char *from)
 {
-    return foreach(SKIP_FROM, 'M', "%s", from );
+    return foreach(SKIP_FROM, 'M', "%*%0", withoutnl(from), from );
 }
 
 int
 mfto(struct letter *let, char *to)
 {
-    return foreach(SKIP_TO, 'R', "%s", to );
+    return foreach(SKIP_TO, 'R', "%*%0", withoutnl(to), to );
 }
 
 
