@@ -309,6 +309,7 @@ mfchk(mfcheck mf, struct letter *let, char *arg, char *soft, char *hard)
 			    return 0;
 	    case spFILE:    let->healthy = 0;
 			    break;
+	    default:        /*to make clang STFU */ ;
 	    }
 	}
     }
@@ -1008,6 +1009,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			    if ( donotaccept && (env->rej.action == spFILE) )
 				sentence(&letter, emBLACKLIST);
 			    if ( ( (env->safe && auth_ok) || smtpbugcheck(&letter)) && post(&letter) ) {
+				if (donotaccept && why)
+				    anotherheader(&letter, "X-Spam", (char*)why);
 				audit(&letter, "DATA", "", 250);
 				message(out, 250, "Okay fine."); 
 				score += 2;
