@@ -1006,11 +1006,13 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			}
 			else {
 			    alarm(0);
-			    if ( donotaccept && (env->rej.action == spFILE) )
-				sentence(&letter, emBLACKLIST);
+			    if ( donotaccept ) {
+				if ( why )
+				    anotherheader(&letter, "X-Spam",(char*)why);
+				if ( env->rej.action == spFILE )
+				    sentence(&letter, emBLACKLIST);
+			    }
 			    if ( ( (env->safe && auth_ok) || smtpbugcheck(&letter)) && post(&letter) ) {
-				if (donotaccept && why)
-				    anotherheader(&letter, "X-Spam", (char*)why);
 				audit(&letter, "DATA", "", 250);
 				message(out, 250, "Okay fine."); 
 				score += 2;
