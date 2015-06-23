@@ -88,7 +88,7 @@ main()
     show(",orc(david parsons)@pell(.portland.or.us)");
     show("\"orc@pell.portland.or.us\"(david parsons)");
     show("orc,(david parsons)orc,orc(david parsons)@pell.portland.or.us");
-    show("david parsons<orc@pell.portland.or.us>,orc@pell(<david@pell.chi.il.us>)");
+    show("david parsons<orc@pell.portland.or.us>,orc@pell(<david@pell.portland.or.us>)");
     show("(david(parsons)<orc@tsfr.org>)<orc@pell.portland.or.us>orc@tsfr.org,root");
     show("<orc@pell.><orc@tsfr.org>david parsons");
     show("orc@pell\n"
