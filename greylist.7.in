@@ -71,7 +71,7 @@ at that host,
 it may never be accepted by the machine with the greylist.
 .Sh AUTHOR
 David Parsons
-.%T orc@pell.chi.il.us .
+.%T orc@pell.portland.or.us .
 .Sh SEE ALSO
 .Xr @NDBM@ 1 ,
 .Xr smtpauth 5 ,

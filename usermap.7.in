@@ -103,7 +103,7 @@ they have no actual home directories on the machine.
 
 .Sh AUTHOR
 David Parsons
-.%T orc@pell.chi.il.us .
+.%T orc@pell.portland.or.us .
 .Sh SEE ALSO
 .Xr aliases 5 ,
 .Xr postoffice 8
