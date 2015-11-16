@@ -248,7 +248,7 @@ smtpbugcheck(struct letter *let)
     
     greylist(let, 1);
 #else
-    if ( (code=virus_scan(let)) != 0 ) {
+    if ( virus_scan(let) != 0 ) {
 	message(let->out, 550, "%s", bouncereason(let));
 	return 0;
     }

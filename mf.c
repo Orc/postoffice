@@ -543,8 +543,10 @@ mfheader(struct letter *let,  char *start, char *sep, char *end)
     header[sep-start] = 0;
     memcpy(content,sep+1, (end-sep)-1);
     content[end-sep-1] = 0;
-#endif
     return foreach(SKIP_HDRS, 'L', "%s%s", header, content);
+#else
+    return MF_OK;
+#endif
 }
 
 #if WITH_MILTER
