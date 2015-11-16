@@ -182,6 +182,12 @@ data(unsigned char *base, unsigned char *p)
 	putchar(' ');
 	return (unsigned char*)name(base, q);
 
+    case 28:	/* AAAA */
+	fputs("[AAAA]",stdout);
+	for (val=0 ; count-- > 0; p++, val++)
+	    printf("%s%d", val ? "." : "", (unsigned)*p);
+	return p;
+
     default:
 	printf("answer is (%d,%d) %d byte%s:", dtype, dclass, count, (count!=1)?"s":"");
 	for ( ; count-- > 0 ; p++) {
