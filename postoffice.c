@@ -55,7 +55,7 @@ main(int argc, char **argv)
     static ENV env;
     char *from = 0;
     char *options = "aA:B:C:dF:f:r:b:o:h:R:q;GUVimnv";
-    char *modes = "sqpmid";
+    char *modes = "sqpmidD";
     struct utsname sys;
     struct hostent *p;
     int debug = 0;
