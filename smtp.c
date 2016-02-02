@@ -857,6 +857,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     signal(SIGQUIT, zzz);
     signal(SIGKILL, zzz);
     signal(SIGTERM, zzz);
+    signal(SIGTSTP, zzz);
     signal(SIGUSR1, SIG_IGN);
     signal(SIGUSR1, SIG_IGN);
     signal(SIGALRM, zzz);

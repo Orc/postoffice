@@ -237,6 +237,7 @@ mail(char *from, int argc, char **argv, ENV *env)
     signal(SIGQUIT, catchsig);
     signal(SIGKILL, catchsig);
     signal(SIGTERM, catchsig);
+    signal(SIGTSTP, catchsig);
     signal(SIGILL,  catchsig);
     signal(SIGINT,  catchsig);
     signal(SIGBUS,  catchsig);

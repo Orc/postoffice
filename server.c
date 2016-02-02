@@ -380,6 +380,7 @@ server(ENV *env, int debug)
     signal(SIGQUIT, sigexit);
     signal(SIGKILL, sigexit);
     signal(SIGTERM, sigexit);
+    signal(SIGTSTP, sigexit);
     signal(SIGUSR2, sigexit);
     signal(SIGCHLD, reaper);
     signal(SIGPIPE, SIG_IGN);
@@ -458,6 +459,7 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGQUIT, sigexit);
     signal(SIGKILL, sigexit);
     signal(SIGTERM, sigexit);
+    signal(SIGTSTP, sigexit);
     signal(SIGUSR1, no_op);
     signal(SIGUSR2, sigexit);
 
