@@ -223,8 +223,10 @@ main(int argc, char **argv)
 		smtp(stdin, stdout, peer, &env);
 		exit(EX_TEMPFAIL);
 	case 'd':
+	case 'D':
 		if (getuid() == 0) {
-		    daemonize(&env, debug);
+		    if (env.bmode == 'd')
+			daemonize(&env, debug);
 		    if (qruntime) {
 			pid_t qd;
 
