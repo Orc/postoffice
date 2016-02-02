@@ -80,6 +80,11 @@ Run as a daemon.
 will fork and run in background
 listening on socket 25 for incoming SMTP
 connections.
+.It Fl bD
+Run as a service.
+.Nm
+will run in the foreground
+listening on socket 25 for incoming SMTP connections.
 .It Fl bi
 Initialize the alias database.
 @VHOST@If a 
