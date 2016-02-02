@@ -36,6 +36,7 @@ authmeharder(struct letter *let, char *user, char *pass)
 {
     struct address *addr;
     struct passwd *pw;
+    char *encrypted;
     int ret = 0;
 
     if ( addr = mkaddress(user) ) {
@@ -48,8 +49,8 @@ authmeharder(struct letter *let, char *user, char *pass)
 #else
 	    pw = getvpwemail(getdomain(addr->domain), addr->user);
 #endif
-	    if (pw)
-		ret = (strcmp(pw->pw_passwd, crypt(pass, pw->pw_passwd)) == 0);
+	    if (pw && pass && (encrypted = crypt(pass, pw->pw_passwd)) )
+		ret = (strcmp(pw->pw_passwd, encrypted) == 0);
 	}
 	freeaddress(addr);
     }
