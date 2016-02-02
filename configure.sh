@@ -146,7 +146,7 @@ fi
 
 
 DB=
-if [ -z "$USE_GDBM" ]; then
+if [ -z "$WITH_GDBM" ]; then
     if AC_CHECK_HEADERS ndbm.h; then
 	if AC_QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
 	    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
