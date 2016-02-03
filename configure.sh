@@ -29,15 +29,6 @@ AC_INIT $TARGET
 
 AC_PROG_CC
 
-echo "int phui;" > /tmp/ngc$$.c
-if $AC_CC $AC_CFLAGS -Wno-parentheses -c -o /tmp/ngc$$.o /tmp/ngc$$.c; then
-    TLOG "It looks like you are using gcc.  You have my deepest sympathies."
-    GCC_NOT_C=1
-    AC_DEFINE "GCC_NOT_C" "1"
-    AC_CFLAGS="$AC_CFLAGS -Wno-parentheses"
-fi
-rm -f /tmp/ngc$$.o /tmp/ngc$$.c
-
 case "$AC_CC $AC_CFLAGS" in
 *-Wall*)    AC_DEFINE 'while(x)' 'while( (x) != 0 )'
 	    AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
