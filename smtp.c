@@ -649,6 +649,9 @@ debug(struct letter *let)
     message(let->out,-250, "B1FF!!!!: T\n");
     message(let->out,-250, "Health: %s\n", let->healthy ? "Good"
 							: "Pining for the fjords");
+#if WITH_PAM
+    message(let->out, -250, "PAM: T\n");
+#endif
 #if WITH_TCPWRAPPERS
     message(let->out,-250, "Tcp-Wrappers: T\n");
 #endif
