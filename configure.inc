@@ -943,7 +943,7 @@ EOF
 		esac
 		shift
 	    done
-	elif ./ngc$$ >> $__cwd >> "$__cwd"/config.h; then
+	elif ./ngc$$ >> "$__cwd"/config.h; then
 	    rc=0
 	fi
 	if [ "$rc" != 0 ]; then
@@ -1078,9 +1078,10 @@ AC_CHECK_FLOCK() {
 
 int main()
 {
-    int x = open("$$.c", O_RDWR, 0666);
-    int y = open("$$.c", O_RDWR, 0666);
+    int x = open("ngc$$.c", O_RDWR, 0666);
+    int y = open("ngc$$.c", O_RDWR, 0666);
 
+    alarm(1);
     if (flock(x, LOCK_EX) != 0)
 	exit(1);
     if (flock(y, LOCK_EX|LOCK_NB) == 0)
@@ -1092,7 +1093,7 @@ EOF
     LOGN "checking flock() sanity"
     HAS_FLOCK=0
     if $AC_CC -o ngc$$ ngc$$.c ; then
-	if ./flock ; then
+	if ./ngc$$ ; then
 	    LOG " (good)"
 	    HAS_FLOCK=1
 	    AC_DEFINE HAS_FLOCK
