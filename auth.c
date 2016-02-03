@@ -46,12 +46,11 @@ authmeharder(struct letter *let, char *user, char *pass)
     if ( addr = mkaddress(user) ) {
 
 	if ( addr->user ) { 
-#if AUTH_PASSWD
 	    struct domain *dom = getdomain(addr->domain);
-
+#if AUTH_PASSWD
 	    pw = isvhost(dom) ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
 #else
-	    pw = getvpwemail(getdomain(addr->domain), addr->user);
+	    pw = getvpwemail(dom, addr->user);
 #endif
 #if WITH_PAM
 	    if ( !isvhost(dom) )
