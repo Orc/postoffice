@@ -320,7 +320,10 @@ else
 fi
 
 if [ "$WITH_AUTH" ]; then
-    TLOGN "checking for the crypt function "
+    
+    AC_CHECK_HEADERS crypt.h && AC_DEFINE HAS_CRYPT_H 1
+	
+    TLOGN "Looking for crypt() "
     if AC_QUIET AC_CHECK_FUNCS crypt; then
 	TLOG "(found)"
 	AC_SUB LIBCRYPT ""
@@ -331,9 +334,9 @@ if [ "$WITH_AUTH" ]; then
 	    AC_SUB LIBCRYPT "-lcrypt"
 	else
 	    TLOG "(not found)"
-	    AC_FAIL "Cannot build AUTH support without a crypt() function"
 	    unset WITH_AUTH
 	    AC_SUB LIBCRYPT ""
+	    AC_FAIL "Cannot build AUTH support without crypt()"
 	fi
     fi
     case "$WITH_AUTH" in

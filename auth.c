@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#if HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+
 #include "letter.h"
 #include "dbif.h"
 #include "audit.h"
