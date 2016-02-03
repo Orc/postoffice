@@ -23,6 +23,7 @@ sbindir=@sbindir@
 mandir=@mandir@
 
 @AUTHMK@AUTH_OBJS= auth.o b64.o
+@PAMOK@AUTH_OBJS+=pam_login.o
 
 OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \

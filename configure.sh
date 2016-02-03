@@ -12,6 +12,7 @@ ac_help='
 --with-greylist		use the greylist code
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --with-auth		enable smtp authentication (for AUTH LOGIN)
+--with-pam		Use PAM for authentication (for AUTH LOGIN)
 --with-gcc-patch	patch the code to stop gcc -Wall from complaining
 --with-milter		Use sendmail-style milters for message authentication
 --with-av=SCRIPT	virus scanning script to run after receiving mail
@@ -163,7 +164,7 @@ test -z "$DB" && AC_FAIL "$TARGET requires ndbm"
 AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
 if [ "$WITH_TCPWRAPPERS" ]; then
-    TLOGN	"checking for libwrap "
+    TLOGN	"looking for tcp wrappers library "
 cat << EOF > $$.c
 #include <tcpd.h>
 int allow_severity = 1;
@@ -174,7 +175,7 @@ main()
 }
 EOF
     if $AC_CC -o $$.x $$.c ; then
-	TLOG "(ok)"
+	TLOG "(found)"
 	AC_DEFINE WITH_TCPWRAPPERS 1
 	AC_SUB    LIBWRAP ""
     elif $AC_CC -o $$.x $$.c -lwrap; then
@@ -182,10 +183,10 @@ EOF
 	AC_DEFINE WITH_TCPWRAPPERS 1
 	AC_SUB    LIBWRAP "-lwrap"
     else
-	TLOG "(no)"
 	rm -f $$.c $$.x
-	AC_FAIL "Cannot find tcp wrappers library -lwrap"
 	AC_SUB    LIBWRAP ""
+	TLOG "(no)"
+	AC_FAIL "Cannot use tcp wrappers without the libwrap library"
     fi
     rm -f $$.c $$.x
 else
@@ -347,6 +348,35 @@ if [ "$WITH_AUTH" ]; then
     AC_DEFINE	SMTP_AUTH 1
 else
     AC_SUB	AUTHMK '#'
+fi
+
+if [ "$WITH_PAM" -a "$WITH_AUTH" ]; then
+    if AC_CHECK_HEADERS security/pam_appl.h; then
+	TLOGN "looking for the PAM library "
+	if AC_QUIET AC_CHECK_FUNCS pam_start; then
+	    TLOG "(found)"
+	    AC_SUB LIBPAM ""
+	else
+	    LIBS="$__libs -lpam"
+	    if AC_QUIET AC_CHECK_FUNCS pam_start; then
+		TLOG "(-lpam)"
+		AC_SUB LIBPAM "-lpam"
+	    else
+		TLOG "(not found)"
+		AC_FAIL "Cannot build PAM support"
+		unset WITH_PAM
+		AC_SUB LIBPAM ""
+	    fi
+	fi
+    else
+	unset WITH_PAM
+    fi
+fi
+
+if [ "$WITH_PAM" ]; then
+    AC_SUB	PAMOK ''
+else
+    AC_SUB	PAMOK '#'
 fi
 
 AC_DEFINE MAX_USERLEN	16

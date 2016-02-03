@@ -49,6 +49,11 @@ authmeharder(struct letter *let, char *user, char *pass)
 #else
 	    pw = getvpwemail(getdomain(addr->domain), addr->user);
 #endif
+#if WITH_PAM
+	    if ( !isvhost(dom) )
+		ret = pam_login_ok("passwd", user, pass);
+	    else
+#endif
 	    if (pw && pass && (encrypted = crypt(pass, pw->pw_passwd)) )
 		ret = (strcmp(pw->pw_passwd, encrypted) == 0);
 	}
