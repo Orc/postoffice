@@ -353,28 +353,29 @@ else
     AC_SUB	AUTHMK '#'
 fi
 
+unset LIBPAM
 if [ "$WITH_PAM" -a "$WITH_AUTH" ]; then
     if AC_CHECK_HEADERS security/pam_appl.h; then
 	TLOGN "looking for the PAM library "
 	if AC_QUIET AC_CHECK_FUNCS pam_start; then
 	    TLOG "(found)"
-	    AC_SUB LIBPAM ""
 	else
 	    LIBS="$__libs -lpam"
 	    if AC_QUIET AC_CHECK_FUNCS pam_start; then
 		TLOG "(-lpam)"
-		AC_SUB LIBPAM "-lpam"
+		LIBPAM="-lpam"
 	    else
 		TLOG "(not found)"
 		AC_FAIL "Cannot build PAM support"
 		unset WITH_PAM
-		AC_SUB LIBPAM ""
 	    fi
 	fi
     else
 	unset WITH_PAM
     fi
 fi
+
+AC_SUB	LIBPAM "$LIBPAM"
 
 if [ "$WITH_PAM" ]; then
     AC_SUB	PAMOK ''
