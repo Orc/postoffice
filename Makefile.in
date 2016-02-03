@@ -38,7 +38,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
 all: $(PGMS)
 
 postoffice: $(OBJS)
-	$(CC) $(CFLAGS) -o postoffice $(OBJS) @LIBS@ @LIBWRAP@ @LIBCRYPT@
+	$(CC) $(CFLAGS) -o postoffice $(OBJS) @LIBS@ @LIBPAM@ @LIBWRAP@ @LIBCRYPT@
 
 version.o: version.c VERSION
 	$(CC) $(CFLAGS) -c version.c -DVERSION=\"`cat VERSION`\"
