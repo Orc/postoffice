@@ -31,11 +31,12 @@ create(int argc, char **argv, int mode)
 	return 2;
     }
 
-    if (dbname == 0)
+    if (dbname == 0) {
 	if (argc < 1)
 	    usage("create", 1);
 	else
 	    dbname = argv[1];
+    }
 
     if ( (db = dbif_open(dbname, mode, 0600)) == 0) {
 	dbif_perror(dbname);
@@ -48,11 +49,12 @@ create(int argc, char **argv, int mode)
 int
 clear(int argc, char **argv, int mode)
 {
-    if (dbname == 0)
+    if (dbname == 0) {
 	if (argc < 1)
 	    usage("clear", 1);
 	else
 	    dbname = argv[1];
+    }
 
     if ( (db = dbif_open(dbname, DBIF_TRUNC|mode, 0600)) == 0 ) {
 	dbif_perror(dbname);

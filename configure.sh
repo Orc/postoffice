@@ -30,8 +30,9 @@ AC_INIT $TARGET
 AC_PROG_CC
 
 case "$AC_CC $AC_CFLAGS" in
-*-Wall*)    AC_DEFINE 'while(x)' 'while( (x) != 0 )'
-	    AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
+*-Wall*|*-pedantic*)    ;;
+*)			AC_DEFINE 'while(x)' 'while( (x) != 0 )'
+			AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
 esac
 
 if [ "$WITH_GCC_PATCH" -a \( \( .patch_applied -ot configure.sh \) \
