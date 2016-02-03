@@ -378,6 +378,7 @@ fi
 
 if [ "$WITH_PAM" ]; then
     AC_SUB	PAMOK ''
+    AC_DEFINE	WITH_PAM 1
 else
     AC_SUB	PAMOK '#'
 fi

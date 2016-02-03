@@ -55,7 +55,7 @@ mx:     mx.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c @LIBS@
 
 mf:     mf.c mx.o socklib.o
-	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c mx.o socklib.o
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c mx.o socklib.o @LIBS@
 
 b64:    b64.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
