@@ -243,7 +243,6 @@ main(int argc, char **argv)
 			}
 		    }
 
-		    if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
 		    if (env.auditing)
 			auditon(0);
 		    else
@@ -269,14 +268,12 @@ main(int argc, char **argv)
 		}
 		else {
 		    superpowers();
-		    if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
 		    if ( !env.localhost ) env.localhost = "localhost";
 		    mail(from, argc-z_optind, argv+z_optind, &env);
 		}
 		break;
 	case 'q':
 		superpowers();
-		if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
 		runq(&env);
 		break;
 	case 'i':	/* initialize alias database */
