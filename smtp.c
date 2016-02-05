@@ -16,6 +16,7 @@
 #include <time.h>
 #include <setjmp.h>
 #include <sys/socket.h>
+#include <sys/utsname.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -746,8 +747,18 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
     openlog("smtpd", LOG_PID, LOG_MAIL);
 
+    if ( env->localhost == 0 ) {
+	struct utsname sys;
+	struct hostent *p;
+
+	if ( (uname(&sys) == 0) && (p = gethostbyname(sys.nodename)) )
+	    env->localhost = strdup(p->h_name);
+	else
+	    env->localhost = "localhost";
+    }
+
     if ( prepare(&letter, in, out, env) ) {
-	letter.deliveredby = peer ? strdup(nameof(peer)) : env->localhost;
+	letter.deliveredby = peer ? strdup(nameof(peer)) : "localhost";
 	letter.deliveredIP = peer ? strdup(inet_ntoa(peer->sin_addr)) : "127.0.0.1";
 	letter.deliveredto = env->localhost;
 

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <ctype.h>
 
@@ -269,7 +270,27 @@ set_option(int super, char *option, ENV *env)
 		    env->greylist_from = val;
 #endif
 		return;
-    case 'h':	isopt(option,"hops", &env->max_hops, 0);
+    case 'h':	if (strncasecmp(option, "hostname=", 9) == 0 ) {
+		    struct utsname sys;
+		    char *myname = option+9;
+
+		    if ( strcasecmp(myname, "auto") == 0 ) {
+			/* take my name from uname->gethostbyname */
+			if ( env->localhost ) {
+			    free(env->localhost);
+			    env->localhost = 0;
+			}
+		    }
+		    else if ( (strcasecmp(myname, "literal") == 0) ) {
+			/* take my name from uname */
+			if ( (uname(&sys) == 0) )
+			    env->localhost = strdup(sys.nodename);
+		    }
+		    else if ( strlen(myname) > 0 )
+			/* use a specific name */
+			env->localhost = strdup(myname);
+		}
+		else isopt(option,"hops", &env->max_hops, 0);
 		return;
     case 'i':	if (isopt(option, "immediate", &val, 0))
 		    env->immediate = val;
@@ -284,9 +305,9 @@ set_option(int super, char *option, ENV *env)
 #if HAVE_STATFS || HAVE_STATVFS
 		else if (isopt(option, "minfree", &val, "m=1000,g=1000000"))
 		    env->minfree = val * 1024;
+#endif
 		else if (isopt(option, "msp", &val, 0) )
 		    env->submission_port = ( option[3] == '=' ) ? val : 587;
-#endif
 		return;
     case 'n':   if (isopt(option, "nodaemon", &val, 0))
 		    env->nodaemon = val;

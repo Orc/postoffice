@@ -56,8 +56,6 @@ main(int argc, char **argv)
     char *from = 0;
     char *options = "aA:B:C:dF:f:r:b:o:h:R:q;GUVimnv";
     char *modes = "sqpmidD";
-    struct utsname sys;
-    struct hostent *p;
     int debug = 0;
     int sendmaild0 = 0;
     int qruntime = 0;
@@ -94,11 +92,6 @@ main(int argc, char **argv)
     /*for (env.szargv0=i=0; i<argc; i++)
 	env.szargv0 += strlen(argv[i]) + 1;*/
 #endif
-
-    if ( p = gethostbyname((uname(&sys) == 0) ? sys.nodename : "localhost") )
-	env.localhost = strdup(p->h_name);
-    else
-	env.localhost = "localhost";
 
 #if HAVE_BASENAME
     pgm = strdup(basename(argv[0]));
@@ -197,9 +190,6 @@ main(int argc, char **argv)
 	case 'b':
 		env.bmode = z_optarg[0];
 		break;
-	case 'o':
-		set_option( 0, z_optarg, &env );
-		break;
 	case 'v':
 		env.verbose = 1;
 		break;
@@ -212,6 +202,20 @@ main(int argc, char **argv)
 	}
     }
 
+
+    /* We process commandline `-o` options after the config file,
+     * but since the config file can be overridden by -C this means
+     * we need to do two passes of the command line just to pick up
+     * -o options AFTER any possible -C option.
+     */
+    if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
+
+    z_optind = 1;
+    while ( (opt = z_getopt(argc, argv, options)) != EOF) {
+	if ( opt == 'o' )
+	    set_option( 0, z_optarg, &env );
+    }
+
     if (sendmaild0)
 	printf("Version %s\n", myversion);
 
@@ -219,7 +223,6 @@ main(int argc, char **argv)
 	switch (env.bmode) {
 	case 's':
 		superpowers();
-		if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
 		smtp(stdin, stdout, peer, &env);
 		exit(EX_TEMPFAIL);
 	case 'd':
@@ -267,6 +270,7 @@ main(int argc, char **argv)
 		else {
 		    superpowers();
 		    if ( !Cflag ) configfile(1, CONFDIR "/postoffice.cf", &env);
+		    if ( !env.localhost ) env.localhost = "localhost";
 		    mail(from, argc-z_optind, argv+z_optind, &env);
 		}
 		break;

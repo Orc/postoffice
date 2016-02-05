@@ -47,6 +47,7 @@ local_if_list()
 	    struct ifreq cur;
 
 	    strcpy(cur.ifr_name, dev->ifr_name);
+
 	    if (ioctl(eth, SIOCGIFADDR, &cur) == -1)
 		continue;
 

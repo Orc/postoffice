@@ -148,6 +148,19 @@ The hop count is incremented every time the mail is
 processed.
 When it reaches this limit,
 the mail is returned with an error message (the default is 100 hops).
+.It Li hostname Ns = Ns Ar name
+Set the local host name.   Normally,
+.Nm
+find the local hostname by first getting the machine name, then looking
+that name up in the DNS (defaulting to "localhost" if either of these
+steps fail.)   You can tell
+.Nm
+to just use the machine name by setting 
+.Ar hostname Ns = Ns Ar literal Ns ,
+or to use 
+.Ar name
+by setting
+.Ar hostname Ns = Ns Ar name Ns .
 .It Li immediate
 Attempt to deliver mail to remote machines immediately instead of waiting
 for the next queue run.
