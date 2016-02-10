@@ -14,6 +14,7 @@ int getloadavg(double *, int);
 
 /* config.c */
 int value(char *, int *, char *);
+void myname(ENV *);
 
 /* goodness.c */
 int goodness(struct letter *, int);

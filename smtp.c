@@ -747,15 +747,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 
     openlog("smtpd", LOG_PID, LOG_MAIL);
 
-    if ( env->localhost == 0 ) {
-	struct utsname sys;
-	struct hostent *p;
-
-	if ( (uname(&sys) == 0) && (p = gethostbyname(sys.nodename)) )
-	    env->localhost = strdup(p->h_name);
-	else
-	    env->localhost = "localhost";
-    }
+    myname(env);
 
     if ( prepare(&letter, in, out, env) ) {
 	letter.deliveredby = peer ? strdup(nameof(peer)) : "localhost";

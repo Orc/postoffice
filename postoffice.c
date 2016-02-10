@@ -216,6 +216,11 @@ main(int argc, char **argv)
 	    set_option( 0, z_optarg, &env );
     }
 
+    /* if env.localhost wasn't set during configuration, set it via
+     * uname() -> gethostbyname() here
+     */
+    myname(&env);
+
     if (sendmaild0)
 	printf("Version %s\n", myversion);
 
@@ -268,7 +273,6 @@ main(int argc, char **argv)
 		}
 		else {
 		    superpowers();
-		    if ( !env.localhost ) env.localhost = "localhost";
 		    mail(from, argc-z_optind, argv+z_optind, &env);
 		}
 		break;

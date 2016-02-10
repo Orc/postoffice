@@ -13,6 +13,7 @@
 
 #include <syslog.h>
 #include <sysexits.h>
+#include <netdb.h>
 
 #include "env.h"
 #include "audit.h"
@@ -42,6 +43,20 @@ value(char *p, int *val, char *m)
 	    }
     }
     return 1;
+}
+
+void
+myname(ENV *env)
+{
+    if ( env->localhost == 0 ) {
+	struct utsname sys;
+	struct hostent *p;
+
+	if ( (uname(&sys) == 0) && (p = gethostbyname(sys.nodename)) )
+	    env->localhost = strdup(p->h_name);
+	else
+	    env->localhost = "localhost";
+    }
 }
 
 
