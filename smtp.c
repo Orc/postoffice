@@ -647,6 +647,7 @@ debug(struct letter *let)
 	describe(let->out, 250, &let->remote.to[i], "remote" );
 
     message(let->out,-250, "Version: <%s>\n", myversion);
+    message(let->out,-250, "Host: <%s>\n", let->env->localhost);
     message(let->out,-250, "B1FF!!!!: T\n");
     message(let->out,-250, "Health: %s\n", let->healthy ? "Good"
 							: "Pining for the fjords");
