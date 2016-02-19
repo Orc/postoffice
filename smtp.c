@@ -778,7 +778,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		goodness(&letter,-10);
 		audit(&letter,"CONN","outlawed", 521);
 		message(out, 521, "%s does not accept mail"
-				  " from %s, because %s.", letter.deliveredto,
+				  " from %s because %s.", letter.deliveredto,
 				  letter.deliveredby, why);
 		syslog(LOG_ERR, "REJECT: outlawed (%s, %s)",
 				    letter.deliveredby, letter.deliveredIP);
@@ -801,7 +801,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		donotaccept = 1;
 	    }
 	    message(out, status, "%s does not accept mail"
-			      " from %s, because %s.", letter.deliveredto,
+			      " from %s because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
 	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
