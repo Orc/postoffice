@@ -646,6 +646,8 @@ debug(struct letter *let)
     for (i=let->remote.count; i-- > 0; )
 	describe(let->out, 250, &let->remote.to[i], "remote" );
 
+    if (let->env->immediate)
+	message(let->out, -250, "Immediate\n");
     message(let->out,-250, "Version: <%s>\n", myversion);
     message(let->out,-250, "Host: <%s>\n", let->env->localhost);
     message(let->out,-250, "B1FF!!!!: T\n");
