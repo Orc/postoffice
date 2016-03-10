@@ -95,6 +95,7 @@ int
 anotherheader(struct letter *let, char *key, char *data)
 {
     int toadd;
+    int i;
     
     if (let == 0 || key == 0 || data == 0) return 0;
 
@@ -108,8 +109,15 @@ anotherheader(struct letter *let, char *key, char *data)
     if (let->headtext == 0)
 	return 0;
 
-    sprintf(let->headtext+let->headsize, "%s: %s\n", key, data);
-    let->headsize += toadd;
+    let->headsize += sprintf(let->headtext+let->headsize, "%s: ", key);
+    /* sanitize the data so it doesn't include any newlines
+     */
+    for (i=0; data[i]; i++)
+	let->headtext[let->headsize++] = (data[i] == '\r' || data[i] == '\n')
+					    ? ' '
+					    : data[i];
+    let->headtext[let->headsize++] = '\n';
+    let->headtext[let->headsize] = 0;	/* null terminate, just to be safe */
     return 1;
 }
 
