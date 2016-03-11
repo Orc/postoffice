@@ -916,7 +916,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		    message(out,-250, "auth login\n"
 				      "auth=login");
 #endif
-		    message(out, 250, "8bitmime");
+		    message(out, 250, "no-soliciting\n"
+		                      "8bitmime");
 		    audit(&letter, "EHLO", line, 250);
 		}
 		else
