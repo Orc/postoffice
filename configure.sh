@@ -452,7 +452,7 @@ AC_DEFINE CONFDIR '"'$AC_CONFDIR'"'
 
 AC_OUTPUT Makefile postoffice.8 newaliases.1 vhosts.7 domains.cf.5 dbm.1 \
                    greylist.7 smtpauth.5 postoffice.cf.5 aliases.5 \
-		   authexpire.8 usermap.7
+		   authexpire.8 usermap.7 os/systemd/postoffice.service
 
 
 # final warning checks, put here to put directory errors out where they
