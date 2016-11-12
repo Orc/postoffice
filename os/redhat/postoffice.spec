@@ -13,7 +13,7 @@ Version: %{codeversion}
 Release: 1
 License: BSD
 Group: System Environment/Daemons
-Source0: ftp://www.pell.chi.il.us/~orc/Code/postoffice/postoffice-%{codeversion}.tar.gz
+Source0: ftp://www.pell.portland.or.us/~orc/Code/postoffice/postoffice-%{codeversion}.tar.gz
 Buildroot: %{_tmppath}/%{name}-root
 BuildRequires: gdbm-devel
 %if "%{with_tcpd}" == "yes"
@@ -145,9 +145,9 @@ exit 0
 /var/spool/mqueue
 
 %changelog
-* Tue Mar 28 2006 David Parsons <orc@pell.chi.il.us> 1.2.6-1
+* Tue Mar 28 2006 David Parsons <orc@pell.portland.or.us> 1.2.6-1
 - replace the hardcoded version with @VERSION@ and do version
   substitution during publication.
 
-* Fri Feb 24 2006 David Parsons <orc@pell.chi.il.us> 1.2.3-1
+* Fri Feb 24 2006 David Parsons <orc@pell.portland.or.us> 1.2.3-1
 - Initial version with rpm building support
