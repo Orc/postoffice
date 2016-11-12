@@ -1,0 +1,13 @@
+[Unit]
+Description=postoffice
+Documentation=man:postoffice(8)
+After=network.target 
+
+[Service]
+ExecStart=@libdir@/postoffice -q5m -bD -a
+ExecReload=/bin/killall postoffice
+Restart=on-failure
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
