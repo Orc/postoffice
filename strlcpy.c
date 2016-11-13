@@ -1,6 +1,9 @@
 /*
  * local implementation of strlcpy(), for machines that don't have it.
  */
+#if TEST
+#include <stdio.h>
+#endif
 
 #include <string.h>
 
@@ -15,3 +18,41 @@ strlcpy(char *dest, char *src, size_t len)
 
     return strlen(src);		/* ugh */
 }
+
+
+#if TEST
+
+static void
+result(char *dest, char *src, size_t len)
+{
+
+    size_t res = strlcpy(dest, src, len);
+
+    if ( src )
+	printf("strlcpy(%p,\"%s\",%d)", dest, src, len);
+    else
+	printf("strlcpy(%p,null,%d)", dest, len);
+
+    printf(" = %d", res);
+    if ( dest && res )
+	printf(" \"%s\"", dest);
+    putchar('\n');
+}
+
+int
+main()
+{
+    char dest[10];
+
+    result(dest, 0, sizeof dest);
+    result(0,    "abc", 100);
+    result(dest, "abc", 0);
+    result(0,    0,     0);
+    result(0,    0,     100);
+    
+    result(dest, "abc", sizeof dest);
+    result(dest, "a super super super super long string", sizeof dest);
+
+    return 0;
+}
+#endif/*TEST*/
