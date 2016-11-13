@@ -43,8 +43,7 @@ mkaddress(char *full)
 	    ret->domain = strdup(q+1);
 	    size = q-full;
 	    if ( ret->domain && (ret->user = malloc(size+1)) ) {
-		strncpy(ret->user, full, size);
-		ret->user[size] = 0;
+		strlcpy(ret->user, full, size);
 		return ret;
 	    }
 	}
@@ -52,8 +51,7 @@ mkaddress(char *full)
 	    ret->user = strdup(q+1);
 	    size = q-full;
 	    if ( ret->user && (ret->domain = malloc(size+1)) ) {
-		strncpy(ret->domain, full, size);
-		ret->domain[size] = 0;
+		strlcpy(ret->domain, full, size);
 		return ret;
 	    }
 	}

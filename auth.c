@@ -116,7 +116,7 @@ authlogin(struct letter *let, char *restofline)
 	if ( (user = authgets(let, &err)) == 0 )
 	    goto done;
     }
-    strncpy(auser,user, sizeof auser - 1);
+    strlcpy(auser,user, sizeof auser);
 
     message(let->out, 334, "<%s>", res=to64("Password:"));
     free(res);

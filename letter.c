@@ -77,8 +77,7 @@ lowercase(char *q)
 {
     static char bfr[40];
 
-    strncpy(bfr, q, sizeof bfr);
-    bfr[sizeof(bfr)-1] = 0;
+    strlcpy(bfr, q, sizeof bfr);
 
     for (q=bfr; *q; ++q)
 	if (isascii(*q) && isupper(*q))

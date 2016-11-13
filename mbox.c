@@ -196,7 +196,7 @@ static void
 whynot(char *text)
 {
     if ( text && *text && (replytext[0] == 0) )
-	strncpy(replytext, text, sizeof replytext);
+	strlcpy(replytext, text, sizeof replytext);
 }
 
 

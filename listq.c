@@ -110,7 +110,7 @@ listq()
 	comment[0] = 0;
 	while ( fgets(line, sizeof line, f) != 0 )
 	    if (line[0] == C_STATUS)
-		strncpy(comment, line+1, sizeof(comment)-2);
+		strlcpy(comment, line+1, sizeof(comment)-1);
 	    else if (line[0] == C_FROM || line[0] == C_HEADER)
 		break;
 

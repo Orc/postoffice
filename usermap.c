@@ -76,8 +76,7 @@ map(char *pat, char *string, struct address *try, struct passwd **mapuser)
 	    if ( (uname = alloca(1+(string-r))) == 0 )
 		return 0;	/* need to throw a 4xx and die */
 
-	    strncpy(uname, r, string-r);
-	    uname[string-r] = 0;
+	    strlcpy(uname, r, string-r);
 	    if ( (*mapuser = getpwemail(try->dom, uname)) == 0 )
 		return 0;
 	    ++pat;

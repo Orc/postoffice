@@ -419,7 +419,7 @@ handshake(struct letter *let, struct milter *mf)
 	}
 
 	urk.sun_family = AF_UNIX;
-	strncpy(urk.sun_path, mf->socket, sizeof urk.sun_path);
+	strlcpy(urk.sun_path, mf->socket, sizeof urk.sun_path);
 	len = strlen(urk.sun_path) + sizeof(urk.sun_family);
 
 	if ( connect(mf->fd, (struct sockaddr*)&urk, len) != 0 ) {

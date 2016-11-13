@@ -293,7 +293,7 @@ readcontrolfile(struct letter *let, char *qid)
 
     reset(let);
 
-    strncpy(let->qid, qid, sizeof let->qid);
+    strlcpy(let->qid, qid, sizeof let->qid);
 
     p = ctrl;
     end = p + size;
@@ -457,7 +457,7 @@ svspool(struct letter *let)
     unlink(let->tempfile);
     let->tempfile = 0;
 
-    strncpy(let->qid, spoolfile+strlen(DATAPFX), sizeof let->qid);
+    strlcpy(let->qid, spoolfile+strlen(DATAPFX), sizeof let->qid);
 
     if (writecontrolfile(let) == 0) {
 	unlink(spoolfile);
