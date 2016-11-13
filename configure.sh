@@ -55,7 +55,12 @@ AC_CHECK_ALLOCA || AC_FAIL "$TARGET requires alloca()"
 AC_CHECK_FUNCS scandir || AC_FAIL "$TARGET requires scandir()"
 AC_CHECK_FUNCS mmap || AC_FAIL "$TARGET requires mmap()"
 AC_CHECK_FUNCS memstr
-AC_CHECK_FUNCS strlcpy
+if AC_CHECK_FUNCS strlcpy ; then
+    AC_SUB 'STRLCPY' ''
+else
+    AC_SUB 'STRLCPY' 'strlcpy.o'
+fi
+    
 
 if ! AC_CHECK_TYPE socklen_t sys/types.h sys/socket.h; then
     AC_DEFINE socklen_t int

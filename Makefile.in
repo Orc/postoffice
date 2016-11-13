@@ -31,7 +31,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
      dbif.o getopt.o socklib.o version.o usermap.o \
-     goodfile.o mf.o \
+     goodfile.o mf.o @STRLCPY@ \
      $(AUTH_OBJS)
 
 
