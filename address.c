@@ -41,16 +41,16 @@ mkaddress(char *full)
 
 	if ( q = strrchr(full, '@') ) {
 	    ret->domain = strdup(q+1);
-	    size = q-full;
-	    if ( ret->domain && (ret->user = malloc(size+1)) ) {
+	    size = 1+(q-full);
+	    if ( ret->domain && (ret->user = malloc(size)) ) {
 		strlcpy(ret->user, full, size);
 		return ret;
 	    }
 	}
 	else if (q = strchr(full, '!')) {
 	    ret->user = strdup(q+1);
-	    size = q-full;
-	    if ( ret->user && (ret->domain = malloc(size+1)) ) {
+	    size = 1+(q-full);
+	    if ( ret->user && (ret->domain = malloc(size)) ) {
 		strlcpy(ret->domain, full, size);
 		return ret;
 	    }
