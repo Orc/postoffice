@@ -1,10 +1,7 @@
 /*
  * local implementation of strlcpy(), for machines that don't have it.
  */
-#if TEST
 #include <stdio.h>
-#endif
-
 #include <string.h>
 
 size_t
@@ -15,6 +12,10 @@ strlcpy(char *dest, char *src, size_t len)
     
     strncpy(dest, src, len);
     dest[len-1] = 0;
+
+#if AAIIEE
+    fprintf(stderr, "strlcpy: \"%s\" -> \"%s\" (%d)\n", src, dest, len);
+#endif
 
     return strlen(src);		/* ugh */
 }
