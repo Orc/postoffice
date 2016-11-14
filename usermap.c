@@ -65,6 +65,7 @@ map(char *pat, char *string, struct address *try, struct passwd **mapuser)
 	}
 	else if (*pat == '~') {
 	    char *uname;
+	    int size;
 
 	    if (*mapuser) return 0;	/* only one user allowed, sorry */
 
@@ -73,10 +74,11 @@ map(char *pat, char *string, struct address *try, struct passwd **mapuser)
 		++string;
 	    if (string == r)
 		return 0;
-	    if ( (uname = alloca(1+(string-r))) == 0 )
+	    size = 1+(string-r);
+	    if ( (uname = alloca(size)) == 0 )
 		return 0;	/* need to throw a 4xx and die */
 
-	    strlcpy(uname, r, string-r);
+	    strlcpy(uname, r, size);
 	    if ( (*mapuser = getpwemail(try->dom, uname)) == 0 )
 		return 0;
 	    ++pat;
