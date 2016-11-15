@@ -428,8 +428,11 @@ writecontrolfile(struct letter *let)
 int
 svspool(struct letter *let)
 {
+    /* mktemp() file format: fixed prefix, 6 X's, ob-null */
+#define TEMPFILE DATAPFX "XXXXXX\0"
+
+    char spoolfile[sizeof(TEMPFILE)];
     int retry = 10;
-    char spoolfile[sizeof(DATAPFX)+6+1];
 
     /* No need to spool the file if it's only going to
      * local recipients
@@ -445,7 +448,7 @@ svspool(struct letter *let)
      * if there's a race.
      */
     do {
-	strcpy(spoolfile, DATAPFX "XXXXXX");
+	strcpy(spoolfile, TEMPFILE);
 
 	if (mktemp(spoolfile) && (link(let->tempfile, spoolfile) == 0) )
 	    break;
