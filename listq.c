@@ -14,22 +14,20 @@
 #include "spool.h"
 
 int
-Qpicker(struct dirent *f)
+Qpicker(const struct dirent *f)
 {
     return (f->d_name[0] == 'c') && (f->d_name[1] == 'm') && (strlen(f->d_name) == 8);
 }
 
 
 static int
-Qcompare(const void *va, const void *vb)
+Qcompare(const struct dirent **a, const struct dirent **b)
 {
-    struct dirent *a = *((struct dirent**)va);
-    struct dirent *b = *((struct dirent**)vb);
     struct stat sa, sb;
     int  ra, rb;
 
-    ra = stat( a->d_name, &sa );
-    rb = stat( b->d_name, &sb );
+    ra = stat( (*a)->d_name, &sa );
+    rb = stat( (*b)->d_name, &sb );
 
     if (ra == -1)
 	return (rb == -1) ? 0 : 1;

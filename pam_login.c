@@ -35,7 +35,8 @@ pam_login_ok(char *service, char *user, char *password)
 	reply->resp_retcode = 0;  
     }
     else {
-	syslog(LOG_ERR, "pam_login_ok: cannot malloc(%d)", sizeof(*reply));
+	syslog(LOG_ERR, "pam_login_ok: cannot malloc(%ld)",
+			(long)sizeof(*reply));
 	return 0;
     }
     

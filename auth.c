@@ -31,6 +31,10 @@
 extern char *from64(char*);
 extern char *to64(char*);
 
+#if WITH_PAM
+extern int pam_login_ok(char*,char*,char*);
+#endif
+
 
 /*
  * authmeharder() verifies a user/passwd.

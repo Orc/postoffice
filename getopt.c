@@ -49,7 +49,7 @@ char	**argv, *opts;
 	register int c;
 	register char *cp;
 
-	if(sp == 1)
+	if(sp == 1) {
 		if(z_optind >= argc ||
 		   argv[z_optind][0] != '-' || argv[z_optind][1] == '\0')
 			return(EOF);
@@ -57,6 +57,7 @@ char	**argv, *opts;
 			z_optind++;
 			return(EOF);
 		}
+	}
 
 	z_optopt = c = argv[z_optind][sp];
 	if(c == ':' || c == ';' || (cp=strchr(opts, c)) == 0) {
