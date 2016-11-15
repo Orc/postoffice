@@ -167,6 +167,33 @@ fi
 
 test -z "$DB" && AC_FAIL "$TARGET requires ndbm"
 
+AC_DEFINE `echo USE_$DB|tr 'a-z' 'A-Z'` 1
+
+# check for DB vs DBM type
+#
+
+TLOGN "Looking for $DB handle type "
+
+DB_HANDLE=
+for blobtype in 'DB*' 'DBM*' GDBM_FILE; do
+
+    cat > /tmp/ngc$$.c << EOF
+#include <$DB.h>
+
+typedef $blobtype DBhandle;
+EOF
+
+    if $AC_CC -c /tmp/ngc$$.c; then
+	DB_HANDLE=$blobtype
+	AC_DEFINE "DB_HANDLE" $blobtype
+	TLOG "($blobtype)"
+	break
+    fi
+done
+rm -f /tmp/ngc$$.c /tmp/ngc$$.o
+
+test -z "$DB_HANDLE" && AC_FAIL "(can't figure out $DB handle type)"
+
 AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
 if [ "$WITH_TCPWRAPPERS" ]; then

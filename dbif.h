@@ -4,17 +4,13 @@
 #include "config.h"
 #include <errno.h>
 
-#if HAVE_NDBM_H
+#if USE_NDBM
 #   include <sys/types.h>
 #   include <sys/stat.h>
 #   include <fcntl.h>
 #   include <ndbm.h>
 
-#if OS_DARWIN
-typedef DBM DB;
-#endif
-
-typedef DB * DBhandle;
+typedef DB_HANDLE DBhandle;
 
 #define DBIF_READER	O_RDONLY
 #define DBIF_WRITER	O_RDWR
@@ -26,7 +22,7 @@ typedef DB * DBhandle;
 
 #define dbif_errno	errno
 
-#elif HAVE_GDBM_H
+#elif USE_GDBM
 #   include <gdbm.h>
 
 typedef GDBM_FILE DBhandle;

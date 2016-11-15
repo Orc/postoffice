@@ -10,16 +10,14 @@
 #endif
 
 
-#if HAVE_GDBM_H && !defined(DBM_SUFFIX)
+#if USE_GDBM && !defined(DBM_SUFFIX)
 #   define DBM_SUFFIX	".db"
 #endif
 
 DBhandle 
 dbif_open(char *file, int flags, int mode)
 {
-#if HAVE_NDBM_H
-    return (DBhandle)dbm_open(file, flags, mode);
-#elif HAVE_GDBM_H
+#if USE_GDBM
     int gflags = GDBM_READER;
     char *dbfile = alloca(strlen(file) + 1 + strlen(DBM_SUFFIX));
 
@@ -35,7 +33,9 @@ dbif_open(char *file, int flags, int mode)
     else if (flags & DBIF_WRITER)
 	gflags = GDBM_WRITER;
 
-    return (DBhandle)gdbm_open(dbfile, 0, gflags, mode, 0);
+    return gdbm_open(dbfile, 0, gflags, mode, 0);
+#elif USE_NDBM
+    return dbm_open(file, flags, mode);
 #else
     return (DBhandle)0;
 #endif
@@ -45,10 +45,10 @@ dbif_open(char *file, int flags, int mode)
 void
 dbif_close(DBhandle db)
 {
-#if HAVE_NDBM_H
-    dbm_close((DBM*)db);
-#elif HAVE_GDBM_H
-    gdbm_close((GDBM_FILE)db);
+#if USE_GDBM
+    gdbm_close(db);
+#elif USE_NDBM
+    dbm_close(db);
 #endif
 }
 
@@ -66,10 +66,10 @@ dbif_get(DBhandle db, char *key)
     else
 	return 0;
 
-#if HAVE_NDBM_H
-    value = dbm_fetch((DBM*)db,id);
-#elif HAVE_GDBM_H
-    value = gdbm_fetch((GDBM_FILE)db, id);
+#if USE_GDBM
+    value = gdbm_fetch(db, id);
+#elif USE_NDBM
+    value = dbm_fetch(db,id);
 #else
     return 0;
 #endif
@@ -91,10 +91,10 @@ dbif_put(DBhandle db, char *key, char *data, int mode)
     else
 	return -1;
 
-#if HAVE_NDBM_H
-    return dbm_store(db,id,value,mode);
-#elif HAVE_GDBM_H
+#if USE_GDBM
     return gdbm_store(db,id,value,mode);
+#elif USE_NDBM
+    return dbm_store(db,id,value,mode);
 #else
     return -1;
 #endif
@@ -108,10 +108,10 @@ dbif_delete(DBhandle db, char *key)
     id.dptr = key;
     id.dsize= strlen(key)+1;
 
-#if HAVE_NDBM_H
-    return dbm_delete((DBM*)db, id);
-#elif HAVE_GDBM_H
-    return gdbm_delete((GDBM_FILE)db, id);
+#if USE_GDBM
+    return gdbm_delete(db, id);
+#elif USE_NDBM
+    return dbm_delete(db, id);
 #else
     return -1;
 #endif
@@ -121,7 +121,7 @@ dbif_delete(DBhandle db, char *key)
 int
 dbif_rename(char *oldname, char *newname)
 {
-#if HAVE_NDBM_H || HAVE_GDBM_H
+#if USE_NDBM || USE_GDBM
     char *oldfile = alloca(strlen(oldname)+2+strlen(DBM_SUFFIX)),
 	 *newfile = alloca(strlen(newname)+2+strlen(DBM_SUFFIX));
 
@@ -139,7 +139,7 @@ dbif_rename(char *oldname, char *newname)
 
 }
 
-#if HAVE_GDBM_H
+#if USE_GDBM
 static datum ffn_key;
 #endif
 
@@ -147,15 +147,15 @@ static datum ffn_key;
 char *
 dbif_findfirst(DBhandle db)
 {
-#if HAVE_NDBM_H
+#if USE_GDBM
+    ffn_key =  gdbm_firstkey(db);
+
+    return ffn_key.dptr ? ffn_key.dptr : 0;
+#elif USE_NDBM
     datum key;
     key = dbm_firstkey(db);
 
     return key.dptr ? key.dptr : 0;
-#elif HAVE_GDBM_H
-    ffn_key =  gdbm_firstkey(db);
-
-    return ffn_key.dptr ? ffn_key.dptr : 0;
 #else
     return 0;
 #endif
@@ -165,14 +165,14 @@ dbif_findfirst(DBhandle db)
 char *
 dbif_findnext(DBhandle db, char *lastkey)
 {
-#if HAVE_NDBM_H
-    datum key = dbm_nextkey(db);
-
-    return key.dptr ? key.dptr : 0;
-#elif HAVE_GDBM_H
+#if USE_GDBM
     ffn_key = gdbm_nextkey(db,ffn_key);
 
     return ffn_key.dptr ? ffn_key.dptr : 0;
+#elif USE_NDBM
+    datum key = dbm_nextkey(db);
+
+    return key.dptr ? key.dptr : 0;
 #else
     return 0;
 #endif
