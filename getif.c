@@ -52,7 +52,7 @@ local_if_list()
 		continue;
 
 	    if (strcmp(dev->ifr_name, "lo") == 0) {
-		unsigned int *p = (int*) &(dev->ifr_addr);
+		unsigned int *p = (unsigned int*) &(dev->ifr_addr);
 
 		ip = *(struct in_addr*)(p+1);
 	    }
