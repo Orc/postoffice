@@ -126,7 +126,7 @@ mkspool(struct letter *let)
 
 	if (df.f_bavail < size) { 
 	    syslog(LOG_ERR, "Disk too full (need %ld blocks, have %ld free)",
-			    let->env->minfree, df.f_bavail);
+			    (long)let->env->minfree, (long)df.f_bavail);
 	    return 0;
 	}
     }
@@ -210,7 +210,7 @@ addheaders(FILE *f, struct letter *let, struct recipient *to)
     if (!let->messageid)
 	fprintf(f, "Message-ID: <%s.%s@%s>\n",
 		    msgtime, let->qid, let->env->localhost);
-    if (!let->mesgfrom)
+    if (!let->mesgfrom) {
 	if (let->from->domain)
 	    fprintf(f, "From: <%s>\n", let->from->full);
 	else if ((pwd = getpwnam(let->from->full)) && pwd->pw_gecos[0] )
@@ -219,6 +219,7 @@ addheaders(FILE *f, struct letter *let, struct recipient *to)
 				let->from->full, let->env->localhost);
 	else
 	    fprintf(f, "From: <%s@%s>\n", let->from->full, let->env->localhost);
+    }
 
     if (!let->date)
 	fprintf(f, "Date: %s\n", date);
@@ -385,12 +386,14 @@ writecontrolfile(struct letter *let)
 	 */
 	if (let->qcomment && let->qcomment[0])
 	    fprintf(f, "%c%s\n", C_STATUS, let->qcomment);
-	if (notnull(let->from))
+	
+	if (notnull(let->from)) {
 	    if (let->from->domain && strlen(let->from->domain) > 0)
 		fprintf(f, "%c%s\n", C_FROM, let->from->full);
 	    else
 		fprintf(f, "%c%s@%s\n",C_FROM,let->from->user,
 				    let->env->localhost);
+	}
 
 	for (count=let->remote.count; count-- > 0; ) {
 	    status = let->remote.to[count].status;
