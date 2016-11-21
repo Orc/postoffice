@@ -19,6 +19,19 @@ dont_ask(int num_msg,
 }  
 
 
+/* complain about a pam failure, using pam_strerror() if available
+ */
+static void
+pam_log(char *message, int code)
+{
+#if HAVE_PAM_STRERROR
+    syslog(LOG_ERR, "%s (%s)", message, pam_strerror(code));
+#else
+    syslog(LOG_ERR, "%s (code %d)", message, code);
+#endif
+}
+
+
 /* authorise via pam.  Might work, might not work, it's all a mystery
  */
 int
@@ -35,7 +48,7 @@ pam_login_ok(char *service, char *user, char *password)
 	reply->resp_retcode = 0;  
     }
     else {
-	syslog(LOG_ERR, "pam_login_ok: cannot malloc(%ld)",
+	syslog(LOG_ERR, "pam_login_ok: cannot malloc %ld bytes",
 			(long)sizeof(*reply));
 	return 0;
     }
@@ -43,13 +56,13 @@ pam_login_ok(char *service, char *user, char *password)
     status = pam_start(service, user, &pretend_to_talk, &auth);
 
     if ( status != PAM_SUCCESS ) {
-	syslog(LOG_ERR, "pam_start failed (code %d)", status);
+	pam_log("pam_start failed", status);
 	return 0;
     }
 
     if ( (status = pam_authenticate(auth, 0)) != PAM_SUCCESS) {
 	switch (status) {
-	default:          syslog(LOG_ERR, "pam_auth failed (code %d)", status);
+	default:          pam_log("pam_auth failed", status);
 	case PAM_AUTH_ERR:return 0;
 	}
     }

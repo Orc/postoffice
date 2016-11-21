@@ -397,6 +397,8 @@ if [ "$WITH_PAM" -a "$WITH_AUTH" ]; then
 	    if AC_QUIET AC_CHECK_FUNCS pam_start; then
 		TLOG "(-lpam)"
 		LIBPAM="-lpam"
+
+		AC_CHECK_FUNCS pam_strerror
 	    else
 		TLOG "(not found)"
 		AC_FAIL "Cannot build PAM support"
