@@ -1545,6 +1545,12 @@ AC_SUB() {
 }
 
 #
+# AC_TEXT writes arbitrary text into config.h
+AC_TEXT() {
+    echo "$@" >> "$__cwd"/config.h
+}
+
+#
 # AC_MAK writes a define into config.mak
 AC_MAK() {
     echo "HAVE_$1 = 1" >> "$__cwd"/config.mak

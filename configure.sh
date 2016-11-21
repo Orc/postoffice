@@ -59,6 +59,7 @@ if AC_CHECK_FUNCS strlcpy ; then
     AC_SUB 'STRLCPY' ''
 else
     AC_SUB 'STRLCPY' 'strlcpy.o'
+    AC_TEXT 'extern char *strlcpy(char*,char*,int);'
 fi
     
 
@@ -438,21 +439,17 @@ rm -f uid
 # just as copies of it), install in a way that's compatable with them.
 
 if [ "$USE_MAILWRAPPERS" ]; then
-    TLOGN "checking mailwrappers"
-
     if [ -x /usr/sbin/mailwrapper ]; then
 	for x in /usr/sbin/sendmail /usr/bin/newaliases /usr/bin/mailq;do
-	    if cmp -s $x /usr/sbin/mailwrapper; then
-		TLOGN "."
-	    else
-		TLOG " (`basename $x` != mailwrapper)"
+	    if ! cmp -s $x /usr/sbin/mailwrapper; then
+		TLOG "Not using mailwrappers (`basename $x` != mailwrapper)"
 		unset USE_MAILWRAPPERS
 		break
 	fi
 	done
-	test "$USE_MAILWRAPPERS" && TLOG " (ok)"
+	test "$USE_MAILWRAPPERS" && TLOG "Using mailwrappers"
     else
-	TLOG " (no mailwrapper program)"
+	TLOG "No mailwrappers on this system"
 	unset USE_MAILWRAPPERS
     fi
 fi
