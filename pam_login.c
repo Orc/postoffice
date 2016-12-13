@@ -50,7 +50,7 @@ pam_login_ok(char *service, char *user, char *password)
     }
     else {
 	syslog(LOG_ERR, "pam_login_ok: cannot allocate %ld bytes",
-			sizeof *reply);
+			(long)sizeof *reply);
 	return 0;
     }
     
