@@ -4,6 +4,7 @@
 #include <stdlib.h>  
 #include <string.h>  
 #include <syslog.h>
+#include "config.h"
 
 
 /* don't prompt for a password, just give a pre-filled one
@@ -22,10 +23,10 @@ dont_ask(int num_msg,
 /* complain about a pam failure, using pam_strerror() if available
  */
 static void
-pam_log(char *message, int code)
+pam_log(pam_handle_t *magic, char *message, int code)
 {
 #if HAVE_PAM_STRERROR
-    syslog(LOG_ERR, "%s (%s)", message, pam_strerror(code));
+    syslog(LOG_ERR, "%s (%s)", message, pam_strerror(magic, code));
 #else
     syslog(LOG_ERR, "%s (code %d)", message, code);
 #endif
@@ -37,38 +38,38 @@ pam_log(char *message, int code)
 int
 pam_login_ok(char *service, char *user, char *password)   
 {  
-    struct pam_response *reply = malloc(sizeof(*reply));
+    struct pam_response *reply = malloc(sizeof *reply);
     struct pam_conv pretend_to_talk = { dont_ask, reply };
     pam_handle_t *auth = NULL;
-    int status;  
+    int status, is_ok = 0;  
 
     
     if ( reply ) {
-	reply->resp = strdup(password);  
-	reply->resp_retcode = 0;  
+	reply->resp = strdup(password);
+	reply->resp_retcode = 0;
     }
     else {
-	syslog(LOG_ERR, "pam_login_ok: cannot malloc %ld bytes",
-			(long)sizeof(*reply));
+	syslog(LOG_ERR, "pam_login_ok: cannot allocate %ld bytes",
+			sizeof *reply);
 	return 0;
     }
     
-    status = pam_start(service, user, &pretend_to_talk, &auth);
-
-    if ( status != PAM_SUCCESS ) {
-	pam_log("pam_start failed", status);
-	return 0;
+    if ( pam_start(service, user, &pretend_to_talk, &auth) != PAM_SUCCESS ) {
+	pam_log(auth, "pam_start failed", status);
+	free(reply->resp);
+	free(reply);
     }
-
-    if ( (status = pam_authenticate(auth, 0)) != PAM_SUCCESS) {
-	switch (status) {
-	default:          pam_log("pam_auth failed", status);
-	case PAM_AUTH_ERR:return 0;
+    else {
+	switch ( pam_authenticate(auth, 0) ) {
+	case PAM_SUCCESS:   is_ok = 1;
+			    break;
+	default:            pam_log(auth, "pam_auth failed", status);
+	case PAM_AUTH_ERR:  break;
 	}
     }
 
     pam_end(auth,status);
-    return 1;  
+    return is_ok;  
 }  
 
 
