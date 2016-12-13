@@ -384,6 +384,9 @@ server(ENV *env, int debug)
     signal(SIGUSR2, sigexit);
     signal(SIGCHLD, reaper);
     signal(SIGPIPE, SIG_IGN);
+#if SIGCONT
+    signal(SIGCONT, SIG_IGN);
+#endif
 
     for (i=0; i < nrports; i++ )
 	if ( ( sock[i] = attach(htons(port[i])) ) == -1 ) {
