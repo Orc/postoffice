@@ -54,7 +54,9 @@ pam_login_ok(char *service, char *user, char *password)
 	return 0;
     }
     
-    if ( pam_start(service, user, &pretend_to_talk, &auth) != PAM_SUCCESS ) {
+    status = pam_start(service, user, &pretend_to_talk, &auth);
+
+    if ( status != PAM_SUCCESS ) {
 	pam_log(auth, "pam_start failed", status);
 	free(reply->resp);
 	free(reply);
