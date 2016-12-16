@@ -62,7 +62,7 @@ pam_login_ok(char *service, char *user, char *password)
 	free(reply);
     }
     else {
-	switch ( pam_authenticate(auth, 0) ) {
+	switch ( status = pam_authenticate(auth, 0) ) {
 	case PAM_SUCCESS:   is_ok = 1;
 			    break;
 	default:            pam_log(auth, "pam_auth failed", status);
