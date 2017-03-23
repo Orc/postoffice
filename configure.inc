@@ -619,6 +619,7 @@ AC_LIBRARY() {
 	    return 0
 	fi
     done
+    LIBS="$__libs"	# reset LIBS if we couldn't find anything
     return 1
 }
 
