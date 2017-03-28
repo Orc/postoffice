@@ -65,8 +65,13 @@ pam_login_ok(char *service, char *user, char *password)
 	switch ( status = pam_authenticate(auth, 0) ) {
 	case PAM_SUCCESS:   is_ok = 1;
 			    break;
-	default:            pam_log(auth, "pam_auth failed", status);
-	case PAM_AUTH_ERR:  break;
+	case PAM_SYMBOL_ERR:
+	case PAM_SERVICE_ERR:
+	case PAM_SYSTEM_ERR:
+	case PAM_BUF_ERR:
+	case PAM_OPEN_ERR:  pam_log(auth, "pam_auth failed", status);
+	default:            /*permission defined for normal reasons; no logging needed*/
+			    break;
 	}
     }
 
