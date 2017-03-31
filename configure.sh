@@ -148,8 +148,7 @@ fi
 DB=
 if [ -z "$WITH_GDBM" ]; then
     if AC_CHECK_HEADERS ndbm.h; then
-	if AC_QUIET AC_CHECK_FUNCS dbm_open || AC_LIBRARY dbm_open -ldb; then
-	    LOG "Found dbmopen()" ${AC_LIBS:+in ${AC_LIBS}}
+	if AC_LIBRARY dbm_open -ldb; then
 	    AC_SUB NDBM ndbm
 	    DB=ndbm
 	fi
@@ -158,15 +157,14 @@ fi
 
 if [ -z "$DB" ]; then
     if AC_CHECK_HEADERS gdbm.h; then
-	if AC_QUIET AC_CHECK_FUNCS gdbm_open || AC_LIBRARY gdbm_open -lgdbm;then
-	    LOG "Found gdbm_open()" ${AC_LIBS:+in ${AC_LIBS}}
+	if AC_LIBRARY gdbm_open -lgdbm;then
 	    AC_SUB NDBM gdbm
 	    DB=gdbm
 	fi
     fi
 fi
 
-test -z "$DB" && AC_FAIL "$TARGET requires ndbm"
+test -z "$DB" && AC_FAIL "$TARGET requires ndbm or gdbm"
 
 AC_DEFINE `echo USE_$DB|tr 'a-z' 'A-Z'` 1
 
@@ -198,33 +196,13 @@ test -z "$DB_HANDLE" && AC_FAIL "(can't figure out $DB handle type)"
 AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
 if [ "$WITH_TCPWRAPPERS" ]; then
-    TLOGN	"looking for tcp wrappers library "
-cat << EOF > $$.c
-#include <tcpd.h>
-int allow_severity = 1;
-int deny_severity = 1;
-main()
-{
-    hosts_ctl("smtp", "", "", "");
-}
-EOF
-    if $AC_CC -o $$.x $$.c ; then
-	TLOG "(found)"
-	AC_DEFINE WITH_TCPWRAPPERS 1
-	AC_SUB    LIBWRAP ""
-    elif $AC_CC -o $$.x $$.c -lwrap; then
-	TLOG "(-lwrap)"
-	AC_DEFINE WITH_TCPWRAPPERS 1
-	AC_SUB    LIBWRAP "-lwrap"
-    else
-	rm -f $$.c $$.x
-	AC_SUB    LIBWRAP ""
-	TLOG "(no)"
-	AC_FAIL "Cannot use tcp wrappers without the libwrap library"
+    __ac_libs=$AC_LIBS
+    AC_LIBRARY hosts_ctl -lwrap || AC_FAIL "Cannot use tcp wrappers without the libwrap library"
+
+    if [ "$__ac_libs" != "$AC_LIBS" ]; then
+	AC_SUB LIBWRAP '-lwrap'
+	AC_LIBS=$__ac_libs
     fi
-    rm -f $$.c $$.x
-else
-    AC_SUB    LIBWRAP ""
 fi
 
 case "$WITH_QUEUEDIR" in
@@ -390,21 +368,16 @@ fi
 unset LIBPAM
 if [ "$WITH_PAM" -a "$WITH_AUTH" ]; then
     if AC_CHECK_HEADERS security/pam_appl.h; then
-	TLOGN "looking for the PAM library "
-	if AC_QUIET AC_CHECK_FUNCS pam_start; then
-	    TLOG "(found)"
-	else
-	    LIBS="$__libs -lpam"
-	    if AC_QUIET AC_CHECK_FUNCS pam_start; then
-		TLOG "(-lpam)"
+	__ac_libs="$AC_LIBS"
+	if AC_LIBRARY pam_start -lpam; then
+	    AC_CHECK_FUNCS pam_strerror
+	    if [ "$__ac_libs" != "$AC_LIBS" ]; then
 		LIBPAM="-lpam"
-
-		AC_CHECK_FUNCS pam_strerror
-	    else
-		TLOG "(not found)"
-		AC_FAIL "Cannot build PAM support"
-		unset WITH_PAM
+		AC_LIBS=$__ac_libs
 	    fi
+	else
+	    AC_FAIL "need a PAM library --with-pam"
+	    unset WITH_PAM
 	fi
     else
 	unset WITH_PAM
