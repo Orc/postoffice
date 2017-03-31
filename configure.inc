@@ -165,18 +165,21 @@ __MAKEDOTO() {
 #
 AC_CHECK_HEADERS () {
 
-    echo "/* AC_CHECK_HEADERS */" > ngc$$.c
-    for hdr in $*; do
-	echo "#include <$hdr>" >> ngc$$.c
-    done
-    echo "int main() { }" >> ngc$$.c
+    __hdr=$1
+    AC_PROG_CPP
 
-    LOGN "looking for header $hdr"
+    shift
+    (   echo "/* AC_CHECK_HEADERS */"
+	echo "#include <${__hdr}>" ) > ngc$$.c
 
-    if __MAKEDOTO ngc$$.c; then
-	AC_DEFINE 'HAVE_'`echo $hdr | $AC_UPPERCASE | tr './' '_'` 1
+    LOGN "looking for header $__hdr"
+
+    if $AC_CPP_FILTER ngc$$.c >/dev/null; then
+	AC_DEFINE 'HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'` 1
 	rc=0
+	LOG " (found)"
     else
+	LOG " (not found)"
 	rc=1
     fi
     __remove ngc$$.c
@@ -295,7 +298,8 @@ EOF
     LOGN "looking for $type type"
 
     if __MAKEDOTO ngc$$.c; then
-	AC_DEFINE HAVE_TYPE_`echo ${type} | $AC_UPPERCASE`
+	AC_DEFINE HAVE_`echo ${type} | $AC_UPPERCASE`
+	AC_DEFINE HAVE_`echo ${type} | $AC_UPPERCASE`
 	rc=0
     else
 	rc=1
@@ -334,7 +338,8 @@ EOF
     LOGN "checking that struct $struct has a $field field"
 
     if __MAKEDOTO ngc$$.c; then
-	AC_DEFINE HAVE_`echo ${struct}_$field | $AC_UPPERCASE`
+	# HAVE_STRUCT_ is for Gnu configure compatability
+	AC_DEFINE HAVE_STRUCT_`echo ${struct}_$field | $AC_UPPERCASE`
 	rc=0
     else
 	rc=1
@@ -608,17 +613,23 @@ AC_LIBRARY() {
 
     # first see if the function can be found in any of the
     # current libraries
-    AC_QUIET AC_CHECK_FUNCS $SRC $__aclhdrs && return 0
+    LOGN "Looking for the ${SRC} function"
+    if AC_QUIET AC_CHECK_FUNCS $SRC $__aclhdrs; then
+	LOG "(found)"
+	return 0
+    fi
 
-    # then search through the list of libraries
+    # then search through the supplied list of libraries
     __libs="$LIBS"
     for x in $__acllibs; do
 	LIBS="$__libs $x"
 	if AC_QUIET AC_CHECK_FUNCS $SRC $__aclhdrs; then
 	    AC_LIBS="$AC_LIBS $x"
+	    LOG " (in $x)"
 	    return 0
 	fi
     done
+    LOG " (not found)"
     LIBS="$__libs"	# reset LIBS if we couldn't find anything
     return 1
 }
@@ -870,6 +881,45 @@ AC_C_INLINE() {
 
 
 #
+# AC_WHATIS tries to print out the value of a macro
+#
+AC_WHATIS() {
+    MODE=$1	# what it should be (string,int,char)
+    shift
+    MACRO=$1	# the macro name
+    shift
+
+    case "$MODE" in
+    string)
+	__fmt='%s' ;;
+    int)
+	__fmt='%d' ;;
+    char)
+	__fmt='%c' ;;
+    *)  LOG "AC_WHATIS $MODE $MACRO -- mode isn't string, int, or char"
+	return 1 ;;
+    esac
+
+    (   echo '#include <stdio.h>'
+
+	for x in "$@"; do
+	    echo "#include <${x}>"
+	done
+
+	echo "main() { printf(\"${MACRO}=\\\"${__fmt}\\\"\\n\", ${MACRO}); }" )  > _ngc$$.c
+
+    if $AC_CC -o _ngc$$ _ngc$$.c; then
+	./_ngc$$
+	rc=0
+    else
+	rc=1
+    fi
+    rm -f _ngc$$ _ngc$$.c
+    return $rc
+}
+
+
+#
 # AC_SCALAR_TYPES checks to see if the compiler can generate 2 and 4 byte ints.
 #
 AC_SCALAR_TYPES () {
@@ -984,6 +1034,7 @@ AC_OUTPUT () {
     AC_SUB 'srcdir'  "$AC_SRCDIR"
     AC_SUB 'prefix'  "$AC_PREFIX"
     AC_SUB 'exedir'  "$AC_EXECDIR"
+    AC_SUB 'bindir'  "$AC_EXECDIR"
     AC_SUB 'sbindir' "$AC_SBINDIR"
     AC_SUB 'libdir'  "$AC_LIBDIR"
     AC_SUB 'libexec' "$AC_LIBEXEC"
@@ -1486,6 +1537,7 @@ EOF
 	    echo "CPP=[$1], CPPFLAGS=[$2]"
 	    AC_SUB 'CPP' "$1"
 	    AC_SUB 'CPPFLAGS' "$2"
+	    AC_CPP_FILTER="$1 $2"
 	    rm ngc$$.c ngc$$.o
 	    return 0
 	fi
@@ -1494,12 +1546,13 @@ EOF
     return 1
 }
 
-
 #
 # AC_PROG_CPP checks for cpp, then checks to see which CPPFLAGS are needed
 # to run it as a filter.
 #
 AC_PROG_CPP () {
+    test "$AC_CPP_FILTER" && return
+
     if [ "$AC_CPP_PROG" ]; then
 	DEST=$AC_CPP_PROG
     else
