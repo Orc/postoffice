@@ -176,20 +176,20 @@ TLOGN "Looking for $DB handle type "
 DB_HANDLE=
 for blobtype in 'DB*' 'DBM*' GDBM_FILE; do
 
-    cat > /tmp/ngc$$.c << EOF
+    cat > /tmp/ac$$.c << EOF
 #include <$DB.h>
 
 typedef $blobtype DBhandle;
 EOF
 
-    if $AC_CC -c /tmp/ngc$$.c; then
+    if $AC_CC -c -o /tmp/ac$$.o /tmp/ac$$.c; then
 	DB_HANDLE=$blobtype
 	AC_DEFINE "DB_HANDLE" $blobtype
 	TLOG "($blobtype)"
 	break
     fi
 done
-rm -f /tmp/ngc$$.c /tmp/ngc$$.o
+rm -f /tmp/ac$$.c /tmp/ac$$.o
 
 test -z "$DB_HANDLE" && AC_FAIL "(can't figure out $DB handle type)"
 
@@ -335,21 +335,18 @@ if [ "$WITH_AUTH" ]; then
     
     AC_CHECK_HEADERS crypt.h && AC_DEFINE HAS_CRYPT_H 1
 	
-    TLOGN "Looking for crypt() "
-    if AC_QUIET AC_CHECK_FUNCS crypt; then
-	TLOG "(found)"
-	AC_SUB LIBCRYPT ""
-    else
-	LIBS="$__libs -lcrypt"
-	if AC_QUIET AC_CHECK_FUNCS crypt; then
-	    TLOG "(in -lcrypt)"
-	    AC_SUB LIBCRYPT "-lcrypt"
+    __ac_libs=$AC_LIBS
+    if AC_LIBRARY crypt -lcrypt; then
+	if [ "$__ac_libs" != "$AC_LIBS" ]; then
+	    AC_LIBS=$__ac_libs
+	    AC_SUB LIBCRYPT '-lcrypt'
 	else
-	    TLOG "(not found)"
-	    unset WITH_AUTH
-	    AC_SUB LIBCRYPT ""
-	    AC_FAIL "Cannot build AUTH support without crypt()"
+	    AC_SUB LIBCRYPT ''
 	fi
+    else
+	unset WITH_AUTH
+	AC_SUB LIBCRYPT ""
+	AC_FAIL "Cannot build --with-auth without a crypt() function"
     fi
     case "$WITH_AUTH" in
     [Pp][Aa][Ss][Ss][Ww][Dd])  AC_DEFINE AUTH_PASSWD 1 ;;
