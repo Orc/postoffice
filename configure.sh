@@ -195,15 +195,17 @@ test -z "$DB_HANDLE" && AC_FAIL "(can't figure out $DB handle type)"
 
 AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
+LIBWRAP=''
 if [ "$WITH_TCPWRAPPERS" ]; then
     __ac_libs=$AC_LIBS
     AC_LIBRARY hosts_ctl -lwrap || AC_FAIL "Cannot use tcp wrappers without the libwrap library"
 
     if [ "$__ac_libs" != "$AC_LIBS" ]; then
-	AC_SUB LIBWRAP '-lwrap'
+	LIBWRAP='-lwrap'
 	AC_LIBS=$__ac_libs
     fi
 fi
+AC_SUB LIBWRAP "${LIBWRAP}"
 
 case "$WITH_QUEUEDIR" in
 "") AC_DEFINE QUEUEDIR \"/var/spool/mqueue/\" ;;
