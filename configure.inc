@@ -164,24 +164,25 @@ __MAKEDOTO() {
 #
 AC_CHECK_HEADERS () {
 
-    __hdr=$1
     AC_PROG_CPP
 
-    shift
-    (   echo "/* AC_CHECK_HEADERS */"
-	echo "#include <${__hdr}>" ) > ngc$$.c
+    for __hdr in "$@"; do
+	(   echo "/* AC_CHECK_HEADERS */"
+	    echo "#include <${__hdr}>" ) > ngc$$.c
 
-    LOGN "looking for header $__hdr"
+	LOGN "looking for header $__hdr"
 
-    if $AC_CPP_FILTER ngc$$.c >/dev/null; then
-	AC_DEFINE 'HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'` 1
-	rc=0
-	LOG " (found)"
-    else
-	LOG " (not found)"
-	rc=1
-    fi
-    __remove ngc$$.c
+	if $AC_CPP_FILTER ngc$$.c >/dev/null; then
+	    AC_DEFINE 'HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'` 1
+	    rc=0
+	    LOG " (found)"
+	else
+	    rc=1
+	    LOG " (not found)"
+	fi
+	__remove ngc$$.c
+    done
+    # return code is only meaningful if one header is checked
     return $rc
 }
 
@@ -946,13 +947,13 @@ AC_SCALAR_TYPES () {
     rc=1
     LOGN "defining WORD & DWORD scalar types"
     
-#    if AC_QUIET AC_CHECK_HEADERS WinDef.h; then
-#	# windows machine; BYTE, WORD, DWORD already
-#	# defined
-#	echo "#include <WinDef.h>" >> "$__cwd"/config.h
-#	TLOG " (defined in WinDef.h)"
-#	return 0
-#    fi
+    if AC_QUIET AC_CHECK_HEADERS WinDef.h; then
+	# windows machine; BYTE, WORD, DWORD already
+	# defined
+	echo "#include <WinDef.h>" >> "$__cwd"/config.h
+	TLOG " (defined in WinDef.h)"
+	return 0
+    fi
 	
     cat > ngc$$.c << EOF
 #include <stdio.h>
