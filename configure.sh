@@ -31,9 +31,10 @@ AC_INIT $TARGET
 AC_PROG_CC
 
 case "$AC_CC $AC_CFLAGS" in
-*-Wall*|*-pedantic*)    ;;
-*)			AC_DEFINE 'while(x)' 'while( (x) != 0 )'
-			AC_DEFINE 'if(x)' 'if( (x) != 0 )' ;;
+*-pedantic*)    ;;
+*)		AC_DEFINE 'while(x)' 'while( (x) != 0 )'
+		AC_DEFINE 'if(x)' 'if( (x) != 0 )'
+		AC_CFLAGS="$AC_CFLAGS -Wno-implicit-int" ;;
 esac
 
 if [ "$WITH_GCC_PATCH" -a \( \( .patch_applied -ot configure.sh \) \
