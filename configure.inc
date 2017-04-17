@@ -358,6 +358,29 @@ EOF
 
 
 #
+# set flags & make defines to make gcc/clang less whiny about legal
+# code constructs they disapprove of.
+#
+AC_CC_QUIET() {
+    AC_PROG_CC
+    if [ "IS_BROKEN_CC" ]; then
+	case "$AC_CC $AC_CFLAGS" in
+	*-pedantic*) ;;
+	*)  # hack around deficiencies in gcc and clang
+	    #
+	    AC_DEFINE 'while(x)' 'while( (x) != 0 )'
+	    AC_DEFINE 'if(x)' 'if( (x) != 0 )'
+
+	    if [ "$IS_CLANG" ]; then
+		AC_CC="$AC_CC -Wno-implicit-int"
+	    elif [ "$IS_GCC" ]; then
+		AC_CC="$AC_CC -Wno-return-type -Wno-implicit-int"
+	    fi ;;
+	esac
+    fi
+}
+
+#
 # check that the C compiler works
 #
 AC_PROG_CC () {

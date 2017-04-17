@@ -29,22 +29,9 @@ USE_MAILWRAPPERS=T
 AC_INIT $TARGET
 
 AC_PROG_CC
+AC_CC_QUIET
+unset _MK_LIBRARIAN
 
-case "$AC_CC $AC_CFLAGS" in
-*-pedantic*)    ;;
-*)		AC_DEFINE 'while(x)' 'while( (x) != 0 )'
-		AC_DEFINE 'if(x)' 'if( (x) != 0 )'
-		AC_CFLAGS="$AC_CFLAGS -Wno-implicit-int" ;;
-esac
-
-if [ "$WITH_GCC_PATCH" -a \( \( .patch_applied -ot configure.sh \) \
-                           -o ! -r .patch_applied \) ]; then
-    TLOG "Applying gcc -Wall patch"
-    if patch -N -p1 < os/gcc/wall.stfu.patch; then
-	rm -f *.orig
-	touch .patch_applied
-    fi
-fi
 
 AC_C_VOLATILE
 AC_C_CONST
