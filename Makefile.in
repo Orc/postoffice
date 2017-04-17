@@ -121,7 +121,7 @@ clean:
 	rm -f *.o $(PGMS) $(TOOLS)
 
 distclean spotless: clean
-	rm -f @GENERATED_FILES@ @CONFIGURE_FILES@
+	@DISTCLEAN@ @GENERATED_FILES@ @CONFIGURE_FILES@
 
 addr.o: addr.c
 address.o: address.c config.h letter.h env.h domain.h mx.h public.h
