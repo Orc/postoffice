@@ -106,6 +106,7 @@ runremote(struct letter *let, char *qid)
 	}
 	else if (pending(let->remote)) {
 	    let->qcomment = replytext;
+	    let->messageid = 1;  /* assert: a messageid always exists  */
 	    writecontrolfile(let);
 	}
 	else {
