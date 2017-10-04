@@ -185,6 +185,7 @@ AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
 LIBWRAP=''
 if [ "$WITH_TCPWRAPPERS" ]; then
+    AC_DEFINE 'WITH_TCPWRAPPERS' '1'
     __ac_libs=$AC_LIBS
     AC_LIBRARY hosts_ctl -lwrap || AC_FAIL "Cannot use tcp wrappers without the libwrap library"
 
