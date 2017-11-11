@@ -52,7 +52,7 @@ int runq(struct env *);
 
 /* server.c */
 #ifndef HAVE_SETPROCTITLE
-void setproctitle(char *, ...);
+void setproctitle(const char *, ...);
 #endif
 int islocalhost(ENV *, struct in_addr *);
 void daemonize(ENV *, int);

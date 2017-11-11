@@ -36,7 +36,7 @@
  * drop an informative message into argv
  */
 void
-setproctitle(char *fmt, ...)
+setproctitle(const char *fmt, ...)
 {
     va_list ptr;
     extern char *pgm;
@@ -117,7 +117,7 @@ reaper(int sig)
     int i, status;
     pid_t z;
 
-    while ( (z = wait3(&status, WNOHANG, 0)) > 0) {
+    while ( (z = waitpid(-1, &status, WNOHANG)) > 0) {
 	for (i = nwindow; i-- > 0; )
 	    if (z == window[i].clerk)
 		window[i].clerk = -1;
