@@ -22,7 +22,7 @@ audit(struct letter *let, char *cmd, char *line, int code)
 
     if (auditing)
 	syslog(LOG_DEBUG,"AUDIT:%3ld:%15.15s:%4.4s:%03d:%s\n",
-			  time(0) - let->posted, let->deliveredIP,
+			  (long)(time(0) - let->posted), let->deliveredIP,
 			  cmd, code, line);
 }
 

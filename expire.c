@@ -54,7 +54,7 @@ list(DBhandle db, long age)
 
 	    if (value[0] == '*') {
 		isblacklist = 1;
-		ct = sscanf(value, "* %ld", &last);
+		ct = sscanf(value, "* " TIME_T_FMT, &last);
 		if (ct == 1) {
 		    ct = 2;
 		    delay = last;
@@ -62,7 +62,7 @@ list(DBhandle db, long age)
 	    }
 	    else {
 		isblacklist = 0;
-		ct = sscanf(value, "%ld %ld", &delay, &last);
+		ct = sscanf(value, TIME_T_FMT " " TIME_T_FMT, &delay, &last);
 	    }
 
 	    if (ct >= 1) {
@@ -109,14 +109,14 @@ scrub(DBhandle db, long age)
 		if ( value[0] == '*' ) {
 		    if (!everybody) continue;
 
-		    ct = sscanf(value, "* %ld", &last);
+		    ct = sscanf(value, "* " TIME_T_FMT, &last);
 		    if (ct == 1) {
 			delay = last;
 			ct = 2;
 		    }
 		}
 		else
-		    ct = sscanf(value, "%ld %ld", &delay, &last);
+		    ct = sscanf(value, TIME_T_FMT " " TIME_T_FMT, &delay, &last);
 
 		switch (ct) {
 		case 1: last = delay;
@@ -165,14 +165,14 @@ approve(DBhandle db, char *key, int blacklist)
 
     if (blacklist) {
 	time(&last);
-	snprintf(bfr, sizeof bfr, "* %ld", last);
+	snprintf(bfr, sizeof bfr, "* " TIME_T_FMT, last);
 	dbif_put(db, key, bfr, DBIF_REPLACE);
     }
     else {
 	if ( value = dbif_get(db,key) ) {
 	    time(&delay);
 
-	    switch (sscanf(value, "%ld %ld", &delay, &last)) { 
+	    switch (sscanf(value, TIME_T_FMT " " TIME_T_FMT, &delay, &last)) { 
 	    default:
 		time(&last);
 	    case 2:
@@ -184,7 +184,7 @@ approve(DBhandle db, char *key, int blacklist)
 	    time(&last);
 	    delay = last-1;
 	}
-	snprintf(bfr, sizeof bfr, "%ld %ld", delay, last);
+	snprintf(bfr, sizeof bfr, TIME_T_FMT " " TIME_T_FMT, delay, last);
 	dbif_put(db, key, bfr, DBIF_REPLACE);
     }
 }
