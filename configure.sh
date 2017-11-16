@@ -223,7 +223,7 @@ AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
 
 AC_CHECK_HEADERS pwd.h grp.h ctype.h
 
-AC_CHECK_HEADER time.h
+AC_CHECK_HEADERS time.h
 
 # check how big a time_t is, make a printf/scanf format for it
 # (netBSD 6+, Minix 3 are 64 bit, most others still 32 bit, but
@@ -236,12 +236,12 @@ main()
 {
     time_t clock;
 
-    if ( sizeof(clock) == sizeof(long long) )
-	puts("%lld");
+    if ( sizeof(clock) == sizeof(int) )
+	puts("%d");
     else if ( sizeof(clock) == sizeof(long) )
 	puts("%ld");
-    else if ( sizeof(clock) == sizeof(int) )
-	puts("%d");
+    else if ( sizeof(clock) == sizeof(long long) )
+	puts("%lld");
     
     return 0;
 }
