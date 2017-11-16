@@ -223,6 +223,38 @@ AC_CHECK_FLOCK || AC_DEFINE NO_FLOCK
 
 AC_CHECK_HEADERS pwd.h grp.h ctype.h
 
+AC_CHECK_HEADER time.h
+
+# check how big a time_t is, make a printf/scanf format for it
+# (netBSD 6+, Minix 3 are 64 bit, most others still 32 bit, but
+# there's no printf/scanf format for this thing)
+cat > ngc$$.c << EOF
+#include <stdio.h>
+#include <time.h>
+
+main()
+{
+    time_t clock;
+
+    if ( sizeof(clock) == sizeof(long long) )
+	puts("%lld");
+    else if ( sizeof(clock) == sizeof(long) )
+	puts("%ld");
+    else if ( sizeof(clock) == sizeof(int) )
+	puts("%d");
+    
+    return 0;
+}
+EOF
+
+if $AC_CC -o ngc$$ ngc$$.c; then
+    TIME_T_FMT=`./ngc$$`
+fi
+rm -f ngc$$ ngc$$.c
+LOG "time_t printf/scanf format is ${TIME_T_FMT:-%ld}"
+AC_DEFINE TIME_T_FMT \"${TIME_T_FMT:-%ld}\"
+
+
 # compile a little test program that can handle the many permutations
 # of a user/group combo, since there doesn't seem to be a clean way of
 # doing it using just system level stuff.
