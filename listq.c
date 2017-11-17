@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "spool.h"
+#include "public.h"
 
 int
 Qpicker(const struct dirent *f)
