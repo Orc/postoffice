@@ -176,20 +176,28 @@ AC_CHECK_HEADERS () {
     AC_PROG_CPP
 
     for __hdr in "$@"; do
-	(   echo "/* AC_CHECK_HEADERS */"
-	    echo "#include <${__hdr}>" ) > ngc$$.c
+	_have='HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'`
 
-	LOGN "looking for header $__hdr"
-
-	if $AC_CPP_FILTER ngc$$.c >/dev/null; then
-	    AC_DEFINE 'HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'` 1
-	    rc=0
-	    LOG " (found)"
+	# don't double-check headers
+	if [ `eval echo $_have` ]; then
+	    echo "already checked for $__hdr"
 	else
-	    rc=1
-	    LOG " (not found)"
+	    (   echo "/* AC_CHECK_HEADERS */"
+		echo "#include <${__hdr}>" ) > ngc$$.c
+
+	    LOGN "looking for header $__hdr"
+
+	    if $AC_CPP_FILTER ngc$$.c >/dev/null; then
+		AC_DEFINE $_have 1
+		rc=0
+		LOG " (found)"
+	    else
+		rc=1
+		LOG " (not found)"
+	    fi
+	    eval ${_have}=$rc
+	    __remove ngc$$.c
 	fi
-	__remove ngc$$.c
     done
     # return code is only meaningful if one header is checked
     return $rc
@@ -1177,48 +1185,93 @@ EOF
 #
 AC_CHECK_FLOCK() {
 
-    AC_CHECK_HEADERS sys/types.h sys/file.h fcntl.h
-
     cat << EOF > ngc$$.c
 #include <stdio.h>
-#include <sys/file.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/file.h>
+#include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+
+int
+locker(int fd, int mode)
+{
+#ifdef USE_FCNTL
+    struct flock lck;
+    register int rc;
+
+    lck.l_whence = SEEK_SET;
+    lck.l_start = 0;
+    lck.l_len = 1;
+    lck.l_pid = 0;
+    switch ( mode & ~LOCK_NB ) {
+    case LOCK_EX: lck.l_type = F_WRLCK; break;
+    case LOCK_SH: lck.l_type = F_RDLCK; break;
+    case LOCK_UN: lck.l_pid = getpid(); lck.l_type = F_UNLCK; break;
+    default: errno = EINVAL; return -1;
+    }
+
+    if ( (rc = fcntl(fd, mode & LOCK_NB ? F_SETLK : F_SETLKW, &lck)) < 0 ) {
+	if ( errno == EAGAIN )
+	    errno = EWOULDBLOCK;
+    }
+    return rc;
+#else
+    return flock(fd, mode);
+#endif
+}
 
 int main()
 {
     int x = open("ngc$$.c", O_RDWR, 0666);
-    int y = open("ngc$$.c", O_RDWR, 0666);
+    pid_t me;
+    int status;
 
-    alarm(1);
-    if (flock(x, LOCK_EX) != 0)
-	exit(1);
-    if (flock(y, LOCK_EX|LOCK_NB) == 0)
-	exit(1);
-    exit(0);
+    if ( x < 0 )
+	return (1);
+
+    if (locker(x, LOCK_EX) != 0)
+	return (1);
+    
+    if ( (me=fork()) < 0 )
+	return (1);
+    else if ( me > 0 ) {
+	wait(&status);
+	return (WIFEXITED(status) ? WEXITSTATUS(status) : 1);
+    }
+    if ( (x = open("ngc$$.c", O_RDWR, 0666)) < 0 )
+	return (1);
+
+    if (locker(x, LOCK_EX|LOCK_NB) == 0)
+	return (1);
+
+    return (0);
 }
 EOF
 
-    LOGN "checking flock() sanity"
-    HAS_FLOCK=0
-    if $AC_CC -o ngc$$ ngc$$.c ; then
-	if ./ngc$$ ; then
-	    LOG " (good)"
-	    HAS_FLOCK=1
-	    AC_DEFINE HAS_FLOCK
-	else
-	    LOG " (bad)"
-	fi
-    else
-	LOG " (not found)"
+    LOGN "checking flock()/fcntl() sanity"
+    
+    unset HAS_FLOCK HAS_FCNTL_LOCK
+    
+    $AC_CC -Dname=\"flock\" -o ngc$$ ngc$$.c || AC_FAIL "cannot compile flock test?"
+    if ./ngc$$ ; then
+	LOG " (flock works)"
+	HAS_FLOCK=1
+	AC_DEFINE HAS_FLOCK
+	return 0;
     fi
 
-    __remove ngc$$ ngc$$.c
+    $AC_CC -Dname=\"fcntl\" -DUSE_FCNTL -o ngc$$ ngc$$.c || AC_FAIL "cannot compile fcntl test?"
+    if ./ngc$$ ; then
+	LOG " (fcntl works)"
+	HAS_FCNTL=1
+	AC_DEFINE HAS_FCNTL_LOCK
+	return 0;
+    fi
 
-    case "$HAS_FLOCK" in
-    0) return 1 ;;
-    *) return 0 ;;
-    esac
+    LOG " (nothing works)"
+    return 1;
 }
 
 

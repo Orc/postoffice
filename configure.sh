@@ -283,7 +283,7 @@ main(int argc, char **argv)
     fprintf(stderr, "%s: UID/GID dumper for configure.sh\n", argv[0]);
     printf("av_UID=; av_GID=;\n");
     if (argc <= 1)
-	exit(1);
+	return 1;
 
     for (p = argv[1]; *p && (*p != ':') && (*p != '.'); ++p)
 	;
@@ -298,7 +298,7 @@ main(int argc, char **argv)
 	    if (*q == 0)
 		printf("av_UID=%s;\n", argv[1]);
 	    else
-		exit(1);
+		return 1;
 	}
 
 	if ( grp = getgrnam(p) )
@@ -309,14 +309,14 @@ main(int argc, char **argv)
 	    if (*q == 0)
 		printf("av_GID=%s;\n", q);
 	    else
-		exit(1);
+		return 1;
 	}
     }
-    else if (pwd = getpwnam(argv[1]) )
+    else if (pwd = getpwnam(argv[1]) ) {
 	printf("av_UID=%d;\nav_GID=%d;\n", pwd->pw_uid, pwd->pw_gid);
-    else
-	exit(1);
-    exit(0);
+	return 0;
+    }
+    return 1;
 }
 EOF
 
