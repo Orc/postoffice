@@ -1511,6 +1511,31 @@ AC_CC_SHLIBS () {
 
 
 #
+# AC_EXEC_MODES checks to see if you need read permissions to execute a
+# program (Minix 3, maybe others?)
+#
+AC_EXEC_MODES() {
+    echo "int main() { return 0; }" > ngc$$.c
+
+    if $AC_CC -o ngc$$ ngc$$.c; then
+	LOGN "checking executable permissions"
+	chmod 111 ngc$$
+	if ngc$$ ; then
+	    LOG " (a=x)"
+	    AC_SUB BINMODE "111"
+	else
+	    LOG " (a=rx)"
+	    AC_SUB BINMODE "555"
+	fi
+    else
+	LOG "cannot check executable permissions?"
+	AC_SUB BINMODE "555"
+    fi
+    rm -f ngc$$ ngc$$.c
+}
+
+
+#
 # AC_PROG_INSTALL finds the install program and guesses whether it's a 
 # Berkeley or GNU install program
 #

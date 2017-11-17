@@ -104,7 +104,7 @@ install.programs: $(PGMS) install.common.binaries
 install.mailfilter: $(PGMS) install.common.binaries
 	@INSTALL_DIR@ $(DESTDIR)$(libexec)
 	@INSTALL_DIR@ $(DESTDIR)$(bindir)
-	@INSTALL@ -m 4711 -c postoffice $(DESTDIR)$(libexec)
+	@INSTALL@ -m 4@BINMODE@ -c postoffice $(DESTDIR)$(libexec)
 	ln -fs @MAILWRAPPER@ $(DESTDIR)$(bindir)/runq
 	echo "# emulate sendmail with postoffice" > $(DESTDIR)$(MAILERCONF).new
 	for x in sendmail send-mail mailq newaliases runq; do \

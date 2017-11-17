@@ -183,6 +183,8 @@ test -z "$DB_HANDLE" && AC_FAIL "(can't figure out $DB handle type)"
 
 AC_CHECK_RESOLVER || AC_FAIL "$TARGET requires resolver(3)"
 
+AC_EXEC_MODES
+
 LIBWRAP=''
 if [ "$WITH_TCPWRAPPERS" ]; then
     AC_DEFINE 'WITH_TCPWRAPPERS' '1'
