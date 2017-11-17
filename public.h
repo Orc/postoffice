@@ -65,4 +65,7 @@ int userok(struct letter *, struct address *);
 /* virusscan.c */
 int virus_scan(struct letter *);
 
+/* locker.c */
+int locker(int, int);
+
 #endif/*PUBLIC_D*/

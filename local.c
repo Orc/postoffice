@@ -196,14 +196,14 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 	    fprintf(let->log, CannotWrite, to->user, strerror(errno));
 	    exit(1);
 	}
-	flock(fileno(f), LOCK_EX);
+	locker(fileno(f), LOCK_EX);
 
 	mboxfrom(f, let);
 	addheaders(f, let, to);
 	copybody(f, let);
 	putc('\n', f);
 
-	flock(fileno(f), LOCK_UN);
+	locker(fileno(f), LOCK_UN);
 	fclose(f);
 	exit(0);
     }

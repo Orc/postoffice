@@ -31,7 +31,7 @@ OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
      dbif.o getopt.o socklib.o version.o usermap.o \
-     goodfile.o mf.o @STRLCPY@ \
+     goodfile.o mf.o locker.o @STRLCPY@ \
      $(AUTH_OBJS)
 
 
@@ -147,6 +147,7 @@ letter.o: letter.c config.h letter.h env.h domain.h mx.h spool.h \
           public.h
 listq.o: listq.c config.h spool.h letter.h env.h domain.h
 local.o: local.c config.h letter.h env.h domain.h spool.h public.h
+locker.o: locker.c config.h
 mail.o: mail.c config.h letter.h env.h domain.h spool.h public.h
 mapfd.o: mapfd.c
 mbox.o: mbox.c config.h mbox.h env.h socklib.h public.h letter.h \

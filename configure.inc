@@ -178,14 +178,18 @@ AC_CHECK_HEADERS () {
     for __hdr in "$@"; do
 	_have='HAVE_'`echo $__hdr | $AC_UPPERCASE | tr './' '_'`
 
-	# don't double-check headers
-	if [ `eval echo $_have` ]; then
+	# don't double-check headers; set _dollar to $ so that the
+	# shell won't freak out during eval
+	_dollar=\$
+	if [ `eval echo ${_dollar}${_have}` ]; then
 	    echo "already checked for $__hdr"
 	else
 	    (   echo "/* AC_CHECK_HEADERS */"
 		echo "#include <${__hdr}>" ) > ngc$$.c
 
 	    LOGN "looking for header $__hdr"
+
+	    echononl " ($_have)"
 
 	    if $AC_CPP_FILTER ngc$$.c >/dev/null; then
 		AC_DEFINE $_have 1
@@ -195,7 +199,7 @@ AC_CHECK_HEADERS () {
 		rc=1
 		LOG " (not found)"
 	    fi
-	    eval ${_have}=$rc
+	    eval ${_have}=${rc}
 	    __remove ngc$$.c
 	fi
     done
@@ -1226,7 +1230,6 @@ int main()
 {
     int x = open("ngc$$.c", O_RDWR, 0666);
     pid_t me;
-    int status;
 
     if ( x < 0 )
 	return (1);
@@ -1237,8 +1240,14 @@ int main()
     if ( (me=fork()) < 0 )
 	return (1);
     else if ( me > 0 ) {
+	int rc, status;
 	wait(&status);
-	return (WIFEXITED(status) ? WEXITSTATUS(status) : 1);
+
+	rc = WIFEXITED(status) ? WEXITSTATUS(status) : 1;
+
+	if ( (rc == 0) && (locker(x, LOCK_UN) == 0) )
+	    return 0;
+	return 1;
     }
     if ( (x = open("ngc$$.c", O_RDWR, 0666)) < 0 )
 	return (1);

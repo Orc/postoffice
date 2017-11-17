@@ -120,10 +120,10 @@ listq()
 #ifdef NO_FLOCK
 	sprintf(qid, (access(xf,R_OK) == 0) ? "*%6s*" :" %6s ", df+2);
 #else
-	sprintf(qid, (flock(fileno(f),LOCK_EX|LOCK_NB) == 0) ?
+	sprintf(qid, (locker(fileno(f),LOCK_EX|LOCK_NB) == 0) ?
 						     " %6s " :
 						     "*%6s*", df + 2);
-	flock(fileno(f), LOCK_UN);
+	locker(fileno(f), LOCK_UN);
 #endif
 
 	printf(TFMT, qid, unit(st.st_size), date, line+1);

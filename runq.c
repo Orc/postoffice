@@ -167,9 +167,9 @@ runjob(struct letter *let, char *qid)
 	    perror(qid);
     }
     else {
-	if ( flock(fd, LOCK_EX|LOCK_NB) == 0 ) {
+	if ( locker(fd, LOCK_EX|LOCK_NB) == 0 ) {
 	    runremote(let, qid);
-	    flock(fd, LOCK_UN);
+	    locker(fd, LOCK_UN);
 	}
 	else if (errno != EWOULDBLOCK)
 	    perror(qid);
