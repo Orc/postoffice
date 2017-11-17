@@ -16,7 +16,7 @@
 int
 locker(int fd, int mode)
 {
-#if USE_FCNTL
+#if HAS_FCNTL_LOCK
     struct flock lck;
     register int rc;
 
