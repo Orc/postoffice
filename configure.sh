@@ -238,12 +238,12 @@ main()
 {
     time_t clock;
 
-    if ( sizeof(clock) == sizeof(int) )
-	puts("%d");
-    else if ( sizeof(clock) == sizeof(long) )
+    if ( sizeof(clock) == sizeof(long) )
 	puts("%ld");
     else if ( sizeof(clock) == sizeof(long long) )
 	puts("%lld");
+    else if ( sizeof(clock) == sizeof(int) )
+	puts("%d");
     
     return 0;
 }
