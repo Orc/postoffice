@@ -34,8 +34,6 @@ Configure.sh has a few options that can be set:
     --with-vhosts[=DIR]	enable vhosts (passwd files in DIR (/etc/virtual))
     --with-vspool=DIR	(vhost mail spool in DIR) (/var/spool/virtual)
     --with-vuser[=user]	(vhost mail files owned by) [mail]
-    --with-gcc-patch	Patch the code to make it conform more closely to
-			the FSF coding style.
 
 Alternatively, if you're running a recent version of redhat Linux (or its
 derivatives;  I've built the rpm package of postoffice 1.2.3 on Centos 4,
@@ -76,10 +74,6 @@ postoffice-(version)/os/redhat/postoffice.spec and do a
     f) POSTOFFICE is written in C, not GCC, so it contains perfectly
        legitimate code that will generate warnings when built with
        ``gcc -Wall''   If Configure.sh detects that you're trying
-       to build with gcc, it attempts to get around some of this
-       brokenness by defining macros for if() and while().  The
-       spurious gcc warnings can be reduced a bit more by configuring
-       POSTOFFICE with the --with-gcc-path option, which applies a
-       patch to bowlderise the code.  This is not guaranteed to work
-       in the future.
+       to build with gcc or clang, it attempts to get around some
+       of this brokenness by defining macros for if() and while().
 

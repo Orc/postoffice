@@ -13,7 +13,6 @@ ac_help='
 --with-queuedir		directory to use for the mail queue (/var/spool/mqueue)
 --with-auth		enable smtp authentication (for AUTH LOGIN)
 --with-pam		Use PAM for authentication (for AUTH LOGIN)
---with-gcc-patch	patch the code to stop gcc -Wall from complaining
 --with-milter		Use sendmail-style milters for message authentication
 --with-av=SCRIPT	virus scanning script to run after receiving mail
 --with-vhost[=PATH]	enable virtual hosting (/etc/virtual)
