@@ -195,11 +195,13 @@ addheaders(FILE *f, struct letter *let, struct recipient *to, int new)
     char date[80];
     struct passwd *pwd;
 
+    if ( ! let->headtext )
+	receivedby(f, let, to);
+    
     if ( new ) {
 	strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
 	strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
 
-	receivedby(f, let, to);
 	if (let->env->forged) {
 	    struct passwd *pw = getpwuid(let->env->sender);
 	    fprintf(f, "X-Authentication-Warning: <%s@%s> set sender to <%s>\n",
