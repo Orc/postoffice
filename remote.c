@@ -219,7 +219,7 @@ send_to_remote(struct letter *let, char *host, int i, int j)
 		dump_session(f);
 #endif
 	}
-	writecontrolfile(let, 1);
+	writecontrolfile(let);
     }
 }
 

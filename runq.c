@@ -106,7 +106,7 @@ runremote(struct letter *let, char *qid)
 	}
 	else if (pending(let->remote)) {
 	    let->qcomment = replytext;
-	    writecontrolfile(let, 0);
+	    writecontrolfile(let);
 	}
 	else {
 	    unlink(cfile);

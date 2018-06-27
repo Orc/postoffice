@@ -165,7 +165,7 @@ mboxfrom(FILE *f, struct letter *let)
 }
 
 
-static void
+void
 receivedby(FILE *f, struct letter *let, struct recipient *to)
 {
     char date[80];
@@ -189,42 +189,42 @@ receivedby(FILE *f, struct letter *let, struct recipient *to)
 
 
 void
-addheaders(FILE *f, struct letter *let, struct recipient *to, int new)
+addheaders(FILE *f, struct letter *let, struct recipient *to)
 {
     char msgtime[20];
     char date[80];
     struct passwd *pwd;
 
-    if ( ! let->headtext )
-	receivedby(f, let, to);
-    
-    if ( new ) {
-	strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
-	strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
+    strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
+    strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
 
-	if (let->env->forged) {
-	    struct passwd *pw = getpwuid(let->env->sender);
-	    fprintf(f, "X-Authentication-Warning: <%s@%s> set sender to <%s>\n",
-			pw ? pw->pw_name : "postmaster",
-			let->deliveredto,
-			let->from->full);
-	}
-	if (!let->messageid)
-	    fprintf(f, "Message-ID: <%s.%s@%s>\n",
-			msgtime, let->qid, let->env->localhost);
-	if (!let->mesgfrom) {
-	    if (let->from->domain)
-		fprintf(f, "From: <%s>\n", let->from->full);
-	    else if ((pwd = getpwnam(let->from->full)) && pwd->pw_gecos[0] )
-		fprintf(f, "From: \"%s\" <%s@%s>\n",
-				    pwd->pw_gecos,
-				    let->from->full, let->env->localhost);
-	    else
-		fprintf(f, "From: <%s@%s>\n", let->from->full, let->env->localhost);
-	}
+    if (let->env->forged) {
+	struct passwd *pw = getpwuid(let->env->sender);
+	fprintf(f, "X-Authentication-Warning: <%s@%s> set sender to <%s>\n",
+		    pw ? pw->pw_name : "postmaster",
+		    let->deliveredto,
+		    let->from->full);
+    }
+    if (!let->messageid) {
+	fprintf(f, "Message-ID: <%s.%s@%s>\n",
+		    msgtime, let->qid, let->env->localhost);
+	let->messageid = 1;
+    }
+    if (!let->mesgfrom) {
+	if (let->from->domain)
+	    fprintf(f, "From: <%s>\n", let->from->full);
+	else if ((pwd = getpwnam(let->from->full)) && pwd->pw_gecos[0] )
+	    fprintf(f, "From: \"%s\" <%s@%s>\n",
+				pwd->pw_gecos,
+				let->from->full, let->env->localhost);
+	else
+	    fprintf(f, "From: <%s@%s>\n", let->from->full, let->env->localhost);
+	let->mesgfrom = 1;
+    }
 
-	if (!let->date)
-	    fprintf(f, "Date: %s\n", date);
+    if (!let->date) {
+	fprintf(f, "Date: %s\n", date);
+	let->date = 1;
     }
 
     if (let->headtext && (let->headsize > 1) )
@@ -373,7 +373,7 @@ readcontrolfile(struct letter *let, char *qid)
 
 
 int
-writecontrolfile(struct letter *let, int new)
+writecontrolfile(struct letter *let)
 {
     FILE *f;
     char ctrlfile[sizeof(DATAPFX)+6+1];
@@ -416,7 +416,7 @@ writecontrolfile(struct letter *let, int new)
 	 * off the disk.
 	 */
 	fprintf(f, "%c%c ;additional headers\n", C_HEADER, C_HEADER);
-	addheaders(f, let, (let->remote.count==1) ? let->remote.to : 0, new);
+	addheaders(f, let, (let->remote.count==1) ? let->remote.to : 0);
 
 	if ( ferror(f) == 0 && fclose(f) == 0)
 	    return 1;
@@ -468,7 +468,7 @@ svspool(struct letter *let)
 
     strlcpy(let->qid, spoolfile+strlen(DATAPFX), sizeof let->qid);
 
-    if (writecontrolfile(let, 1) == 0) {
+    if (writecontrolfile(let) == 0) {
 	unlink(spoolfile);
 	return 0;
     }
