@@ -61,18 +61,23 @@ hprintf(jmp_buf *fail, struct letter *let, char *fmt, ...)
 int
 anotherheader(struct letter *let, char *key, char *data)
 {
-    int toadd;
-    int i;
+    int needed, i;
     
     if (let == 0 || key == 0 || data == 0) return 0;
 
-    toadd = strlen(key) + 2 /* :0x20 */ + strlen(data) + 1 /* \n */;
+    needed = strlen(key) + 2 /* :0x20 */ + strlen(data) + 1 /* \n */;
 
-    if (let->headtext)
-	let->headtext = realloc(let->headtext, let->headsize + toadd + 1);
-    else
-	let->headtext = calloc(1,toadd+1);
 
+    if ( let->headtext == 0 ) {
+	let->headalloc = needed+1;
+	let->headsize = 0;
+	let->headtext = calloc(1, let->headalloc);
+    }
+    else if ( let->headsize + needed > let->headalloc ) {
+	let->headalloc += (1+needed);
+	let->headtext = realloc(let->headtext, let->headalloc);
+    }
+    
     if (let->headtext == 0)
 	return 0;
 
