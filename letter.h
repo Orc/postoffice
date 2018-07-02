@@ -57,6 +57,7 @@ struct letter {
     char  *bodytext;		/* mmap()ed copy of the body */
     size_t bodysize;		/* # bytes in it */
     char  *headtext;		/* malloc()ed copy of extra headers */
+    size_t headalloc;		/* allocated size of extra headers */
     size_t headsize;		/* size of extra headers */
     char   qid[8];		/* spool file suffix */
     char  *tempfile;		/* temporary spoolfile */
@@ -109,5 +110,6 @@ extern void freelist(struct list *);
 
 extern struct passwd *getpwemail(struct domain *, char *);
 extern int goodfile(char *, struct passwd *);
+extern int notnull(struct address *);
 
 #endif/*__LETTER_D*/

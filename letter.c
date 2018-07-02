@@ -88,40 +88,6 @@ lowercase(char *q)
 
 
 /*
- * add a new header to the letter
- */
-int
-anotherheader(struct letter *let, char *key, char *data)
-{
-    int toadd;
-    int i;
-    
-    if (let == 0 || key == 0 || data == 0) return 0;
-
-    toadd = strlen(key) + 2 /* :0x20 */ + strlen(data) + 1 /* \n */;
-
-    if (let->headtext)
-	let->headtext = realloc(let->headtext, let->headsize + toadd + 1);
-    else
-	let->headtext = calloc(1,toadd+1);
-
-    if (let->headtext == 0)
-	return 0;
-
-    let->headsize += sprintf(let->headtext+let->headsize, "%s: ", key);
-    /* sanitize the data so it doesn't include any newlines
-     */
-    for (i=0; data[i]; i++)
-	let->headtext[let->headsize++] = (data[i] == '\r' || data[i] == '\n')
-					    ? ' '
-					    : data[i];
-    let->headtext[let->headsize++] = '\n';
-    let->headtext[let->headsize] = 0;	/* null terminate, just to be safe */
-    return 1;
-}
-
-
-/*
  * try to match a name in a passwd file (case not significant)
  */
 struct passwd *

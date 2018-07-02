@@ -466,8 +466,6 @@ data(struct letter *let)
 
     message(let->out, 354, "Bring it on.");
 
-    receivedby(let->body, let, let->local.count > 0 ? let->local.to : 0);
-    
     while ( 1 ) {
 	alarm(let->env->timeout);
 	c = fgetc(let->in);

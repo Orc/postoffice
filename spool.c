@@ -34,70 +34,6 @@
 #include "mx.h"
 
 
-static int
-headervalidate(struct letter *let, char* text, size_t size)
-{
-#define ISHDR(p,f)	(strncasecmp(p,f,strlen(f)) == 0)
-    char *p, *ep;
-    int has_headers = 0;
-    int contin = 0;
-    
-    for (p = text, ep = p+size ; p && (p < ep); ) {
-	if (*p == ' ' || *p == '\t') {
-	    if (contin)
-		p = memchr(p, '\n', (ep-p));
-	    else
-		break;
-	}
-	else if (isalnum(*p)) {
-	    if (ISHDR(p, "received:"))
-		let->hopcount++;
-	    else if (ISHDR(p, "date:"))
-		let->date = 1;
-	    else if (ISHDR(p, "message-id:"))
-		let->messageid = 1;
-	    else if (ISHDR(p, "from:"))
-		let->mesgfrom = 1;
-
-	    contin=1;
-	    while ( (p < ep) && *p != ':' && *p != '\n')
-		++p;
-
-	    if (*p != ':')
-		break;
-
-	    has_headers = 1;
-	    p = memchr(p, '\n', (ep-p));
-	}
-	else if (*p == '\n')
-	    break;
-
-	if (p) ++p;
-    }
-    return has_headers;
-}
-
-
-int
-examine(struct letter *let)
-{
-    fflush(let->body);
-
-    if ( (let->bodytext = mapfd(fileno(let->body), &let->bodysize)) == 0 ) {
-	syslog(LOG_ERR, "cannot mmap() the email body: %m");
-	return 0;
-    }
-
-    /* check the message for headers */
-    let->has_headers = headervalidate(let, let->bodytext,let->bodysize);
-    if (let->headsize > 0) {
-	let->has_headers = 1;
-	headervalidate(let, let->headtext, let->headsize);
-    }
-    return 1;
-}
-
-    
 int
 mkspool(struct letter *let)
 {
@@ -145,7 +81,7 @@ mkspool(struct letter *let)
 }
 
 
-static int
+int
 notnull(struct address *from)
 {
     return from && from->full && (from->full[0] != 0);
@@ -165,86 +101,6 @@ mboxfrom(FILE *f, struct letter *let)
 }
 
 
-void
-receivedby(FILE *f, struct letter *let, struct recipient *to)
-{
-    char date[80];
-    int nullfrom = notnull(let->from);
-
-    if (let->deliveredIP == 0) return;
-
-    strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
-    if (strcmp(let->deliveredby, let->deliveredIP) != 0)
-	fprintf(f, "Received: from %s (%s)", let->deliveredby,
-					     let->deliveredIP);
-    else
-	fprintf(f, "Received: from %s", let->deliveredIP);
-    if ( !nullfrom )
-	fprintf(f, "\n          (MAIL FROM:<%s>)", let->from->full);
-    fprintf(f, "\n          by %s (TFMTKAYTFO)", let->env->localhost);
-    if (to && to->fullname)
-	fprintf(f,"\n          for %s", to->fullname);
-    fprintf(f, " (qid %s); %s\n", let->qid, date);
-}
-
-
-void
-addheaders(FILE *f, struct letter *let, struct recipient *to)
-{
-    char msgtime[20];
-    char date[80];
-    struct passwd *pwd;
-
-    strftime(date, 80, "%a, %d %b %Y %H:%M:%S %Z", localtime(&let->posted));
-    strftime(msgtime, 20, "%d.%m.%Y.%H.%M.%S", localtime(&let->posted) );
-
-    if (let->env->forged) {
-	struct passwd *pw = getpwuid(let->env->sender);
-	fprintf(f, "X-Authentication-Warning: <%s@%s> set sender to <%s>\n",
-		    pw ? pw->pw_name : "postmaster",
-		    let->deliveredto,
-		    let->from->full);
-    }
-    if (!let->messageid) {
-	fprintf(f, "Message-ID: <%s.%s@%s>\n",
-		    msgtime, let->qid, let->env->localhost);
-	let->messageid = 1;
-    }
-    if (!let->mesgfrom) {
-	if (let->from->domain)
-	    fprintf(f, "From: <%s>\n", let->from->full);
-	else if ((pwd = getpwnam(let->from->full)) && pwd->pw_gecos[0] )
-	    fprintf(f, "From: \"%s\" <%s@%s>\n",
-				pwd->pw_gecos,
-				let->from->full, let->env->localhost);
-	else
-	    fprintf(f, "From: <%s@%s>\n", let->from->full, let->env->localhost);
-	let->mesgfrom = 1;
-    }
-
-    if (!let->date) {
-	fprintf(f, "Date: %s\n", date);
-	let->date = 1;
-    }
-
-    if (let->headtext && (let->headsize > 1) )
-	fwrite(let->headtext,let->headsize,1,f);
-
-#if 0
-    fprintf(f, "X-Debug-Me: has_headers=%d,\n"
-	       "            date=%d,\n"
-	       "            mboxfrom=%d,\n"
-	       "            messageid=%d,\n"
-	       "            mesgfrom=%d\n",
-		let->has_headers,
-		let->date,
-		let->mboxfrom,
-		let->messageid,
-		let->mesgfrom);
-#endif
-}
-
-
 #if 0
 static int
 domaincmp(struct recipient *a, struct recipient *b)
@@ -252,6 +108,7 @@ domaincmp(struct recipient *a, struct recipient *b)
     return strcmp(a->host, b->host);
 }
 #endif
+
 
 static char*
 restofline(char *p, char *q)
@@ -356,7 +213,6 @@ readcontrolfile(struct letter *let, char *qid)
 		if (1+q < end) {
 		    let->headtext = restofline(1+q, end);
 		    let->headsize = strlen(let->headtext);
-		    headervalidate(let, let->headtext, let->headsize);
 		}
 		else {
 		    let->headtext = calloc(1,1);
@@ -406,8 +262,6 @@ writecontrolfile(struct letter *let)
 	    }
 	}
 
-	if (let->has_headers)
-	    fprintf(f, "%cH ;has headers\n", C_FLAGS);
 	if (let->mesgfrom)
 	    fprintf(f, "%cF ;has from:\n", C_FLAGS);
 
@@ -415,8 +269,11 @@ writecontrolfile(struct letter *let)
 	 * control message so we can cheat and simply spool them
 	 * off the disk.
 	 */
-	fprintf(f, "%c%c ;additional headers\n", C_HEADER, C_HEADER);
-	addheaders(f, let, (let->remote.count==1) ? let->remote.to : 0);
+	if ( let->has_headers ) {
+	    fprintf(f, "%cH ;has headers\n", C_FLAGS);
+	    fprintf(f, "%c%c ;additional headers\n", C_HEADER, C_HEADER);
+	    addheaders(f, let);
+	}
 
 	if ( ferror(f) == 0 && fclose(f) == 0)
 	    return 1;

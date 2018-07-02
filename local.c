@@ -138,7 +138,7 @@ _exe(struct letter *let, struct recipient *to)
     close(io[0]);
 
     mboxfrom(f, let);
-    addheaders(f, let, to);
+    addheaders(f, let);
     copybody(f, let);
     rc = ferror(f);
     fclose(f);
@@ -199,7 +199,7 @@ mbox(struct letter *let, struct recipient *to, char *mbox)
 	locker(fileno(f), LOCK_EX);
 
 	mboxfrom(f, let);
-	addheaders(f, let, to);
+	addheaders(f, let);
 	copybody(f, let);
 	putc('\n', f);
 
