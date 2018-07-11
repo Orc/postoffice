@@ -192,6 +192,6 @@ newaliases(int argc, char **argv)
 
 main()
 {
-    newaliases(0);
+    newaliases(0,0);
 }
 #endif
