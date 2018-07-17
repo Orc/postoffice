@@ -133,9 +133,14 @@ backreference(DNS_REC *rec, int offset)
     unsigned char size;
     unsigned char *p = offset + (unsigned char*)&(rec->h);
 
-    while (size = *p++) {
+    while ( (p <= rec->eod) && (size = *p++) ) {
 	if ( (size & 192) == 192 ) {
-	    unsigned short z = (size & ~192) << 8;
+	    unsigned short z;
+
+	    if ( p >= rec->eod )
+		return 0;
+
+	    z = (size & ~192) << 8;
 	    z |= *p++;
 
 	    return backreference(rec, z);
@@ -157,10 +162,15 @@ dname(char **np, DNS_REC *rec, unsigned char *p, unsigned char *end)
 
     dn_len = 0;
 
-    while ( (size = *p++) ) {
+    while ( (p <= end) && (size = *p++) ) {
 
 	if ( (size & 192) == 192) {
-	    unsigned short z = (size & ~192) << 8;
+	    unsigned short z;
+
+	    if ( p >= end )
+		return 0;
+
+	    z = (size & ~192) << 8;
 	    z |= *p++;
 
 	    if ( backreference( rec, z ) ) {
@@ -208,6 +218,9 @@ query(char *host, short qtype, DNS_REC *dp)
 
     rc = strcasecmp(host, name);
 
+    if ( p > dp->eod - (sizeof(rtype) + sizeof(rclass)) )
+	return 0;
+
     GETSHORT(rtype, p);
     GETSHORT(rclass, p);
 
@@ -234,6 +247,9 @@ cname(char *host)
 	p = dname(0, &dns_rec, p, dns_rec.eod);
 
 	p += 8;
+	if ( p > dns_rec.eod - sizeof(reclen) )
+	    return 0;
+
 	GETSHORT(reclen, p);
 
 	p = dname(&name, &dns_rec, p, p+reclen);
@@ -274,6 +290,10 @@ ptr(struct in_addr *ip)
 	p = dname(0, &dns_rec, p, dns_rec.eod);
 
 	p += 8;
+
+	if ( p > dns_rec.eod - sizeof(reclen) )
+	    return 0;
+
 	GETSHORT(reclen, p);
 
 	dname(&name, &dns_rec, p, p+reclen);
@@ -304,8 +324,12 @@ mx(char *host, struct mxlist *list)
 		return;
 	    p += 8;
 
+	    if ( p > dns_rec.eod - (sizeof(reclen) + sizeof(prio)) )
+		return;
+
 	    GETSHORT(reclen, p);
 	    GETSHORT(prio, p);
+
 	    p = dname(&name, &dns_rec, p, p + (reclen-sizeof(prio)) );
 	    if ( name )
 		NewMX(list, prio, strdup(name));
@@ -329,10 +353,12 @@ address(struct iplist *list, int key, char* host, int allow_localhost)
 	while ( p && (count-- > 0) ) {
 	    if ( (p = dname(0, &dns_rec, p, dns_rec.eod)) == 0 )
 		return;
-	    
+
 	    rectype = ntohs(*((short*)p));
 
 	    p += 8;
+	    if ( p > dns_rec.eod - sizeof(reclen) )
+		break;
 	    GETSHORT(reclen, p);
 
 	    if ( (rectype == T_A) && (allow_localhost || (memcmp(localhost, p, reclen) != 0)) ) {
