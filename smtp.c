@@ -1106,7 +1106,8 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		}
 		else {
 		    sleep(30);
-		    message(out, 502, "Sorry, but %s.", why);
+		    message(out, 502, why ? "Sorry, but %s."
+					  : "That would be a no.", why);
 		}
 	    }
 	}
