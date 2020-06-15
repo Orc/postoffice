@@ -275,8 +275,8 @@ set_option(int super, char *option, ENV *env)
 		    if (!super) insecure("forward-all");
 		    env->forward_all = val;
 		}
-		else if (isopt(options,"forbidden=", 10) == 0)
-		    dealwithsam(super, option, 10, &(env->rej) );
+		else if (strncmp(option, "forbidden=", 10) == 0)
+		    dealwithspam(super, option, 10, &(env->rej) );
 #if WITH_MILTER
 		else if (strncasecmp(option, "filter=", 7) == 0)
 		    mfregister(option+7,0);
