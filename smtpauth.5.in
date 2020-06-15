@@ -51,8 +51,8 @@ with
 .Ql [] )
 .It DATE DATE
 When the client can connect and when the client last connected (both
-in seconds after the epoch).   If the client is blacklisted (via the
-.Fl b
+in seconds after the epoch).   If the client is forbidden (via the
+.Fl d
 flag in 
 .Xr authexpire 8 ),
 the first DATE will be the magic token

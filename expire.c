@@ -42,7 +42,7 @@ list(DBhandle db, long age)
 {
     char *key, *value;
     time_t delay, last;
-    int ct, isblacklist;
+    int ct, allowed = 1;
     char bfr[80];
 
     for (key = dbif_findfirst(db); key; key = dbif_findnext(db,key)) {
@@ -53,7 +53,7 @@ list(DBhandle db, long age)
 	    last = 0;
 
 	    if (value[0] == '*') {
-		isblacklist = 1;
+		allowed = 0;
 		ct = sscanf(value, "* " TIME_T_FMT, &last);
 		if (ct == 1) {
 		    ct = 2;
@@ -61,18 +61,18 @@ list(DBhandle db, long age)
 		}
 	    }
 	    else {
-		isblacklist = 0;
+		allowed = 1;
 		ct = sscanf(value, TIME_T_FMT " " TIME_T_FMT, &delay, &last);
 	    }
 
 	    if (ct >= 1) {
-		if (isblacklist)
-		    fputs("**** blacklist ****", stdout);
-		else {
+		if ( allowed ) {
 		    strftime(bfr, sizeof bfr, "<%H:%M %d %b %Y>",
 						localtime(&delay));
 		    fputs(bfr, stdout);
 		}
+		else
+		    fputs("**** forbidden ****", stdout);
 
 		if (ct == 2) {
 		    putchar(' ');
@@ -157,13 +157,13 @@ scrub(DBhandle db, long age)
 
 
 void
-approve(DBhandle db, char *key, int blacklist)
+approve(DBhandle db, char *key, int forbidden)
 {
     char *value;
     char bfr[80];
     time_t delay, last;
 
-    if (blacklist) {
+    if (forbidden) {
 	time(&last);
 	snprintf(bfr, sizeof bfr, "* " TIME_T_FMT, last);
 	dbif_put(db, key, bfr, DBIF_REPLACE);
@@ -198,7 +198,7 @@ main(int argc, char **argv)
     char *pgm;
     char *user = 0;
     long age;
-    int  blacklist = 0;
+    int  forbidden = 0;
 
 #if HAVE_BASENAME
     pgm = basename(argv[0]);
@@ -212,13 +212,14 @@ main(int argc, char **argv)
     prettyprint = isatty(fileno(stdout));
 
     opterr = 1;
-    while ( (opt = getopt(argc, argv, "?a:b:Elnuvwz")) != EOF) {
+    while ( (opt = getopt(argc, argv, "?a:b:d:Elnuvwz")) != EOF) {
 	switch (opt) {
 	case 'a':   user = optarg;
-		    blacklist = 0;
+		    forbidden = 0;
 		    break;
-	case 'b':   user = optarg;
-		    blacklist = 1;
+	case 'b':	/* backwards compatability */
+	case 'd':   user = optarg;
+		    forbidden = 1;
 		    break;
 	case 'n':   dryrun = 1;
 		    break;
@@ -275,7 +276,7 @@ main(int argc, char **argv)
     time(&now);
 
     if (user)
-	approve(db,user, blacklist);
+	approve(db,user, forbidden);
     else if (listing)
 	list(db, age);
     else

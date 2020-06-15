@@ -253,7 +253,8 @@ set_option(int super, char *option, ENV *env)
     case 'a':	if (isopt(option, "audit", &val, 0))
 		    env->auditing = val;
 		return;
-    case 'b':   if (strncmp(option, "blacklist=", 10) == 0)
+    case 'b':   /* backwards compatability */
+		if (strncmp(option, "blacklist=", 10) == 0)
 		    dealwithspam(super, option, 10, &(env->rej) );
 		return;
     case 'c':   if (isopt(option, "checkhelo", &val, 0))
@@ -274,6 +275,8 @@ set_option(int super, char *option, ENV *env)
 		    if (!super) insecure("forward-all");
 		    env->forward_all = val;
 		}
+		else if (isopt(options,"forbidden=", 10) == 0)
+		    dealwithsam(super, option, 10, &(env->rej) );
 #if WITH_MILTER
 		else if (strncasecmp(option, "filter=", 7) == 0)
 		    mfregister(option+7,0);

@@ -37,7 +37,7 @@ struct env {
 				 * than this many bytes free */
     int   submission_port;	/* secondary smtp server port (if any) */
     struct spam spam;		/* what to do with spam */
-    struct spam rej;		/*  "  "   "   "  mail from blacklisted sites */
+    struct spam rej;		/*  "  "   "   "  mail from forbidden sites */
     struct usermap *usermap;	/* map usernames (personal aliases) */
     struct iplist trusted;	/* trusted hosts */
     unsigned int   nodaemon:1;	/* refuse MAIL FROM:<> */

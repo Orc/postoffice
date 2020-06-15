@@ -55,20 +55,19 @@ The settings are:
 .Bl -tag -width Fl
 .It Li audit
 Enable session auditing.
-.It Li blacklist Ns = Ns Ar option
+.It Li forbidden Ns = Ns Ar option
 Configure how 
 .Nm postoffice
-deals with blacklisted sites.
+deals with forbidden sites.
 .Bl -tag -width Fl
-.It Li blacklist=accept
-Allow blacklisted sites to connect and treat them as if they were
+.It Li forbidden=accept
+Let them connect and treat them as if they were
 a normal site.
-.It Li blacklist=bounce 
-Refuse connections from blacklisted sites.
-.It Li blacklist=folder Ns : Ns Ar path
-Accept mail from blacklisted sites and place it in the users
-blacklisted mail folder.  If
-Accept the spam-infested message and deliver it to the users
+.It Li forbidden=bounce 
+Refuse connections.
+.It Li forbidden=folder Ns : Ns Ar path
+Accept the mail and place it in the users
+forbidden mail folder.  If
 .Ql path
 begins with
 .Ql ~/ Ns ,
@@ -79,7 +78,7 @@ it will be expanded to a folder in the maildir named
 .Li username Ns : Ns Ar path Ns .
 Non-local users (and users in a virtual domain) will have mail
 delivered as if you had configured
-.Ql blacklist=accept Ns .
+.Ql forbidden=accept Ns .
 .El
 .It Li checkhelo
 Check the arguments passed with the 
@@ -232,7 +231,7 @@ server.   If your machine is connected to a public network,
 .Em SET
 .Em THIS
 .Em OPTION ,
-unless you really want to end up on every antispam blacklist on
+unless you really want to end up on every antispam list on
 the planet.
 .It Li relay-host Ns = Ns Ar host
 Send all mail destined for remote hosts via this

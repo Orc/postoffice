@@ -697,7 +697,7 @@ debug(struct letter *let)
     if (env->submission_port)
 	message(let->out,-250, "submission port: %d", env->submission_port);
     about(let, "spam", &(env->spam));
-    about(let, "blacklist", &(env->rej));
+    about(let, "forbidden", &(env->rej));
 
     message(let->out, 250, "Timeout: %d\n"
 		      "Delay: %d\n"
@@ -793,7 +793,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    if ( env->rej.action == spBOUNCE ) {
 		status=421;
 		goodness(&letter, -10);
-		audit(&letter, "CONN", "blacklist", 421);
+		audit(&letter, "CONN", "forbidden", 421);
 		ok = 0;
 		/*byebye(&letter, 1);*/
 	    }
@@ -805,7 +805,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    message(out, status, "%s does not accept mail"
 			      " from %s because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
-	    syslog(LOG_ERR, "REJECT: blacklist (%s, %s)",
+	    syslog(LOG_ERR, "REJECT: forbidden (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
 	}
 	else
