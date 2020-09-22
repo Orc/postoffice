@@ -15,6 +15,8 @@
 #include <sysexits.h>
 #include <netdb.h>
 
+#include <errno.h>
+
 #include "env.h"
 #include "audit.h"
 #ifdef WITH_MILTER
@@ -129,8 +131,11 @@ configfile(int super, char *cf, ENV *env)
 	    not_a_secure_cf(0, "not /", cf);
 	if ( strlen(cf) >= sizeof line )
 	    not_a_secure_cf(0, "too long", cf);
-	if ( stat(cf, &sb) != 0 )
+	if ( stat(cf, &sb) != 0 ) {
+	    if ( errno == ENOENT )
+		return 0;
 	    not_a_secure_cf(0, "can't stat", cf);
+	}
 	if ( sb.st_uid != 0 )
 	    not_a_secure_cf(0, "not owner 0", cf);
 	if ( sb.st_gid != 0 && (sb.st_mode & S_IWGRP) )
