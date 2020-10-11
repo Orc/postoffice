@@ -782,7 +782,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		message(out, 521, "%s does not accept mail"
 				  " from %s because %s.", letter.deliveredto,
 				  letter.deliveredby, why);
-		syslog(LOG_ERR, "REJECT: outlawed (%s, %s)",
+		syslog(LOG_ERR, "REJECT: DENY (%s, %s)",
 				    letter.deliveredby, letter.deliveredIP);
 		byebye(&letter,1);
 	    }
@@ -805,7 +805,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    message(out, status, "%s does not accept mail"
 			      " from %s because %s.", letter.deliveredto,
 			      letter.deliveredby, why);
-	    syslog(LOG_ERR, "REJECT: forbidden (%s, %s)",
+	    syslog(LOG_ERR, "REJECT: SPAM (%s, %s)",
 				letter.deliveredby, letter.deliveredIP);
 	}
 	else
@@ -826,7 +826,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		donotaccept = 1;
 		audit(&letter, "CONN", "stranger", 220);
 	    }
-	    syslog(LOG_ERR, "REJECT: stranger (%s)", letter.deliveredIP);
+	    syslog(LOG_ERR, "REJECT: NO DNS (%s)", letter.deliveredIP);
 	}
 	else {
 	    int fd;
