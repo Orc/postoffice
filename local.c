@@ -328,7 +328,7 @@ runlocal(struct letter *let)
 	switch (let->local.to[count].typ) {
 	case emEXE: rc = exe(let, &(let->local.to[count]) );
 		    break;
-	case emBLACKLIST:
+	case emDENY:
 		    rc = spam(let, &(let->local.to[count]), & let->env->rej );
 		    break;
 	case emSPAM:rc = spam(let, &(let->local.to[count]), & let->env->spam );
@@ -345,12 +345,12 @@ runlocal(struct letter *let)
 	    char *typ;
 
 	    switch (let->local.to[count].typ) {
-	    case emBLACKLIST:   typ = "[BLACKLIST]";
-				break;
-	    case emSPAM:	typ = "[SPAM]";
-				break;
-	    default:		typ = "";
-				break;
+	    case emDENY:typ = "[DENY]";
+			break;
+	    case emSPAM:typ = "[SPAM]";
+			break;
+	    default:	typ = "";
+			break;
 	    }
 	    syslog(LOG_INFO, "deliver mail from %s (%s) to %s (%s)%s",
 		fromwho(let->from), let->deliveredby,

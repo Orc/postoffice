@@ -586,8 +586,8 @@ describe(FILE *f, int code, struct recipient *to, char *key)
 	/* should never happen */
 	message(f,-code, "to: ?alias [%s %s] %s", to->fullname, to->host, key);
 	break;
-    case emBLACKLIST:
-	message(f,-code, "to: BLACKLIST [%d] %d %d %s", to->fullname, to->uid, to->gid, key);
+    case emDENY:
+	message(f,-code, "to: DENY [%d] %d %d %s", to->fullname, to->uid, to->gid, key);
 	break;
     case emSPAM:
 	message(f,-code, "to: SPAM [%d] %d %d %s", to->fullname, to->uid, to->gid, key);
@@ -1021,7 +1021,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 				if ( why )
 				    anotherheader(&letter, "X-Spam",(char*)why);
 				if ( env->rej.action == spFILE )
-				    sentence(&letter, emBLACKLIST);
+				    sentence(&letter, emDENY);
 			    }
 			    if ( ( (env->safe && auth_ok) || smtpbugcheck(&letter)) && post(&letter) ) {
 				audit(&letter, "DATA", "", 250);
