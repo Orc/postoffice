@@ -13,7 +13,7 @@
 #include <setjmp.h>
 
 
-jmp_buf timer_jmp;
+extern jmp_buf timer_jmp;
 void    timer_expired(int);
 
 int     attach_in(struct in_addr *ip, int port);
