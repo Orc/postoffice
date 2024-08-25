@@ -21,6 +21,7 @@
 #include "env.h"
 #include "spool.h"
 #include "public.h"
+#include "mymalloc.h"
 
 static void
 say(char *fmt, ...)

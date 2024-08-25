@@ -23,6 +23,7 @@
 #include "aliases.h"
 #include "env.h"
 #include "domain.h"
+#include "mymalloc.h"
 
 
 static char*

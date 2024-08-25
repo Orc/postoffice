@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <syslog.h>
 
 #if HAVE_CRYPT_H
 #include <crypt.h>
@@ -13,6 +14,7 @@
 #include "letter.h"
 #include "dbif.h"
 #include "audit.h"
+#include "mymalloc.h"
 
 /*
  * C:AUTH LOGIN
@@ -47,10 +49,19 @@ authmeharder(struct letter *let, char *user, char *pass)
     char *encrypted;
     int ret = 0;
 
+
+    if ( !(let && user && pass) )
+	return 1;
+
+
     if ( addr = mkaddress(user) ) {
 
+
 	if ( addr->user ) { 
-	    struct domain *dom = getdomain(addr->domain);
+	    struct domain *dom;
+
+	    dom = getdomain(addr->domain);
+
 #if AUTH_PASSWD
 	    pw = isvhost(dom) ? getvpwemail(dom, addr->user) : getpwnam(addr->user);
 #else
@@ -58,7 +69,7 @@ authmeharder(struct letter *let, char *user, char *pass)
 #endif
 #if WITH_PAM
 	    if ( !isvhost(dom) )
-		ret = pam_login_ok("passwd", user, pass);
+		ret = pam_login_ok("login", user, pass);
 	    else
 #endif
 	    if (pw && pass && (encrypted = crypt(pass, pw->pw_passwd)) )

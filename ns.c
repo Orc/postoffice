@@ -17,6 +17,8 @@
 #endif
 
 #include "mx.h"
+#include "mymalloc.h"
+
 /*
  * how the dns records look (roughly)
  *

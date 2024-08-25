@@ -20,6 +20,7 @@
 #include "letter.h"
 #include "spool.h"
 #include "public.h"
+#include "mymalloc.h"
 
 static char blocked[] = "Mail to %s is blocked by security policy\n";
 static char CannotWrite[] = "Cannot write to mailbox for %s: %s\n";

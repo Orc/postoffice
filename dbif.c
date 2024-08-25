@@ -9,6 +9,7 @@
 #   include <alloca.h>
 #endif
 
+#include "mymalloc.h"
 
 #if USE_GDBM && !defined(DBM_SUFFIX)
 #   define DBM_SUFFIX	".db"

@@ -26,6 +26,7 @@
 #include "spool.h"
 #include "domain.h"
 #include "public.h"
+#include "mymalloc.h"
 
 
 void

@@ -16,6 +16,7 @@
 
 #include "letter.h"
 #include "domain.h"
+#include "mymalloc.h"
 
 
 static struct domain *domains = 0;
@@ -28,7 +29,7 @@ add_dom(char *domain, char *spool, char *etc)
     int a, b, size;
     struct domain *p;
 
-    if ( (domains = realloc(domains, (1+nrdom)*sizeof domains[0])) == 0 )
+    if ( (domains = domains ? realloc(domains, (1+nrdom)*sizeof domains[0]) : malloc(sizeof domains[0])) == 0 )
 	return 0;
 
     p = &domains[nrdom];
@@ -110,11 +111,13 @@ getdomain(char *dom)
 
     initdomain();
 
-    if (dom == 0) return domains + 0;
+    if ( nrdom > 0 ) {
+	if (dom == 0) return &domains[0];
 
-    for (i=1; i < nrdom; i++)
-	if (strcasecmp(dom, domains[i].domain) == 0)
-	    return domains + i;
+	for (i=1; i < nrdom; i++)
+	    if (domains[i].domain && (strcasecmp(dom, domains[i].domain) == 0) )
+		return &domains[i];
+    }
 
     return (struct domain*)0;
 }

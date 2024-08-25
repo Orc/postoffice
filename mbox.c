@@ -13,10 +13,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "mbox.h"
-#include "socklib.h"
-#include "public.h"
-
 #if HAVE_LIMITS_H
 #   include <limits.h>
 #endif
@@ -27,6 +23,11 @@
 
 #include "mbox.h"
 #include "mx.h"
+#include "mbox.h"
+#include "socklib.h"
+#include "public.h"
+#include "mymalloc.h"
+
 
 void dump_session(MBOX *ses);
 

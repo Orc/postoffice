@@ -20,6 +20,7 @@
 
 #include "letter.h"
 #include "usermap.h"
+#include "mymalloc.h"
 
 static char *
 back(char *string, char *start, char c)
