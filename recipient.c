@@ -17,6 +17,7 @@
 #endif
 
 #include "letter.h"
+#include "mymalloc.h"
 
 struct back {
     char *user;

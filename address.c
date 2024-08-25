@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <syslog.h>
 
 #if HAVE_MALLOC_H
 #   include <malloc.h>
@@ -13,6 +14,7 @@
 #include "mx.h"
 #include "domain.h"
 #include "public.h"
+#include "mymalloc.h"
 
 void
 freeaddress(struct address *ptr)
@@ -37,8 +39,10 @@ mkaddress(char *full)
     if (full == 0)
 	return 0;
 
-    if ( (ret=calloc(sizeof *ret, 1)) && (ret->full = strdup(full)) ) {
-
+    if ( (ret = calloc(1, sizeof *ret)) == 0 )
+	return 0;
+    
+    if ( ret->full = strdup(full) ) {
 	if ( q = strrchr(full, '@') ) {
 	    ret->domain = strdup(q+1);
 	    size = 1+(q-full);

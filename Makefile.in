@@ -25,13 +25,14 @@ mandir=@mandir@
 @AUTHMK@AUTH_OBJS= auth.o b64.o
 @PAMOK@AUTH_OBJS+=pam_login.o
 
+MALLOC=mymalloc.o
 OBJS=server.o letter.o smtp.o addr.o getif.o getloadavg.o \
      mx.o userok.o address.o spool.o recipient.o listq.o \
      mail.o local.o virusscan.o greylist.o runq.o mapfd.o \
      config.o remote.o mbox.o bounce.o postoffice.o \
      newaliases.o arpatok.o audit.o goodness.o domain.o \
      dbif.o getopt.o socklib.o version.o usermap.o \
-     goodfile.o mf.o locker.o headers.o @STRLCPY@ \
+     goodfile.o mf.o locker.o headers.o $(MALLOC) @STRLCPY@ \
      $(AUTH_OBJS)
 
 
@@ -51,14 +52,14 @@ dbm:	dbm.c dbif.o
 
 tools:  $(TOOLS)
 
-mx:     mx.c
-	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c @LIBS@
+mx:     mx.c $(MALLOC)
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mx mx.c $(MALLOC) @LIBS@
 
-mf:     mf.c mx.o socklib.o @STRLCPY@
-	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c mx.o socklib.o @STRLCPY@ @LIBS@
+mf:     mf.c mx.o socklib.o @STRLCPY@ $(MALLOC)
+	$(CC) $(CFLAGS) -DDEBUG=1 -o mf mf.c mx.o socklib.o $(MALLOC) @STRLCPY@ @LIBS@
 
-b64:    b64.c
-	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c
+b64:    b64.c $(MALLOC)
+	$(CC) $(CFLAGS) -DDEBUG=1 -o b64 b64.c $(MALLOC)
 
 getopt: getopt.c
 	$(CC) $(CFLAGS) -DDEBUG=1 -o getopt getopt.c
@@ -157,6 +158,7 @@ mx.o: mx.c config.h mx.h
 newaliases.o: newaliases.c config.h dbif.h aliases.h env.h domain.h
 postoffice.o: postoffice.c config.h letter.h env.h domain.h smtp.h \
               audit.h public.h
+mymalloc.o:     mymalloc.c
 recipient.o: recipient.c config.h letter.h env.h domain.h
 remote.o: remote.c config.h letter.h env.h domain.h mbox.h bounce.h \
           socklib.h spool.h

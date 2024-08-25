@@ -39,6 +39,7 @@
 #include "mx.h"
 #include "socklib.h"
 #include "cstring.h"
+#include "mymalloc.h"
 
 
 extern void message(FILE *f, int code, char *fmt, ...);

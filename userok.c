@@ -16,6 +16,7 @@
 #include "letter.h"
 #include "dbif.h"
 #include "usermap.h"
+#include "mymalloc.h"
 
 
 /*

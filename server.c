@@ -29,6 +29,7 @@
 #include "smtp.h"
 #include "mx.h"
 #include "public.h"
+#include "mymalloc.h"
 
 
 #ifndef HAVE_SETPROCTITLE
@@ -38,6 +39,7 @@
 void
 setproctitle(const char *fmt, ...)
 {
+#ifdef DIY_SETPROCTITLE
     va_list ptr;
     extern char *pgm;
     int pfx;
@@ -52,6 +54,7 @@ setproctitle(const char *fmt, ...)
 	vsnprintf(argv0+pfx, szargv0-(pfx+1), fmt, ptr);
 	va_end(ptr);
     }
+#endif
 }
 #endif
 

@@ -32,6 +32,7 @@
 #include "letter.h"
 #include "env.h"
 #include "mx.h"
+#include "mymalloc.h"
 
 
 int

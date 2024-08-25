@@ -38,6 +38,7 @@ int allow_severity = 0;
 #include "mf.h"
 #include "audit.h"
 #include "public.h"
+#include "mymalloc.h"
 #include "spool.h"
 
 extern char myversion[];
@@ -748,6 +749,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 #   define auth_ok 0
 #endif
 
+    closelog();
     openlog("smtpd", LOG_PID, LOG_MAIL);
 
     myname(env);

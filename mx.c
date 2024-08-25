@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
+#include <syslog.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +22,7 @@
 #endif
 
 #include "mx.h"
-
+#include "mymalloc.h"
 
 #define DNSIZE 512
 
@@ -450,8 +451,8 @@ freemxlist(struct mxlist *p)
     for (i=0; i < p->count; i++)
 	free(p->host[i].name);
     free(p->host);
-    p->size = p->count = 0;
     p->host = 0;
+    p->size = p->count = 0;
 }
 
 

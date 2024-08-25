@@ -23,6 +23,7 @@
 #include "mf.h"
 #endif
 #include "public.h"
+#include "mymalloc.h"
 
 
 int

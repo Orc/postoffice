@@ -22,6 +22,7 @@ extern char myversion[];
 #include "smtp.h"
 #include "audit.h"
 #include "public.h"
+#include "mymalloc.h"
 
 
 #ifndef HAVE_SETPROCTITLE
@@ -94,13 +95,13 @@ main(int argc, char **argv)
 #endif
 
 #if HAVE_BASENAME
-    pgm = strdup(basename(argv[0]));
+    pgm = basename(argv[0]);
 #else
     {   char *avp = strrchr(argv[0], '/');
-	pgm = strdup(avp ? avp+1 : argv[0]);
+	pgm = avp ? avp+1 : argv[0];
     }
 #endif
-    openlog(pgm, LOG_PID, LOG_MAIL);
+    openlog(pgm ? pgm : "postoffice", LOG_PID, LOG_MAIL);
 
 #if 0
     {	int i;
@@ -243,6 +244,7 @@ main(int argc, char **argv)
 			    exit(EX_TEMPFAIL);
 			}
 			else if (qd == 0) {
+			    openlog("runq", LOG_PID, LOG_MAIL);
 			    runqd(&env,qruntime);
 			    exit(EX_TEMPFAIL);
 			}

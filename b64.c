@@ -39,6 +39,9 @@
 #  include <malloc.h>
 #endif
 
+#include "mymalloc.h"
+
+
 static char
 table64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -62,7 +65,7 @@ to64(char *clear)
     if (clear == 0) return 0;
     sz = strlen(clear);
 
-    if ( (res = malloc( ((sz*3)/2)+4 )) == 0) return 0;
+    if ( (res = malloc( (sz*4)+5 )) == 0) return 0;
     out = res;
 
 

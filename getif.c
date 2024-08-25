@@ -16,6 +16,8 @@
 #   include <malloc.h>
 #endif
 
+#include "mymalloc.h"
+
 #if __linux__
 #   include <linux/if.h>
 #endif
