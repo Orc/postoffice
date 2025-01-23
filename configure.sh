@@ -198,8 +198,8 @@ if [ "$WITH_TCPWRAPPERS" ]; then
 
 	# check libwrappers for orc-specific deny message passing
 	AC_CHECK_VAR 'char *' tcpwrappers_version && AC_DEFINE 'ORC_LIBWRAPPERS' '1'
-	AC_SUB LIBWRAP "${LIBWRAP}"
     fi
+    AC_SUB LIBWRAP "${LIBWRAP}"
 fi
 
 case "$WITH_QUEUEDIR" in

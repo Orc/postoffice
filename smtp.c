@@ -571,7 +571,7 @@ helo(struct letter *let, enum cmds cmd, char *line)
 		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 521);
 		    message(let->out, 521, "Liar, liar, pants on fire!");
 		    freeiplist(&list);
-		    syslog(LOG_DEBUG, "freeiplist(%p)", list);
+		    /*syslog(LOG_DEBUG, "freeiplist(%p)", list);*/
 		    return 0;
 		}
 	    freeiplist(&list);
@@ -758,6 +758,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     volatile int ok = 1, donotaccept = 0;
     volatile char * volatile why = 0;
     volatile int patience = 5;
+    char *p;
     int i, delay = 0;
     volatile int rc, score, traf = 0;
     volatile int timeout = env->timeout;
@@ -805,7 +806,7 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    if ( why ) {
 		if ( strncmp("DENY=", why, 5) == 0 ) {
 		    go_away(&letter, out, why);
-		    /* never returns, but free the reason to stop
+		    /* never returns, but free why to keep
 		     * the sanity checker from flipping out */
 		    free(why);
 		}
@@ -833,9 +834,14 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		goodness(&letter, -5);
 		donotaccept = 1;
 	    }
+	    if ( p = strchr(why, '=') ) /* if the reason is in CODE=description form, just tell the caller the description */
+		++p;
+	    else
+		p = why
+
 	    message(out, status, "%s does not accept mail"
 			      " from %s because %s.", letter.deliveredto,
-			      letter.deliveredby, 4+why);
+			      letter.deliveredby, p);
 	    syslog(LOG_ERR, "REJECT: SPAM (%s, %s) %s",
 				letter.deliveredby, letter.deliveredIP, why);
 #if ORC_TCPWRAPPERS
