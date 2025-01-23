@@ -186,13 +186,18 @@ AC_EXEC_MODES
 
 LIBWRAP=''
 if [ "$WITH_TCPWRAPPERS" ]; then
-    AC_DEFINE 'WITH_TCPWRAPPERS' '1'
     __ac_libs=$AC_LIBS
     AC_LIBRARY hosts_ctl -lwrap || AC_FAIL "Cannot use tcp wrappers without the libwrap library"
 
     if [ "$__ac_libs" != "$AC_LIBS" ]; then
 	LIBWRAP='-lwrap'
 	AC_LIBS=$__ac_libs
+    fi
+    AC_DEFINE 'WITH_TCPWRAPPERS' '1'
+    
+    # check libwrappers for orc-specific deny message passing
+    if AC_CHECK_VAR 'char *' tcpwrappers_version; then
+	AC_DEFINE 'ORC_LIBWRAPPERS' '1'
     fi
 fi
 AC_SUB LIBWRAP "${LIBWRAP}"

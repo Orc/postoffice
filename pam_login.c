@@ -26,9 +26,9 @@ static void
 pam_log(pam_handle_t *magic, char *message, int code)
 {
 #if HAVE_PAM_STRERROR
-    syslog(LOG_ERR, "%s (%s)", message, pam_strerror(magic, code));
+    syslog(LOG_DEBUG, "%s (%s)", message, pam_strerror(magic, code));
 #else
-    syslog(LOG_ERR, "%s (code %d)", message, code);
+    syslog(LOG_DEBUG, "%s (code %d)", message, code);
 #endif
 }
 
@@ -49,15 +49,14 @@ pam_login_ok(char *service, char *user, char *password)
 	reply->resp_retcode = 0;
     }
     else {
-	syslog(LOG_ERR, "pam_login_ok: cannot allocate %ld bytes",
-			(long)sizeof *reply);
+	/*syslog(LOG_ERR, "pam_login_ok: cannot allocate %ld bytes", (long)sizeof *reply);*/
 	return 0;
     }
     
     status = pam_start(service, user, &pretend_to_talk, &auth);
 
     if ( status != PAM_SUCCESS ) {
-	pam_log(auth, "pam_start failed", status);
+	/*pam_log(auth, "pam_start failed", status);*/
 	free(reply->resp);
 	free(reply);
     }
@@ -69,8 +68,9 @@ pam_login_ok(char *service, char *user, char *password)
 	case PAM_SERVICE_ERR:
 	case PAM_SYSTEM_ERR:
 	case PAM_BUF_ERR:
-	case PAM_OPEN_ERR:  pam_log(auth, "pam_auth failed", status);
-	default:            /*permission defined for normal reasons; no logging needed*/
+	case PAM_OPEN_ERR:  /*pam_log(auth, "pam_auth failed", status);*/
+	default:            /*permission denied for normal reasons; no logging needed*/
+			    is_ok = 0;
 			    break;
 	}
     }

@@ -219,6 +219,7 @@ smtpbugcheck(struct letter *let)
 #if WITH_MILTER
     char *what = 0;
     
+    alarm(120);	/* allow 60 seconds to do all the bug checking */
     if ( let->healthy ) {
 	int status = mfdata(let);
 	if ( status == MF_OK )
@@ -570,6 +571,7 @@ helo(struct letter *let, enum cmds cmd, char *line)
 		    audit(let, (cmd==HELO)?"HELO":"EHLO", line, 521);
 		    message(let->out, 521, "Liar, liar, pants on fire!");
 		    freeiplist(&list);
+		    syslog(LOG_DEBUG, "freeiplist(%p)", list);
 		    return 0;
 		}
 	    freeiplist(&list);
@@ -658,7 +660,11 @@ debug(struct letter *let)
     message(let->out, -250, "PAM: T\n");
 #endif
 #if WITH_TCPWRAPPERS
-    message(let->out,-250, "Tcp-Wrappers: T\n");
+#if ORC_TCPWRAPPERS
+    message(let->out,-250, "Enhanced TCP-wrappers: T\n");
+#else
+    message(let->out,-250, "Basic TCP-wrappers: T\n");
+#endif
 #endif
 #if WITH_GREYLIST
     if ( let->env->greylist_from )
@@ -729,6 +735,18 @@ debug(struct letter *let)
 }
 
 
+static void
+go_away(struct letter *letter, FILE* out, char* reason)
+{
+    goodness(letter,-10);
+    audit(letter,"CONN","outlawed", 521);
+    message(out, 521, "%s does not accept mail"
+		      " from %s because %s.", letter->deliveredto, letter->deliveredby, reason);
+    syslog(LOG_ERR, "REJECT: DENY (%s, %s) %s", letter->deliveredby, letter->deliveredIP, reason);
+    byebye(letter,1);
+}
+
+
 void
 smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 {
@@ -775,22 +793,33 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    byebye(&letter, 1);
 	}
 #ifdef WITH_TCPWRAPPERS
+	/* the tcp wrappers header file doesn't use prototyped declarations,
+	 * so I'll cheat and use the same code for both the standard and
+	 * my enhanced hosts_ctl calls
+	 */
 	if (!hosts_ctl("smtp", letter.deliveredby,
-			       letter.deliveredIP, STRING_UNKNOWN)) {
+			       letter.deliveredIP, STRING_UNKNOWN, &why)) {
 	    int status;
-	    if ( why=getenv("DENY") ) {
-		goodness(&letter,-10);
-		audit(&letter,"CONN","outlawed", 521);
-		message(out, 521, "%s does not accept mail"
-				  " from %s because %s.", letter.deliveredto,
-				  letter.deliveredby, why);
-		syslog(LOG_ERR, "REJECT: DENY (%s, %s)",
-				    letter.deliveredby, letter.deliveredIP);
-		byebye(&letter,1);
-	    }
 
-	    if ( (why=getenv("WHY")) == 0)
-		why = "We get too much spam from your domain";
+#if ORC_TCPWRAPPERS
+	    if ( why ) {
+		if ( strncmp("DENY=", why, 5) == 0 ) {
+		    go_away(&letter, out, why);
+		    /* never returns, but free the reason to stop
+		     * the sanity checker from flipping out */
+		    free(why);
+		}
+	    }
+	    else
+		why = strdup("WHY=We get too much spam from your domain");
+#else
+	    if ( why = getenv("DENY") )
+		go_away(&letter, out, why);
+		/* never returns */
+
+	    if ( (why = getenv("WHY")) == NULL )
+		why="WHY=We get too much spam from your domain";
+#endif
 
 	    if ( env->rej.action == spBOUNCE ) {
 		status=421;
@@ -806,9 +835,12 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 	    }
 	    message(out, status, "%s does not accept mail"
 			      " from %s because %s.", letter.deliveredto,
-			      letter.deliveredby, why);
-	    syslog(LOG_ERR, "REJECT: SPAM (%s, %s)",
-				letter.deliveredby, letter.deliveredIP);
+			      letter.deliveredby, 4+why);
+	    syslog(LOG_ERR, "REJECT: SPAM (%s, %s) %s",
+				letter.deliveredby, letter.deliveredIP, why);
+#if ORC_TCPWRAPPERS
+	    free(why);
+#endif
 	}
 	else
 #endif

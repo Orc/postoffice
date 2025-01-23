@@ -56,7 +56,6 @@ authmeharder(struct letter *let, char *user, char *pass)
 
     if ( addr = mkaddress(user) ) {
 
-
 	if ( addr->user ) { 
 	    struct domain *dom;
 
@@ -68,8 +67,9 @@ authmeharder(struct letter *let, char *user, char *pass)
 	    pw = getvpwemail(dom, addr->user);
 #endif
 #if WITH_PAM
-	    if ( !isvhost(dom) )
+	    if ( !isvhost(dom) ) {
 		ret = pam_login_ok("login", user, pass);
+	    }
 	    else
 #endif
 	    if (pw && pass && (encrypted = crypt(pass, pw->pw_passwd)) )
@@ -77,7 +77,6 @@ authmeharder(struct letter *let, char *user, char *pass)
 	}
 	freeaddress(addr);
     }
-
     return ret;
 }
 
@@ -105,7 +104,7 @@ authgets(struct letter *let, int *errp)
 	if ( (ret = from64(line)) == 0)
 	    *errp = 2;
     }
-    return ret;
+    return strdup(ret);
 }
 
 

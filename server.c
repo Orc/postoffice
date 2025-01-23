@@ -199,8 +199,10 @@ do_smtp_connection(int client, ENV *env)
 	write(client, "451 SYSTEM ERROR.  "
 			  "PLEASE TRY AGAIN LATER.\r\n", 44);
     }
-    else if (i < 0 || getloadavg(loadavg, 3) < 1
-		   || loadavg[0] > env->max_loadavg) {
+    else if (i < 0 ) {
+	message(out, 451, "I'm too popular.  Please try again later.");
+    }
+    else if ( getloadavg(loadavg, 3) < 1 || loadavg[0] > env->max_loadavg) {
 	message(out, 451, "I'm too busy. Please try again later.");
     }
     else if (getpeername(client, (struct sockaddr*)&window[i].customer, &cs) == -1) {
@@ -260,6 +262,7 @@ do_smtp_connection(int client, ENV *env)
     }
     if (in) fclose(in);
     if (out) fclose(out);
+    close(client);
 
     return ret;
 }
@@ -345,9 +348,15 @@ reattach(ENV *env, int i, int sock[], int port[])
 	sleep(60);
 	sock[i] = attach(htons(port[i]));
 
-	if ( sock[i] == -1 )
-	    syslog(LOG_ERR, "cannot attach to port %d (retry %d): %m",
-			     port[i], ++retries);
+	if ( sock[i] == -1 ) {
+	    if ( retries < 10 )
+		syslog(LOG_ERR, "cannot attach to port %d (retry %d): %m",
+				 port[i], ++retries);
+	    else {
+		syslog(LOG_ERR, "cannot attach to port %d -- restarting: %m", port[i]);
+		exit(1);
+	    }
+	}
 	else
 	    return;
     }
@@ -470,11 +479,13 @@ runqd(ENV *env, int qrunwhen)
     signal(SIGUSR2, sigexit);
 
 
-    setproctitle("runq every %d minutes", qrunwhen);
+    syslog(LOG_DEBUG, "runq every %d minutes", qrunwhen);
 
     while (1) {
 	if ( (runchild=fork()) == 0) {
-	    ENV child_env = *env;
+	    ENV child_env;
+
+	    init_env(&child_env);
 
 	    setsid(); /* set a new session, then double-fork to orphan
 		       * the actual queue runner
