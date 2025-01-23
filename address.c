@@ -19,13 +19,21 @@
 void
 freeaddress(struct address *ptr)
 {
+    int snooze = alarm(10);
+    
     if (ptr) {
+	/*syslog(LOG_DEBUG, "freeaddress(domain: %s)", ptr->domain);*/
 	if (ptr->domain) free(ptr->domain);
+	/*syslog(LOG_DEBUG, "freeaddress(user: %s)", ptr->user);*/
 	if (ptr->user) free(ptr->user);
+	/*syslog(LOG_DEBUG, "freeaddress(full: %s)", ptr->full);*/
 	if (ptr->full) free(ptr->full);
+	/*syslog(LOG_DEBUG, "freeaddress(alias: %s)", ptr->alias);*/
 	if (ptr->alias) free(ptr->alias);
 	free(ptr);
     }
+
+    alarm(snooze);
 }
 
 
@@ -44,6 +52,7 @@ mkaddress(char *full)
     
     if ( ret->full = strdup(full) ) {
 	if ( q = strrchr(full, '@') ) {
+	    /*syslog(LOG_DEBUG, "mkaddress @:  user=|%.*s| domain=|%s|", q-full, full, q+1);*/
 	    ret->domain = strdup(q+1);
 	    size = 1+(q-full);
 	    if ( ret->domain && (ret->user = malloc(size)) ) {
@@ -52,6 +61,7 @@ mkaddress(char *full)
 	    }
 	}
 	else if (q = strchr(full, '!')) {
+	    /*syslog(LOG_DEBUG, "mkaddress !: user=|%s| domain=|%.*s|", q+1, q-full, full);*/
 	    ret->user = strdup(q+1);
 	    size = 1+(q-full);
 	    if ( ret->user && (ret->domain = malloc(size)) ) {
@@ -59,8 +69,10 @@ mkaddress(char *full)
 		return ret;
 	    }
 	}
-	else if ( (strlen(full) < 1) || (ret->user = strdup(full)) )
+	else if ( (strlen(full) < 1) || (ret->user = strdup(full)) ) {
+	    /*syslog(LOG_DEBUG, "mkaddress nodomain: user=|%s|", full);*/
 	    return ret;
+	}
 
     }
     freeaddress(ret);

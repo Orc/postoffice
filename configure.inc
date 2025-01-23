@@ -209,6 +209,40 @@ AC_CHECK_HEADERS () {
 
 
 #
+# check for a global variable
+#
+AC_CHECK_VAR () {
+    AC_PROG_CC
+
+    A="$1"
+    B="$2"
+
+    cat << EOF > ngc$$.c
+main()
+{
+    extern $A $B;
+}
+EOF
+
+    LOGN "looking for global variable $B"
+
+    if $AC_CC $AC_CFLAGS $AC_LDFLAGS -o ngc$$ ngc$$.c $LIBS; then
+	AC_DEFINE `echo ${2:-HAVE_$B} | $AC_UPPERCASE` 1
+	TLOG " (found)"
+	rc=0
+    else
+	echo "offending command was:"
+	cat ngc$$.c
+	echo "$AC_CC $AC_CFLAGS $AC_LDFLAGS -o ngc$$ ngc$$.c $LIBS"
+	TLOG " (not found)"
+	rc=1
+    fi
+    __remove ngc$$ ngc$$.c
+
+}
+
+
+#
 # emulate GNU autoconf's AC_CHECK_FUNCS function
 #
 AC_CHECK_FUNCS () {
@@ -652,7 +686,7 @@ AC_LIBRARY() {
     LOGN "Looking for the ${SRC} function"
     if AC_QUIET AC_CHECK_FUNCS $SRC; then
 	AC_DEFINE HAVE_LIB`echo $1 | sed -e 's/-l//' | $AC_UPPERCASE`
-	LOG "(found)"
+	LOG " (found)"
 	return 0
     fi
 

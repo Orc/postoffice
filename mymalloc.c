@@ -1,8 +1,12 @@
-#ifdef DEBUG_MALLOC
-
 #include <stdlib.h>
 #include <syslog.h>
 #include <string.h>
+
+#ifdef AMALLOC
+#include "amalloc.h"
+#endif
+
+#ifdef DEBUG_MALLOC
 
 void *
 mymalloc(size_t size, char *file, int line)

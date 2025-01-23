@@ -30,10 +30,12 @@ char *argv0;
 int   szargv0;
 #endif
 
+char *pgm;
 
 extern int   z_getopt();
 extern char* z_optarg;
 extern int   z_optind;
+
 
 void
 superpowers()
@@ -45,15 +47,47 @@ superpowers()
     }
 }
 
-char *pgm;
 
+void
+init_env(ENV *env)
+{
+    extern struct in_addr *local_if_list();
+    
+    bzero(env, sizeof *env);
+
+    env->bmode = 'm';
+    env->local_if = local_if_list();
+    env->relay_ok = 1;			/* allow local relaying */
+    env->verbose = 0;			/* be chattery */
+    env->verify_from = 1;		/* verify the host of MAIL FROM:<user@host> */
+    env->nodaemon = 0;			/* allow MAIL FROM:<> */
+    env->delay = 3600;			/* greylist delay */
+    env->largest = 0;
+    env->debug = 0;
+    env->sender = getuid();
+    env->timeout = 300;
+    env->qreturn = 86400*3;		/* 3 days */
+    env->max_loadavg = 4.0;
+#if HAVE_STATFS || HAVE_STATVFS
+    env->minfree = 10*1000*1024;	/* 10m free for messages */
+#else
+    env->minfree = 0;
+#endif
+    env->max_clients = 100;		/* should be fairly ridiculous */
+    env->max_hops = 100;		/* (ditto) */
+
+    env->spam.action = spBOUNCE;
+    env->rej.action = spBOUNCE;
+}
+
+
+int
 main(int argc, char **argv)
 {
     int opt;
     int Cflag = 0;			/* flag for -C */
-    extern struct in_addr *local_if_list();
     struct sockaddr_in *peer = 0;	/* peer for -bs (for debugging) */
-    static ENV env;
+    ENV env;
     char *from = 0;
     char *options = "aA:B:C:dF:f:r:b:o:h:R:q;GUVimnv";
     char *modes = "sqpmidD";
@@ -61,30 +95,8 @@ main(int argc, char **argv)
     int sendmaild0 = 0;
     int qruntime = 0;
 
-    env.bmode = 'm';
-    env.local_if = local_if_list();
-    env.relay_ok = 1;		/* allow local relaying */
-    env.verbose = 0;		/* be chattery */
-    env.verify_from = 1;	/* verify the host of MAIL FROM:<user@host> */
-    env.nodaemon = 0;		/* allow MAIL FROM:<> */
-    env.delay = 3600;		/* greylist delay */
-    env.largest = 0;
-    env.debug = 0;
-    env.sender = getuid();
-    env.timeout = 300;
-    env.qreturn = 86400*3;	/* 3 days */
-    env.max_loadavg = 4.0;
-#if HAVE_STATFS || HAVE_STATVFS
-    env.minfree = 10*1000*1024;	/* 10m free for messages */
-#else
-    env.minfree = 0;
-#endif
-    env.max_clients = 100;	/* should be fairly ridiculous */
-    env.max_hops = 100;		/* (ditto) */
 
-    env.spam.action = spBOUNCE;
-    env.rej.action = spBOUNCE;
-
+    init_env(&env);		/* set up the default environment */
     Shuffle;			/* set up the random # generator for mx sorting */
 
 #ifndef HAVE_SETPROCTITLE
