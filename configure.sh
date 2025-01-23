@@ -187,20 +187,20 @@ AC_EXEC_MODES
 LIBWRAP=''
 if [ "$WITH_TCPWRAPPERS" ]; then
     __ac_libs=$AC_LIBS
-    AC_LIBRARY hosts_ctl -lwrap || AC_FAIL "Cannot use tcp wrappers without the libwrap library"
+    if AC_LIBRARY hosts_ctl -lwrap; then
+	AC_LOG "(-lwrap)"
 
-    if [ "$__ac_libs" != "$AC_LIBS" ]; then
-	LIBWRAP='-lwrap'
-	AC_LIBS=$__ac_libs
-    fi
-    AC_DEFINE 'WITH_TCPWRAPPERS' '1'
-    
-    # check libwrappers for orc-specific deny message passing
-    if AC_CHECK_VAR 'char *' tcpwrappers_version; then
-	AC_DEFINE 'ORC_LIBWRAPPERS' '1'
+	if [ "$__ac_libs" != "$AC_LIBS" ]; then
+	    LIBWRAP='-lwrap'
+	    AC_LIBS=$__ac_libs
+	fi
+	AC_DEFINE 'WITH_TCPWRAPPERS' '1'
+
+	# check libwrappers for orc-specific deny message passing
+	AC_CHECK_VAR 'char *' tcpwrappers_version && AC_DEFINE 'ORC_LIBWRAPPERS' '1'
+	AC_SUB LIBWRAP "${LIBWRAP}"
     fi
 fi
-AC_SUB LIBWRAP "${LIBWRAP}"
 
 case "$WITH_QUEUEDIR" in
 "") AC_DEFINE QUEUEDIR \"/var/spool/mqueue/\" ;;
