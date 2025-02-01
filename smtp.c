@@ -755,15 +755,15 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
     time_t tick = time(NULL);
     extern char *nameof(struct sockaddr_in*);
     enum cmds c;
-    volatile int ok = 1, donotaccept = 0;
-    volatile char * volatile why = 0;
-    volatile int patience = 5;
+    int ok = 1, donotaccept = 0;
+    char * why = 0;
+    int patience = 5;
     char *p;
     int i, delay = 0;
-    volatile int rc, score, traf = 0;
-    volatile int timeout = env->timeout;
+    int rc, score, traf = 0;
+    int timeout = env->timeout;
 #ifdef SMTP_AUTH
-    volatile int auth_ok = 0;
+    int auth_ok = 0;
 #else
 #   define auth_ok 0
 #endif
