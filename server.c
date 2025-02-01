@@ -345,7 +345,7 @@ reattach(ENV *env, int i, int sock[], int port[])
     syslog(LOG_ERR, "%m -- reattaching to port %d", port[i]);
     close(sock[i]);
     while ( 1 ) {
-	sleep(60);
+	sleep(5);
 	sock[i] = attach(htons(port[i]));
 
 	if ( sock[i] == -1 ) {

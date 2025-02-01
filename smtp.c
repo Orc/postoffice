@@ -660,7 +660,7 @@ debug(struct letter *let)
     message(let->out, -250, "PAM: T\n");
 #endif
 #if WITH_TCPWRAPPERS
-#if ORC_TCPWRAPPERS
+#if ORC_LIBWRAPPERS
     message(let->out,-250, "Enhanced TCP-wrappers: T\n");
 #else
     message(let->out,-250, "Basic TCP-wrappers: T\n");
@@ -802,10 +802,10 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 			       letter.deliveredIP, STRING_UNKNOWN, &why)) {
 	    int status;
 
-#if ORC_TCPWRAPPERS
+#if ORC_LIBWRAPPERS
 	    if ( why ) {
 		if ( strncmp("DENY=", why, 5) == 0 ) {
-		    go_away(&letter, out, why);
+		    go_away(&letter, out, 5+why);
 		    /* never returns, but free why to keep
 		     * the sanity checker from flipping out */
 		    free(why);
@@ -834,16 +834,18 @@ smtp(FILE *in, FILE *out, struct sockaddr_in *peer, ENV *env)
 		goodness(&letter, -5);
 		donotaccept = 1;
 	    }
+#if ORC_LIBWRAPPERS
 	    if ( p = strchr(why, '=') ) /* if the reason is in CODE=description form, just tell the caller the description */
 		++p;
 	    else
-		p = why
+		p = why;
+#endif
 
 	    message(out, status, "%s does not accept mail"
 			      " from %s because %s.", letter.deliveredto,
 			      letter.deliveredby, p);
 	    syslog(LOG_ERR, "REJECT: SPAM (%s, %s) %s",
-				letter.deliveredby, letter.deliveredIP, why);
+				letter.deliveredby, letter.deliveredIP, p);
 #if ORC_TCPWRAPPERS
 	    free(why);
 #endif
