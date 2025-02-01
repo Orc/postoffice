@@ -31,6 +31,8 @@
 #include "public.h"
 #include "mymalloc.h"
 
+extern void init_env(ENV*);
+
 
 #ifndef HAVE_SETPROCTITLE
 /*
