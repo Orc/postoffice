@@ -13,6 +13,7 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <syslog.h>
+#include <time.h>
 
 #include <stdio.h>
 #include <string.h>
