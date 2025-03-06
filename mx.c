@@ -13,7 +13,6 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <syslog.h>
-#include <time.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -451,7 +450,8 @@ freemxlist(struct mxlist *p)
 
     for (i=0; i < p->count; i++)
 	free(p->host[i].name);
-    free(p->host);
+    if ( p->host )
+	free(p->host);
     p->host = 0;
     p->size = p->count = 0;
 }
@@ -460,7 +460,8 @@ freemxlist(struct mxlist *p)
 void
 freeiplist(struct iplist *p)
 {
-    free(p->a);
+    if ( p->a )
+	free(p->a);
     p->size = p->count = 0;
     p->a = 0;
 }

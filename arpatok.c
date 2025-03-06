@@ -84,16 +84,16 @@ show(char *address)
 main()
 {
     show("orc@pell");
-    show("orc(jessica parsons)@pell(.portland.or.us)");
-    show(",orc(jessica parsons)@pell(.portland.or.us)");
-    show("\"orc@pell.portland.or.us\"(jessica parsons)");
-    show("orc,(jessica parsons)orc,orc(jessica parsons)@pell.portland.or.us");
-    show("jessica parsons<orc@pell.portland.or.us>,orc@pell(<jessica@pell.portland.or.us>)");
-    show("(jessica(parsons)<orc@tsfr.org>)<orc@pell.portland.or.us>orc@tsfr.org,root");
-    show("<orc@pell.><orc@tsfr.org>jessica parsons");
+    show("orc(david parsons)@pell(.portland.or.us)");
+    show(",orc(david parsons)@pell(.portland.or.us)");
+    show("\"orc@pell.portland.or.us\"(david parsons)");
+    show("orc,(david parsons)orc,orc(david parsons)@pell.portland.or.us");
+    show("david parsons<orc@pell.portland.or.us>,orc@pell(<david@pell.portland.or.us>)");
+    show("(david(parsons)<orc@tsfr.org>)<orc@pell.portland.or.us>orc@tsfr.org,root");
+    show("<orc@pell.><orc@tsfr.org>david parsons");
     show("orc@pell\n"
 	 "       <orc@tsfr.\n"
-	 "        org>jessica parsons");
+	 "        org>david parsons");
     show("");
     show(",");
     show(" (nothing but whitespace and comments here) ");

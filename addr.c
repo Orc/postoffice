@@ -88,8 +88,8 @@ main()
     say("<\"orc\">");
     say("\"<orc\">");
     say("<\"o\"\"rc\">");
-    say("jessica parsons<orc>");
-    say("\"jessica parsons\"<orc>");
+    say("david parsons<orc>");
+    say("\"david parsons\"<orc>");
     say("<>");
     say("");
 }
